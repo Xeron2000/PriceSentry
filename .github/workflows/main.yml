@@ -1,0 +1,30 @@
+name: Monitor Binance Top Movers
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' 
+  workflow_dispatch:  
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8' 
+
+      - name: Install dependencies
+        run: |
+          pip install requests  # 安装所需的库
+
+      - name: Run monitor script
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }} 
+          CHAT_ID: ${{ secrets.CHAT_ID }}               
+        run: |
+          python binance_mover.py
