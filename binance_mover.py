@@ -47,6 +47,8 @@ def get_price_n_minutes_ago(symbols, minutes):
             data = response.json()
             if data:
                 prices[symbol] = float(data[-1]['p'])
+            else:
+                print(f"No trade data found for {symbol} within the last {minutes} minutes.")
         else:
             print(f"Failed to fetch price for {symbol}: {response.status_code}")
 
@@ -71,7 +73,7 @@ def load_symbols_from_file(file_path):
     with open(file_path, 'r') as file:
         return [line.strip() for line in file.readlines() if line.strip()]
 
-def monitor_top_movers_once(minutes, symbols):
+def monitor_top_movers_once(minutes, symbols, is_custom=False):
     initial_prices = get_price_n_minutes_ago(symbols, minutes)
     updated_prices = get_current_prices(symbols)
 
@@ -83,12 +85,17 @@ def monitor_top_movers_once(minutes, symbols):
 
     top_movers_sorted = sorted(price_changes.items(), key=lambda x: abs(x[1]), reverse=True)
 
-    message = f"\nTop 5 Movers in the last {minutes} minutes:\n"
+    if is_custom:
+        message = f"\nTop 5 Movers for custom symbols in the last {minutes} minutes:\n"
+    else:
+        message = f"\nTop 5 Movers in the last {minutes} minutes:\n"
+    
     for symbol, change in top_movers_sorted[:5]:
         message += f"Symbol: {symbol}, Price Change: {change:.2f}%\n"
 
     print(message)
     send_message_to_telegram(message)
+
 def parse_timeframe(timeframe):
     if timeframe.endswith('m'):
         return int(timeframe[:-1])
@@ -109,16 +116,19 @@ if __name__ == "__main__":
     try:
         timeframe_minutes = parse_timeframe(args.timeframe)
         
-        if args.symbols:
-            symbols_to_monitor = load_symbols_from_file(args.symbols)
-            if not symbols_to_monitor:
-                print("No valid symbols found. Exiting.")
-                exit(1)
-        else:
-            top_gainers, top_losers = get_binance_top_gainers_and_losers()
-            symbols_to_monitor = [coin['symbol'] for coin in top_gainers + top_losers]
-
+        # 获取默认的 Top Movers 数据
+        top_gainers, top_losers = get_binance_top_gainers_and_losers()
+        symbols_to_monitor = [coin['symbol'] for coin in top_gainers + top_losers]
         monitor_top_movers_once(timeframe_minutes, symbols_to_monitor)
+
+        # 如果有传入 symbols 参数，追加自定义符号的 Top Movers 数据
+        if args.symbols:
+            custom_symbols = load_symbols_from_file(args.symbols)
+            if custom_symbols:
+                monitor_top_movers_once(timeframe_minutes, custom_symbols, is_custom=True)
+            else:
+                print("No valid symbols found in the file. Exiting.")
+                exit(1)
     except ValueError as e:
         print(e)
         exit(1)
