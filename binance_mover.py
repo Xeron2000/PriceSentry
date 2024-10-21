@@ -93,8 +93,7 @@ def monitor_top_movers_once(minutes, symbols, is_custom=False):
     for symbol, change in top_movers_sorted[:5]:
         message += f"Symbol: {symbol}, Price Change: {change:.2f}%\n"
 
-    print(message)
-    send_message_to_telegram(message)
+    return message
 
 def parse_timeframe(timeframe):
     if timeframe.endswith('m'):
@@ -116,19 +115,23 @@ if __name__ == "__main__":
     try:
         timeframe_minutes = parse_timeframe(args.timeframe)
         
-        # 获取默认的 Top Movers 数据
         top_gainers, top_losers = get_binance_top_gainers_and_losers()
         symbols_to_monitor = [coin['symbol'] for coin in top_gainers + top_losers]
-        monitor_top_movers_once(timeframe_minutes, symbols_to_monitor)
+        default_message = monitor_top_movers_once(timeframe_minutes, symbols_to_monitor)
 
-        # 如果有传入 symbols 参数，追加自定义符号的 Top Movers 数据
+        custom_message = ""
         if args.symbols:
             custom_symbols = load_symbols_from_file(args.symbols)
             if custom_symbols:
-                monitor_top_movers_once(timeframe_minutes, custom_symbols, is_custom=True)
+                custom_message = monitor_top_movers_once(timeframe_minutes, custom_symbols, is_custom=True)
             else:
                 print("No valid symbols found in the file. Exiting.")
                 exit(1)
+
+        full_message = default_message + custom_message
+        print(full_message)
+        send_message_to_telegram(full_message)
+
     except ValueError as e:
         print(e)
         exit(1)
