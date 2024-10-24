@@ -17,19 +17,29 @@ def send_message_to_telegram(message):
     if response.status_code != 200:
         print(f"Failed to send message: {response.text}")
 
-def get_binance_top_gainers_and_losers(limit=10):
+def get_binance_top_gainers_and_losers(start, end):
     url = "https://api.binance.com/api/v3/ticker/24hr"
     response = requests.get(url)
 
     if response.status_code == 200:
         data = response.json()
+
         usdt_pairs = [coin for coin in data if coin['symbol'].endswith('USDT')]
-        top_gainers = sorted(usdt_pairs, key=lambda x: float(x['priceChangePercent']), reverse=True)[:limit]
-        top_losers = sorted(usdt_pairs, key=lambda x: float(x['priceChangePercent']))[:limit]
+
+        def safe_float(val):
+            try:
+                return float(val)
+            except ValueError:
+                return 0.0
+
+        top_gainers = sorted(usdt_pairs, key=lambda x: safe_float(x['priceChangePercent']), reverse=True)[start:end]
+        top_losers = sorted(usdt_pairs, key=lambda x: safe_float(x['priceChangePercent']))[start:end]
+
         return top_gainers, top_losers
     else:
         print(f"Failed to fetch data: {response.status_code}")
         return [], []
+
 
 def get_price_n_minutes_ago(symbols, minutes):
     timestamp = int(time.time() * 1000) - minutes * 60 * 1000
@@ -109,13 +119,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monitor top gainers and losers on Binance.")
     parser.add_argument('--timeframe', type=str, default='15m', help='Timeframe to check (e.g., 15m, 1h, 1d)')
     parser.add_argument('--symbols', type=str, help='Path to a file containing symbols to monitor (one per line)')
+    parser.add_argument('--start', type=int, default=0, help='Starting rank of gainers/losers (default: 0)')
+    parser.add_argument('--end', type=int, default=10, help='Ending rank of gainers/losers (default: 10)')
 
     args = parser.parse_args()
 
     try:
         timeframe_minutes = parse_timeframe(args.timeframe)
 
-        top_gainers, top_losers = get_binance_top_gainers_and_losers()
+        top_gainers, top_losers = get_binance_top_gainers_and_losers(args.start, args.end)
+
         symbols_to_monitor = [coin['symbol'] for coin in top_gainers + top_losers]
         default_message = monitor_top_movers_once(timeframe_minutes, symbols_to_monitor)
 
