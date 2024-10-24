@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     try:
         timeframe_minutes = parse_timeframe(args.timeframe)
-        
+
         top_gainers, top_losers = get_binance_top_gainers_and_losers()
         symbols_to_monitor = [coin['symbol'] for coin in top_gainers + top_losers]
         default_message = monitor_top_movers_once(timeframe_minutes, symbols_to_monitor)
