@@ -23,8 +23,8 @@ sudo apt install python3 python3-pip
 Use Git to clone the project code:
 
 ```bash
-git clone https://github.com/Xeron2000/Binance-Contract-Watcher.git
-cd Binance-Contract-Watcher
+git clone https://github.com/Xeron2000/TradePulse.git
+cd TradePulse
 ```
 
 ### Install Required Libraries

@@ -6,7 +6,7 @@ import argparse
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
 
-def send_message_to_telegram(message):
+def sendTelegramMessage(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {
         'chat_id': CHAT_ID,
@@ -17,7 +17,7 @@ def send_message_to_telegram(message):
     if response.status_code != 200:
         print(f"Failed to send message: {response.text}")
 
-def get_binance_top_gainers_and_losers(start, end):
+def getTopGainersAndLosers(start, end):
     url = "https://api.binance.com/api/v3/ticker/24hr"
     response = requests.get(url)
 
@@ -26,22 +26,22 @@ def get_binance_top_gainers_and_losers(start, end):
 
         usdt_pairs = [coin for coin in data if coin['symbol'].endswith('USDT')]
 
-        def safe_float(val):
+        def safeFloat(val):
             try:
                 return float(val)
             except ValueError:
                 return 0.0
 
-        top_gainers = sorted(usdt_pairs, key=lambda x: safe_float(x['priceChangePercent']), reverse=True)[start:end]
-        top_losers = sorted(usdt_pairs, key=lambda x: safe_float(x['priceChangePercent']))[start:end]
+        topGainers = sorted(usdt_pairs, key=lambda x: safeFloat(x['priceChangePercent']), reverse=True)[start:end]
+        topLosers = sorted(usdt_pairs, key=lambda x: safeFloat(x['priceChangePercent']))[start:end]
 
-        return top_gainers, top_losers
+        return topGainers, topLosers
     else:
         print(f"Failed to fetch data: {response.status_code}")
         return [], []
 
 
-def get_price_n_minutes_ago(symbols, minutes):
+def getPriceMinutesAgo(symbols, minutes):
     timestamp = int(time.time() * 1000) - minutes * 60 * 1000
     url = "https://api.binance.com/api/v3/aggTrades"
 
@@ -64,7 +64,7 @@ def get_price_n_minutes_ago(symbols, minutes):
 
     return prices
 
-def get_current_prices(symbols):
+def getCurrentPrices(symbols):
     url = "https://api.binance.com/api/v3/ticker/price"
     response = requests.get(url)
 
@@ -75,17 +75,17 @@ def get_current_prices(symbols):
         print(f"Failed to fetch current prices: {response.status_code}")
         return {}
 
-def load_symbols_from_file(file_path):
+def loadSymbolsFromFile(file_path):
     if not os.path.exists(file_path):
         print(f"File not found: {file_path}")
         return []
-    
+
     with open(file_path, 'r') as file:
         return [line.strip() for line in file.readlines() if line.strip()]
 
-def monitor_top_movers_once(minutes, symbols, is_custom=False):
-    initial_prices = get_price_n_minutes_ago(symbols, minutes)
-    updated_prices = get_current_prices(symbols)
+def monitorTopMovers(minutes, symbols, is_custom=False):
+    initial_prices = getPriceMinutesAgo(symbols, minutes)
+    updated_prices = getCurrentPrices(symbols)
 
     price_changes = {}
     for symbol in initial_prices:
@@ -99,13 +99,13 @@ def monitor_top_movers_once(minutes, symbols, is_custom=False):
         message = f"\nTop 5 Movers for custom symbols in the last {minutes} minutes:\n"
     else:
         message = f"\nTop 5 Movers in the last {minutes} minutes:\n"
-    
+
     for symbol, change in top_movers_sorted[:5]:
         message += f"Symbol: {symbol}, Price Change: {change:.2f}%\n"
 
     return message
 
-def parse_timeframe(timeframe):
+def parseTimeframe(timeframe):
     if timeframe.endswith('m'):
         return int(timeframe[:-1])
     elif timeframe.endswith('h'):
@@ -125,25 +125,25 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        timeframe_minutes = parse_timeframe(args.timeframe)
+        timeframe_minutes = parseTimeframe(args.timeframe)
 
-        top_gainers, top_losers = get_binance_top_gainers_and_losers(args.start, args.end)
+        top_gainers, top_losers = getTopGainersAndLosers(args.start, args.end)
 
         symbols_to_monitor = [coin['symbol'] for coin in top_gainers + top_losers]
-        default_message = monitor_top_movers_once(timeframe_minutes, symbols_to_monitor)
+        default_message = monitorTopMovers(timeframe_minutes, symbols_to_monitor)
 
         custom_message = ""
         if args.symbols:
-            custom_symbols = load_symbols_from_file(args.symbols)
+            custom_symbols = loadSymbolsFromFile(args.symbols)
             if custom_symbols:
-                custom_message = monitor_top_movers_once(timeframe_minutes, custom_symbols, is_custom=True)
+                custom_message = monitorTopMovers(timeframe_minutes, custom_symbols, is_custom=True)
             else:
                 print("No valid symbols found in the file. Exiting.")
                 exit(1)
 
         full_message = default_message + custom_message
         print(full_message)
-        send_message_to_telegram(full_message)
+        sendTelegramMessage(full_message)
 
     except ValueError as e:
         print(e)
