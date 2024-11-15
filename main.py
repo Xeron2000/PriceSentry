@@ -41,36 +41,39 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    try:
-        timeframe_minutes = parseTimeframe(args.timeframe)
+try:
+    timeframe_minutes = parseTimeframe(args.timeframe)
+    top_gainers, top_losers = getTopGainersAndLosers(args.start, args.end)
 
-        if args.symbols:
-            custom_symbols = loadSymbolsFromFile(args.symbols)
-            if custom_symbols:
-                symbols_to_monitor = custom_symbols
-                custom_message = monitorTopMovers(
-                    timeframe_minutes, symbols_to_monitor, args.threshold, is_custom=True
-                )
+    if args.symbols:
+        custom_symbols = loadSymbolsFromFile(args.symbols)
+        if custom_symbols:
+            custom_message = monitorTopMovers(
+                timeframe_minutes, custom_symbols, args.threshold, is_custom=True
+            )
+            if custom_message:
+                print(custom_message)
+                sendTelegramMessage(custom_message)
             else:
-                print("No valid symbols found in the file. Exiting.")
-                exit(1)
-            full_message = custom_message
+                print(f"No price changes exceed the threshold of {
+                      args.threshold}% for custom symbols.")
         else:
-            top_gainers, top_losers = getTopGainersAndLosers(args.start, args.end)
-            symbols_to_monitor = [coin["symbol"] for coin in top_gainers + top_losers]
-            default_message = monitorTopMovers(
-                timeframe_minutes, symbols_to_monitor, args.threshold
-            )
-            full_message = default_message
+            print("No valid symbols found in the file. Exiting.")
+            exit(1)
 
-        if full_message.strip():
-            print(full_message)
-            sendTelegramMessage(full_message)
+    else:
+        symbols_to_monitor = [coin["symbol"]
+                              for coin in top_gainers + top_losers]
+        default_message = monitorTopMovers(
+            timeframe_minutes, symbols_to_monitor, args.threshold
+        )
+        if default_message:
+            print(default_message)
+            sendTelegramMessage(default_message)
         else:
-            print(
-                f"No price changes exceed the threshold of {args.threshold}%. No message sent."
-            )
+            print(f"No price changes exceed the threshold of {
+                  args.threshold}% in top gainers/losers.")
 
-    except ValueError as e:
-        print(e)
-        exit(1)
+except ValueError as e:
+    print(e)
+    exit(1)
