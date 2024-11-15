@@ -83,7 +83,7 @@ def loadSymbolsFromFile(file_path):
     with open(file_path, 'r') as file:
         return [line.strip() for line in file.readlines() if line.strip()]
 
-def monitorTopMovers(minutes, symbols, is_custom=False):
+def monitorTopMovers(minutes, symbols, threshold=2.0, is_custom=False):
     initial_prices = getPriceMinutesAgo(symbols, minutes)
     updated_prices = getCurrentPrices(symbols)
 
@@ -91,14 +91,18 @@ def monitorTopMovers(minutes, symbols, is_custom=False):
     for symbol in initial_prices:
         if symbol in updated_prices:
             price_change = ((updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]) * 100
-            price_changes[symbol] = price_change
+            if abs(price_change) > threshold:
+                price_changes[symbol] = price_change
+
+    if not price_changes:
+        return None
 
     top_movers_sorted = sorted(price_changes.items(), key=lambda x: abs(x[1]), reverse=True)
 
     if is_custom:
-        message = f"\nTop 5 Movers for custom symbols in the last {minutes} minutes:\n"
+        message = f"\nTop Movers for custom symbols in the last {minutes} minutes (Threshold: {threshold}%):\n"
     else:
-        message = f"\nTop 5 Movers in the last {minutes} minutes:\n"
+        message = f"\nTop Movers in the last {minutes} minutes (Threshold: {threshold}%):\n"
 
     for symbol, change in top_movers_sorted[:5]:
         message += f"Symbol: {symbol}, Price Change: {change:.2f}%\n"
@@ -121,6 +125,7 @@ if __name__ == "__main__":
     parser.add_argument('--symbols', type=str, help='Path to a file containing symbols to monitor (one per line)')
     parser.add_argument('--start', type=int, default=0, help='Starting rank of gainers/losers (default: 0)')
     parser.add_argument('--end', type=int, default=10, help='Ending rank of gainers/losers (default: 10)')
+    parser.add_argument('--threshold', type=float, default=2.0, help='Minimum percentage change to display (default: 2%)')
 
     args = parser.parse_args()
 
@@ -130,20 +135,23 @@ if __name__ == "__main__":
         top_gainers, top_losers = getTopGainersAndLosers(args.start, args.end)
 
         symbols_to_monitor = [coin['symbol'] for coin in top_gainers + top_losers]
-        default_message = monitorTopMovers(timeframe_minutes, symbols_to_monitor)
+        default_message = monitorTopMovers(timeframe_minutes, symbols_to_monitor, args.threshold)
 
         custom_message = ""
         if args.symbols:
             custom_symbols = loadSymbolsFromFile(args.symbols)
             if custom_symbols:
-                custom_message = monitorTopMovers(timeframe_minutes, custom_symbols, is_custom=True)
+                custom_message = monitorTopMovers(timeframe_minutes, custom_symbols, args.threshold, is_custom=True)
             else:
                 print("No valid symbols found in the file. Exiting.")
                 exit(1)
 
-        full_message = default_message + custom_message
-        print(full_message)
-        sendTelegramMessage(full_message)
+        full_message = (default_message or "") + (custom_message or "")
+        if full_message.strip():
+            print(full_message)
+            sendTelegramMessage(full_message)
+        else:
+            print(f"No price changes exceed the threshold of {args.threshold}%. No message sent.")
 
     except ValueError as e:
         print(e)

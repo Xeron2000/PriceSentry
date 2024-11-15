@@ -1,6 +1,6 @@
 ## Project Overview
 
-This script monitors trading pairs on Binance, retrieves those with significant price changes over a specified time period, and sends the results to a specified chat via a Telegram Bot.
+This script monitors cryptocurrency trading pairs on Binance, tracks price movements over a specified time period, and sends alerts for significant price changes directly to a Telegram chat. It allows you to either monitor the top gainers and losers from Binance's market or specify custom trading pairs to monitor. You can define the monitoring frequency and the minimum percentage change required to trigger an alert, making it a flexible solution for active traders.
 
 ## System Requirements
 
@@ -32,7 +32,7 @@ cd TradePulse
 Use pip to install the necessary Python libraries:
 
 ```bash
-pip3 install requests
+pip install -r requirements.txt
 ```
 
 ## Setting Up the Telegram Bot
@@ -55,43 +55,43 @@ https://api.telegram.org/bot<TELEGRAM_TOKEN>/getUpdates
 
 3. Locate the message you sent and record the `chat_id`.
 
-## Setting Environment Variables
+## Setting Up the .env File
 
-For security reasons, it is recommended to store the Telegram Bot token and chat ID as environment variables. You can do this in the terminal using the following commands:
-
-```bash
-export TELEGRAM_TOKEN='your_telegram_bot_token'
-export CHAT_ID='your_chat_id'
-```
-
-To make these environment variables effective every time you start the terminal, add them to the `~/.bashrc` file:
+Create a .env file in the root directory of the project.
+Add the following lines to the .env file:
 
 ```bash
-echo "export TELEGRAM_TOKEN='your_telegram_bot_token'" >> ~/.bashrc
-echo "export CHAT_ID='your_chat_id'" >> ~/.bashrc
-source ~/.bashrc
+TELEGRAM_TOKEN='your_telegram_bot_token'
+CHAT_ID='your_chat_id'
 ```
 
 ## Using the Script
 
 ### Running the Script
 
-You can run the script from the command line, specifying the time range and the path to the file containing the trading pair symbols:
+You can run the script from the command line, specifying the time range and optionally the path to a file containing the trading pair symbols. If no symbols file is provided, the script will monitor the top gainers and losers.
+
+#### Monitor Top Gainers and Losers (Default Behavior)
+
+If you want to monitor the top 10 gainers and losers over a specified time frame, use the following command:
 
 ```bash
-python3 binance_mover.py --timeframe 15m --symbols /path/to/symbols.txt
+python3 main.py --timeframe 15m --start 0 --end 10 --threshold 2.0
 ```
 
 - The `--timeframe` parameter specifies the time range in the format `Xm` (minutes), `Xh` (hours), or `Xd` (days).
-- The `--symbols` parameter specifies the file path containing trading pair symbols, with one symbol per line.
+- The `--start` and `--end` parameters specify the rank range for gainers and losers (default: 0 to 10).
+- The `--threshold` parameter specifies the minimum percentage change to display (default: 2%).
 
-### Example
+#### Monitor Custom Symbols
 
-If you want to monitor the top 10 trading pairs with the highest gains and losses over the past 30 minutes, you can run the following command:
+If you want to monitor specific symbols from a file, use the --symbols parameter, which points to a file with one symbol per line:
 
 ```bash
-python3 binance_mover.py --timeframe 30m
+python3 main.py --timeframe 1h --symbols /path/to/custom_symbols.txt --threshold 5.0
 ```
+
+- The --symbols parameter specifies the file path containing trading pair symbols, with one symbol per line.
 
 ## Setting Up Scheduled Script Execution
 
@@ -108,10 +108,10 @@ crontab -e
 At the end of the file, add the following line to run the script every hour:
 
 ```bash
-0 * * * * /usr/bin/python3 /path/to/yourproject/binance_mover.py --timeframe 15m >> /path/to/yourproject/log.txt 2>&1
+*/15 * * * * /usr/bin/python3 /path/to/yourproject/main.py >> /path/to/yourproject/log.txt 2>&1
 ```
 
-- Ensure you replace `/path/to/yourproject/binance_mover.py` with the actual path to your script.
+- Ensure you replace `/path/to/yourproject/main.py` with the actual path to your script.
 - The log will be output to the `log.txt` file, which you can check for information about the execution status.
 
 ## Frequently Asked Questions
