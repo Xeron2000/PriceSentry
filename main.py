@@ -55,8 +55,7 @@ try:
                 print(custom_message)
                 sendTelegramMessage(custom_message)
             else:
-                print(f"No price changes exceed the threshold of {
-                      args.threshold}% for custom symbols.")
+                print(f"No price changes exceed the threshold of {args.threshold}% for custom symbols.")
         else:
             print("No valid symbols found in the file. Exiting.")
             exit(1)
