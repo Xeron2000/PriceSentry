@@ -1,6 +1,6 @@
 ## Project Overview
 
-This script monitors cryptocurrency trading pairs on Binance, tracks price movements over a specified time period, and sends alerts for significant price changes directly to a Telegram chat. It allows you to either monitor the top gainers and losers from Binance's market or specify custom trading pairs to monitor. You can define the monitoring frequency and the minimum percentage change required to trigger an alert, making it a flexible solution for active traders.
+TradePulse monitors cryptocurrency trading pairs on Binance, tracks price movements over a specified time period, and sends alerts for significant price changes directly to a Telegram chat. It allows you to either monitor the top gainers and losers from Binance's market or specify custom trading pairs to monitor. You can define the monitoring frequency and the minimum percentage change required to trigger an alert, making it a flexible solution for active traders.
 
 ## System Requirements
 
@@ -105,7 +105,7 @@ Open the `crontab` file:
 crontab -e
 ```
 
-At the end of the file, add the following line to run the script every hour:
+At the end of the file, add the following line to run the script every 15 minutes:
 
 ```bash
 */15 * * * * /usr/bin/python3 /path/to/yourproject/main.py >> /path/to/yourproject/log.txt 2>&1
