@@ -70,8 +70,7 @@ try:
             print(default_message)
             sendTelegramMessage(default_message)
         else:
-            print(f"No price changes exceed the threshold of {
-                  args.threshold}% in top gainers/losers.")
+            print(f"No price changes exceed the threshold of {args.threshold}% in top gainers/losers.")
 
 except ValueError as e:
     print(e)
