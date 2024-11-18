@@ -1,5 +1,5 @@
 import argparse
-from config import parseTimeframe
+from utils.time_utils import parseTimeframe
 from utils.api import getTopGainersAndLosers, getCurrentPrices, getPriceMinutesAgo
 from utils.file_io import loadSymbolsFromFile
 from utils.price_analysis import monitorTopMovers
