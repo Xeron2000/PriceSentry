@@ -1,9 +1,9 @@
 import argparse
-from utils.time_utils import parseTimeframe
-from utils.api import getTopGainersAndLosers, getCurrentPrices, getPriceMinutesAgo
-from utils.file_io import loadSymbolsFromFile
-from utils.price_analysis import monitorTopMovers
-from telegram.notifier import sendTelegramMessage
+from utils.timeUtils import parseTimeframe
+from exchanges.binance import getTopGainersAndLosers, getCurrentPrices, getPriceMinutesAgo
+from utils.fileUtils import loadSymbolsFromFile
+from utils.priceUtils import monitorTopMovers
+from notifications.telegram import sendTelegramMessage
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

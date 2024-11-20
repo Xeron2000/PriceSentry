@@ -1,5 +1,5 @@
 def monitorTopMovers(minutes, symbols, threshold=2.0, is_custom=False):
-    from .api import getPriceMinutesAgo, getCurrentPrices
+    from exchanges.binance import getPriceMinutesAgo, getCurrentPrices
 
     initial_prices = getPriceMinutesAgo(symbols, minutes)
     updated_prices = getCurrentPrices(symbols)
