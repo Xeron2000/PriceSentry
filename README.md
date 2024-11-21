@@ -1,11 +1,30 @@
+# TradePulse
+
 ## Project Overview
 
 TradePulse is an open-source tool designed to monitor the price movements of cryptocurrency trading pairs and send alerts when significant price changes occur. Users can choose to monitor the top gainers and losers in the market or specify custom trading pairs to track. The tool allows users to set the monitoring frequency and define the minimum percentage change required to trigger an alert. With its high extensibility, it will support additional exchanges and notification channels in the future, making it suitable for a variety of trader needs. Contributions to the code are welcome, and we encourage participation in the development and improvement of the project.
 
+## Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [System Requirements](#system-requirements)
+3. [Installation Steps](#installation-steps)
+   - [Install Python and pip](#install-python-and-pip)
+   - [Clone the Project Code](#clone-the-project-code)
+   - [Install Required Libraries](#install-required-libraries)
+4. [Setting Up the Telegram Bot](#setting-up-the-telegram-bot)
+   - [Create a Telegram Bot](#create-a-telegram-bot)
+   - [Get Chat ID](#get-chat-id)
+5. [Example Configuration File](#example-configuration-file)
+   - [Configuration Fields and Descriptions](#configuration-fields-and-descriptions)
+6. [Setting Up Scheduled Script Execution](#setting-up-scheduled-script-execution)
+7. [Frequently Asked Questions](#frequently-asked-questions)
+8. [License](#license)
+
 ## System Requirements
 
 - Python 3.6 or higher
-- pip (Python package manager)
+- pip
 
 ## Installation Steps
 
@@ -55,6 +74,22 @@ https://api.telegram.org/bot<TELEGRAM_TOKEN>/getUpdates
 
 3. Locate the message you sent and record the `chat_id`.
 
+## Example Configuration File
+
+```json
+{
+  "telegramToken": "your_telegram_bot_token",
+  "chatId": "your_chat_id",
+  "defaultTimeframe": "5m",
+  "defaultStart": 1,
+  "defaultEnd": 10,
+  "defaultThreshold": 1,
+  "exchange": "binance", 
+  "notificationChannels": ["telegram"], 
+  "symbolsFilePath": "config/symbols.txt"
+}
+```
+
 ### Configuration Fields and Descriptions
 
 1. **telegramToken**  
@@ -94,21 +129,6 @@ https://api.telegram.org/bot<TELEGRAM_TOKEN>/getUpdates
    The file path that contains the trading pair symbols. If empty, pairs will be automatically retrieved based on the `defaultStart` and `defaultEnd` ranking range, defaulting to the top 10 pairs by price change.  
    Example: `"symbolsFilePath": "config/symbols.txt"`
 
-### Example Configuration File
-
-```json
-{
-  "telegramToken": "your_telegram_bot_token",
-  "chatId": "your_chat_id",
-  "defaultTimeframe": "5m",
-  "defaultStart": 1,
-  "defaultEnd": 10,
-  "defaultThreshold": 1,
-  "exchange": "binance", 
-  "notificationChannels": ["telegram"], 
-  "symbolsFilePath": "config/symbols.txt"
-}
-```
 
 ## Setting Up Scheduled Script Execution
 
