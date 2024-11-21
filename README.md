@@ -1,8 +1,8 @@
-# TradePulse
+# PriceSentry
 
 ## Project Overview
 
-TradePulse is an open-source tool designed to monitor the price movements of cryptocurrency trading pairs and send alerts when significant price changes occur. Users can choose to monitor the top gainers and losers in the market or specify custom trading pairs to track. The tool allows users to set the monitoring frequency and define the minimum percentage change required to trigger an alert. With its high extensibility, it will support additional exchanges and notification channels in the future, making it suitable for a variety of trader needs. Contributions to the code are welcome, and we encourage participation in the development and improvement of the project.
+PriceSentry is an open-source tool designed to monitor the price movements of cryptocurrency trading pairs and send alerts when significant price changes occur. Users can choose to monitor the top gainers and losers in the market or specify custom trading pairs to track. The tool allows users to set the monitoring frequency and define the minimum percentage change required to trigger an alert. With its high extensibility, it will support additional exchanges and notification channels in the future, making it suitable for a variety of trader needs. Contributions to the code are welcome, and we encourage participation in the development and improvement of the project.
 
 ## Table of Contents
 
@@ -42,8 +42,8 @@ sudo apt install python3 python3-pip
 Use Git to clone the project code:
 
 ```bash
-git clone https://github.com/Xeron2000/TradePulse.git
-cd TradePulse
+git clone https://github.com/Xeron2000/PriceSentry.git
+cd PriceSentry
 ```
 
 ### Install Required Libraries
