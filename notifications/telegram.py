@@ -11,7 +11,7 @@ def sendTelegramMessage(message, telegram_token, chat_id):
     try:
         response = requests.post(url, data=data)
         if response.status_code == 200:
-            print("Message sent successfully!")
+            print("Message sent to telegram successfully!")
             return True
         else:
             print(f"Failed to send message: {response.text}")

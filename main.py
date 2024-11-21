@@ -1,5 +1,6 @@
 import json
 from notifications.telegram import sendTelegramMessage
+from notifications.dingding import sendDingDingMessage
 from exchanges.binance import BinanceExchange
 from utils.fileUtils import loadSymbolsFromFile
 from utils.priceUtils import monitorTopMovers
@@ -15,10 +16,12 @@ def getExchange(exchangeName):
     else:
         raise ValueError(f"Unsupported exchange: {exchangeName}")
 
-def sendNotifications(message, notificationChannels, telegram_token, chat_id):
+def sendNotifications(message, notificationChannels, telegram_token, chat_id, webhook_url, secret):
     for channel in notificationChannels:
         if channel == 'telegram':
             sendTelegramMessage(message, telegram_token, chat_id)
+        elif channel == 'dingding':
+            sendDingDingMessage(message, webhook_url, secret)
         else:
             print(f"Unsupported notification channel: {channel}")
 
@@ -30,6 +33,8 @@ def main():
     notificationChannels = config['notificationChannels']
     telegram_token = config.get("telegramToken")
     chat_id = config.get("chatId")
+    webhook_url = config.get("dingDingWebhook")
+    secret = config.get("dingDingSecret")
 
     symbolsFilePath = config['symbolsFilePath']
     symbols = []
@@ -52,7 +57,7 @@ def main():
         )
         if message:
             print(f"Message to be sent:\n{message}")
-            sendNotifications(message, notificationChannels, telegram_token, chat_id)
+            sendNotifications(message, notificationChannels, telegram_token, chat_id,webhook_url, secret)
         else:
             print("No price changes exceed the threshold.")
     else:

@@ -1,12 +1,14 @@
 {
     "telegramToken": "",
     "chatId": "",
+    "dingDingWebhook": "",
+    "dingDingSecret": "",
     "defaultTimeframe": "5m",
     "defaultStart": 1,
     "defaultEnd": 10,
     "defaultThreshold": 1,
     "exchange": "binance", 
-    "notificationChannels": ["telegram"], 
-    "symbolsFilePath": "config/symbols.txt"
+    "notificationChannels": ["telegram","dingding"], 
+    "symbolsFilePath": ""
   }
   
