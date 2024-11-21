@@ -122,7 +122,7 @@ Open the `crontab` file:
 crontab -e
 ```
 
-At the end of the file, add the following line to run the script every 15 minutes:
+At the end of the file, add the following line to run the script every 5 minutes:
 
 ```bash
 */5 * * * * /usr/bin/python3 /path/to/yourproject/main.py >> /path/to/yourproject/log.txt 2>&1
