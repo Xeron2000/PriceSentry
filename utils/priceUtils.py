@@ -1,8 +1,9 @@
-def monitorTopMovers(minutes, symbols, threshold=2.0, is_custom=False):
-    from exchanges.binance import getPriceMinutesAgo, getCurrentPrices
+def monitorTopMovers(minutes, symbols, threshold=2.0, is_custom=False, exchange=None):
+    if exchange is None or not hasattr(exchange, 'getPriceMinutesAgo') or not hasattr(exchange, 'getCurrentPrices'):
+        raise ValueError("Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' methods")
 
-    initial_prices = getPriceMinutesAgo(symbols, minutes)
-    updated_prices = getCurrentPrices(symbols)
+    initial_prices = exchange.getPriceMinutesAgo(symbols, minutes)
+    updated_prices = exchange.getCurrentPrices(symbols)
 
     price_changes = {}
     for symbol in initial_prices:
@@ -16,7 +17,7 @@ def monitorTopMovers(minutes, symbols, threshold=2.0, is_custom=False):
 
     if not price_changes:
         return None
-
+    
     top_movers_sorted = sorted(
         price_changes.items(), key=lambda x: abs(x[1]), reverse=True
     )

@@ -22,4 +22,8 @@ YGGUSDT
 GALAUSDT
 WLDUSDT
 DOTUSDT
+<<<<<<< HEAD
 LDOUSDT
+=======
+LDOUSDT
+>>>>>>> c4832db (refactor: reorganize project structure)

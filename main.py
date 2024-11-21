@@ -1,77 +1,62 @@
-import argparse
-from utils.timeUtils import parseTimeframe
-from exchanges.binance import getTopGainersAndLosers, getCurrentPrices, getPriceMinutesAgo
+import json
+from notifications.telegram import sendTelegramMessage
+from exchanges.binance import BinanceExchange
 from utils.fileUtils import loadSymbolsFromFile
 from utils.priceUtils import monitorTopMovers
-from notifications.telegram import sendTelegramMessage
+from utils.timeUtils import parseTimeframe
+
+def loadConfig(configPath='config/config.json'):
+    with open(configPath, 'r') as file:
+        return json.load(file)
+
+def getExchange(exchangeName):
+    if exchangeName == "binance":
+        return BinanceExchange()
+    else:
+        raise ValueError(f"Unsupported exchange: {exchangeName}")
+
+def sendNotifications(message, notificationChannels, telegram_token, chat_id):
+    for channel in notificationChannels:
+        if channel == 'telegram':
+            sendTelegramMessage(message, telegram_token, chat_id)
+        else:
+            print(f"Unsupported notification channel: {channel}")
+
+def main():
+    config = loadConfig()
+
+    exchange = getExchange(config['exchange'])
+
+    notificationChannels = config['notificationChannels']
+    telegram_token = config.get("telegramToken")
+    chat_id = config.get("chatId")
+
+    symbolsFilePath = config['symbolsFilePath']
+    symbols = []
+    
+    if symbolsFilePath:
+        symbols = loadSymbolsFromFile(symbolsFilePath)
+    else:
+        defaultStart = config['defaultStart']
+        defaultEnd = config['defaultEnd']
+        topGainers, topLosers = exchange.getTopGainersAndLosers(defaultStart, defaultEnd)
+        symbols = [coin['symbol'] for coin in topGainers] + [coin['symbol'] for coin in topLosers]
+
+    defaultTimeframe = config['defaultTimeframe']
+    defaultThreshold = config['defaultThreshold']
+    timeframe_minutes = parseTimeframe(defaultTimeframe)
+
+    if symbols:
+        message = monitorTopMovers(
+            timeframe_minutes, symbols, defaultThreshold, is_custom=bool(symbolsFilePath), exchange=exchange
+        )
+        if message:
+            print(f"Message to be sent:\n{message}")
+            sendNotifications(message, notificationChannels, telegram_token, chat_id)
+        else:
+            print("No price changes exceed the threshold.")
+    else:
+        print("No symbols to monitor.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Monitor top gainers and losers on Binance."
-    )
-    parser.add_argument(
-        "--timeframe",
-        type=str,
-        default="15m",
-        help="Timeframe to check (e.g., 15m, 1h, 1d)",
-    )
-    parser.add_argument(
-        "--symbols",
-        type=str,
-        help="Path to a file containing symbols to monitor (one per line)",
-    )
-    parser.add_argument(
-        "--start",
-        type=int,
-        default=0,
-        help="Starting rank of gainers/losers (default: 0)",
-    )
-    parser.add_argument(
-        "--end",
-        type=int,
-        default=10,
-        help="Ending rank of gainers/losers (default: 10)",
-    )
-    parser.add_argument(
-        "--threshold",
-        type=float,
-        default=2.0,
-        help="Minimum percentage change to display (default: 2%)",
-    )
-
-    args = parser.parse_args()
-
-try:
-    timeframe_minutes = parseTimeframe(args.timeframe)
-    top_gainers, top_losers = getTopGainersAndLosers(args.start, args.end)
-
-    if args.symbols:
-        custom_symbols = loadSymbolsFromFile(args.symbols)
-        if custom_symbols:
-            custom_message = monitorTopMovers(
-                timeframe_minutes, custom_symbols, args.threshold, is_custom=True
-            )
-            if custom_message:
-                print(custom_message)
-                sendTelegramMessage(custom_message)
-            else:
-                print(f"No price changes exceed the threshold of {args.threshold}% for custom symbols.")
-        else:
-            print("No valid symbols found in the file. Exiting.")
-            exit(1)
-
-    else:
-        symbols_to_monitor = [coin["symbol"]
-                              for coin in top_gainers + top_losers]
-        default_message = monitorTopMovers(
-            timeframe_minutes, symbols_to_monitor, args.threshold
-        )
-        if default_message:
-            print(default_message)
-            sendTelegramMessage(default_message)
-        else:
-            print(f"No price changes exceed the threshold of {args.threshold}% in top gainers/losers.")
-
-except ValueError as e:
-    print(e)
-    exit(1)
+    main()

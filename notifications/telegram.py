@@ -1,16 +1,21 @@
-import os
-from dotenv import load_dotenv
 import requests
 
-load_dotenv()
+def sendTelegramMessage(message, telegram_token, chat_id):
+    if not telegram_token or not chat_id:
+        print("Telegram token or chat ID is missing.")
+        return False
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
-
-
-def sendTelegramMessage(message):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    data = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
-    response = requests.post(url, data=data)
-    if response.status_code != 200:
-        print(f"Failed to send message: {response.text}")
+    url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
+    data = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
+    
+    try:
+        response = requests.post(url, data=data)
+        if response.status_code == 200:
+            print("Message sent successfully!")
+            return True
+        else:
+            print(f"Failed to send message: {response.text}")
+            return False
+    except requests.RequestException as e:
+        print(f"Error while sending Telegram message: {e}")
+        return False
