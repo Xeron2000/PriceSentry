@@ -9,6 +9,6 @@
     "defaultThreshold": 1,
     "exchange": "binance", 
     "notificationChannels": ["telegram","dingding"], 
-    "symbolsFilePath": ""
+    "symbolsFilePath": "config/symbols.txt"
   }
   
