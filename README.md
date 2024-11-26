@@ -20,7 +20,6 @@ PriceSentry is an open-source tool designed to monitor the price movements of cr
    - [Get the Webhook URL](#get-the-webhook-url)
    - [Enable Signature](#enable-signature)
 6. [Example Configuration File](#example-configuration-file)
-   - [Configuration Fields and Descriptions](#configuration-fields-and-descriptions)
 7. [Setting Up Scheduled Script Execution](#setting-up-scheduled-script-execution)
 8. [Frequently Asked Questions](#frequently-asked-questions)
 9. [License](#license)
@@ -99,68 +98,50 @@ https://api.telegram.org/bot<TELEGRAM_TOKEN>/getUpdates
 
 ### Example Configuration File
 
-```json
-{
-  "telegramToken": "your_telegram_bot_token",
-  "chatId": "your_chat_id",
-  "dingDingWebhook": "your_dingding_webhook_url",
-  "dingDingSecret": "your_dingding_secret",
-  "defaultTimeframe": "5m",
-  "defaultStart": 1,
-  "defaultEnd": 10,
-  "defaultThreshold": 1,
-  "exchange": "binance",
-  "notificationChannels": ["telegram", "dingding"],
-  "symbolsFilePath": "config/symbols.txt"
-}
+```yaml
+# Configuration for the exchange and default behavior
+# The name of the exchange to connect to.
+exchange: "binance"  # Example: "binance"
+
+# The default timeframe (frequency of data retrieval).
+# Possible values: "1m", "5m", "15m", "1h", "1d".
+defaultTimeframe: "5m"  # Example: "5m"
+
+# The default starting position of the price change ranking range.
+defaultStart: 1  # Example: 1
+
+# The default ending position of the price change ranking range.
+defaultEnd: 10  # Example: 10
+
+# The default price change threshold. Only pairs exceeding this value will be notified.
+defaultThreshold: 1  # Example: 1
+
+# The file path containing trading pair symbols. If empty, pairs will be auto-retrieved.
+symbolsFilePath: "config/symbols.txt"  # Example: "config/symbols.txt"
+
+# Notification channels and configuration
+# The channels for receiving notifications. Currently supports Telegram and DingDing.
+notificationChannels: 
+  - "telegram"
+  - "dingding"
+
+# Telegram bot configuration
+# The token used to connect to the Telegram bot.
+telegram:
+  token: ""  # Example: "your_telegram_bot_token"
+  
+  # The Telegram chat ID where notifications will be sent.
+  chatId: ""  # Example: "your_chat_id"
+
+# DingDing robot configuration
+# The DingDing robot webhook URL for sending notifications.
+dingding:
+  webhook: ""  # Example: "https://oapi.dingtalk.com/robot/send?access_token=your_access_token"
+  
+  # The DingDing robot secret used to generate the signature for secure notifications.
+  secret: ""  # Example: "your_sign_secret"
+
 ```
-
-### Configuration Fields and Descriptions
-
-1. **telegramToken**  
-   The token used to connect to the Telegram bot.  
-   Example: `"telegramToken": "your_telegram_bot_token"`
-
-2. **chatId**  
-   The Telegram chat ID where notifications will be sent.  
-   Example: `"chatId": "your_chat_id"`
-
-3. **dingDingWebhook**  
-   The DingDing robot webhook URL for sending notifications.  
-   Example: `"dingDingWebhook": "https://oapi.dingtalk.com/robot/send?access_token=your_access_token"`
-
-4. **dingDingSecret**  
-   The DingDing robot secret used to generate the signature for secure notifications.  
-   Example: `"dingDingSecret": "your_sign_secret"`
-
-5. **defaultTimeframe**  
-   The default timeframe (frequency of data retrieval).  
-   Example: `"defaultTimeframe": "5m"`  
-   Possible values: `"1m"`, `"5m"`, `"15m"`, `"1h"`, `"1d"`
-
-6. **defaultStart**  
-   The default starting position of the price change ranking range.  
-   Example: `"defaultStart": 1`
-
-7. **defaultEnd**  
-   The default ending position of the price change ranking range.  
-   Example: `"defaultEnd": 10`
-
-8. **defaultThreshold**  
-   The default price change threshold, only pairs that exceed this value will be notified.  
-   Example: `"defaultThreshold": 1`
-
-9. **exchange**  
-   The name of the exchange to connect to.  
-   Example: `"exchange": "binance"`
-
-10. **notificationChannels**  
-    The channels for receiving notifications. Currently supports **Telegram** and **DingDing**.  
-    Example: `"notificationChannels": ["telegram", "dingding"]`
-
-11. **symbolsFilePath**  
-    The file path that contains the trading pair symbols. If empty, pairs will be automatically retrieved based on the `defaultStart` and `defaultEnd` ranking range, defaulting to the top 10 pairs by price change.  
-    Example: `"symbolsFilePath": "config/symbols.txt"`
 
 ### Setting Up Scheduled Script Execution
 
