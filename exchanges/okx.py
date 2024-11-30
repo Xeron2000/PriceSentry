@@ -2,14 +2,14 @@ import ccxt
 from datetime import datetime, timedelta
 
 
-class BinanceExchange:
+class OKXExchange:
     def __init__(self):
-        self.exchange_name = "Binance" 
-        self.exchange = ccxt.binance({
-            'rateLimit': 1200,
+        self.exchange_name = "OKX" 
+        self.exchange = ccxt.okx({
+            'rateLimit': 1000,
             'enableRateLimit': True,
         })
-    
+
     def getPriceMinutesAgo(self, symbols, minutes):
         prices = {}
         try:
@@ -23,7 +23,7 @@ class BinanceExchange:
         except Exception as e:
             print(f"Failed to fetch price {minutes} minutes ago: {e}")
         return prices
-    
+
     def getCurrentPrices(self, symbols):
         try:
             tickers = self.exchange.fetch_tickers()

@@ -1,16 +1,11 @@
 # Configuration for the exchange and default behavior
 # The name of the exchange to connect to.
+# Possible values: "binance", "okx"
 exchange: "binance"  # Example: "binance"
 
 # The default timeframe (frequency of data retrieval).
 # Possible values: "1m", "5m", "15m", "1h", "1d".
 defaultTimeframe: "5m"  # Example: "5m"
-
-# The default starting position of the price change ranking range.
-defaultStart: 1  # Example: 1
-
-# The default ending position of the price change ranking range.
-defaultEnd: 10  # Example: 10
 
 # The default price change threshold. Only pairs exceeding this value will be notified.
 defaultThreshold: 1  # Example: 1

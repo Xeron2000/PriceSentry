@@ -2,19 +2,25 @@ import yaml
 from notifications.telegram import sendTelegramMessage
 from notifications.dingding import sendDingDingMessage
 from exchanges.binance import BinanceExchange
+from exchanges.okx import OKXExchange
 from utils.fileUtils import loadSymbolsFromFile
 from utils.priceUtils import monitorTopMovers
 from utils.timeUtils import parseTimeframe
+
 
 def loadConfig(configPath='config/config.yaml'):
     with open(configPath, 'r') as file:
         return yaml.safe_load(file)
 
+
 def getExchange(exchangeName):
     if exchangeName == "binance":
         return BinanceExchange()
+    elif exchangeName == "okx":
+        return OKXExchange()
     else:
         raise ValueError(f"Unsupported exchange: {exchangeName}")
+
 
 def sendNotifications(message, notificationChannels, telegram_config, dingding_config):
     for channel in notificationChannels:
@@ -29,20 +35,21 @@ def sendNotifications(message, notificationChannels, telegram_config, dingding_c
         else:
             print(f"Unsupported notification channel: {channel}")
 
+
 def main():
     config = loadConfig()
 
     exchange = getExchange(config['exchange'])
     symbolsFilePath = config['symbolsFilePath']
-    symbols = []
 
-    if symbolsFilePath:
-        symbols = loadSymbolsFromFile(symbolsFilePath)
-    else:
-        defaultStart = config['defaultStart']
-        defaultEnd = config['defaultEnd']
-        topGainers, topLosers = exchange.getTopGainersAndLosers(defaultStart, defaultEnd)
-        symbols = [coin['symbol'] for coin in topGainers] + [coin['symbol'] for coin in topLosers]
+    if not symbolsFilePath:
+        print("Error: `symbolsFilePath` is not configured.")
+        return
+
+    symbols = loadSymbolsFromFile(symbolsFilePath)
+    if not symbols:
+        print("Error: No symbols found in the specified file.")
+        return
 
     defaultTimeframe = config['defaultTimeframe']
     defaultThreshold = config['defaultThreshold']
@@ -52,17 +59,15 @@ def main():
     telegram_config = config.get('telegram', {})
     dingding_config = config.get('dingding', {})
 
-    if symbols:
-        message = monitorTopMovers(
-            timeframe_minutes, symbols, defaultThreshold, is_custom=bool(symbolsFilePath), exchange=exchange
-        )
-        if message:
-            print(f"Message to be sent:\n{message}")
-            sendNotifications(message, notificationChannels, telegram_config, dingding_config)
-        else:
-            print("No price changes exceed the threshold.")
+    message = monitorTopMovers(
+        timeframe_minutes, symbols, defaultThreshold, is_custom=True, exchange=exchange
+    )
+    if message:
+        print(f"Message to be sent:\n{message}")
+        sendNotifications(message, notificationChannels, telegram_config, dingding_config)
     else:
-        print("No symbols to monitor.")
+        print("No price changes exceed the threshold.")
+
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-def monitorTopMovers(minutes, symbols, threshold=2.0, is_custom=False, exchange=None):
+def monitorTopMovers(minutes, symbols, threshold, is_custom=False, exchange=None):
     if exchange is None or not hasattr(exchange, 'getPriceMinutesAgo') or not hasattr(exchange, 'getCurrentPrices'):
         raise ValueError("Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' methods")
 
@@ -22,11 +22,7 @@ def monitorTopMovers(minutes, symbols, threshold=2.0, is_custom=False, exchange=
         price_changes.items(), key=lambda x: abs(x[1]), reverse=True
     )
 
-    message = (
-        f"\nTop Movers in the last {minutes} minutes (Threshold: {threshold}%):\n"
-        if not is_custom
-        else f"\nTop Movers for custom symbols in the last {minutes} minutes (Threshold: {threshold}%):\n"
-    )
+    message = (f"\nTop Movers for custom symbols on {exchange.exchange_name} in the last {minutes} minutes (Threshold: {threshold}%):\n")
 
     for symbol, change in top_movers_sorted[:5]:
         message += f"Symbol: {symbol}, Price Change: {change:.2f}%\n"
