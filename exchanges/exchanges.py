@@ -2,14 +2,17 @@ import ccxt
 from datetime import datetime, timedelta
 
 
-class OKXExchange:
-    def __init__(self):
-        self.exchange_name = "OKX" 
-        self.exchange = ccxt.okx({
+class Exchange:
+    def __init__(self, exchange_name):        
+        if exchange_name.lower() not in ccxt.exchanges:
+            raise ValueError(f"Exchange '{exchange_name}' is not supported by ccxt.")
+        
+        self.exchange_name = exchange_name.capitalize()
+        self.exchange = getattr(ccxt, exchange_name.lower())({
             'rateLimit': 1000,
             'enableRateLimit': True,
         })
-
+    
     def getPriceMinutesAgo(self, symbols, minutes):
         prices = {}
         try:
@@ -23,7 +26,7 @@ class OKXExchange:
         except Exception as e:
             print(f"Failed to fetch price {minutes} minutes ago: {e}")
         return prices
-
+    
     def getCurrentPrices(self, symbols):
         try:
             tickers = self.exchange.fetch_tickers()

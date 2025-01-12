@@ -8,7 +8,7 @@ exchange: "binance"  # Example: "binance"
 defaultTimeframe: "5m"  # Example: "5m"
 
 # The default price change threshold. Only pairs exceeding this value will be notified.
-defaultThreshold: 1  # Example: 1
+defaultThreshold: 0.1  # Example: 1
 
 # The file path containing trading pair symbols. If empty, pairs will be auto-retrieved.
 symbolsFilePath: "config/symbols.txt"  # Example: "config/symbols.txt"

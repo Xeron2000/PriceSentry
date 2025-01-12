@@ -1,72 +1,79 @@
 import yaml
+import logging
 from notifications.telegram import sendTelegramMessage
 from notifications.dingding import sendDingDingMessage
-from exchanges.binance import BinanceExchange
-from exchanges.okx import OKXExchange
+from exchanges.exchanges import Exchange
 from utils.fileUtils import loadSymbolsFromFile
 from utils.priceUtils import monitorTopMovers
 from utils.timeUtils import parseTimeframe
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def loadConfig(configPath='config/config.yaml'):
-    with open(configPath, 'r') as file:
-        return yaml.safe_load(file)
+    try:
+        with open(configPath, 'r') as file:
+            config = yaml.safe_load(file)
+        required_keys = ['exchange', 'symbolsFilePath', 'defaultTimeframe', 'defaultThreshold', 'notificationChannels']
+        for key in required_keys:
+            if key not in config:
+                raise ValueError(f"Missing required config key: {key}")
+        return config
+    except Exception as e:
+        logging.error(f"Failed to load config: {e}")
+        raise
 
 
 def getExchange(exchangeName):
-    if exchangeName == "binance":
-        return BinanceExchange()
-    elif exchangeName == "okx":
-        return OKXExchange()
-    else:
-        raise ValueError(f"Unsupported exchange: {exchangeName}")
+    try:
+        return Exchange(exchangeName)
+    except ValueError as e:
+        logging.error(e)
+        raise
 
 
 def sendNotifications(message, notificationChannels, telegram_config, dingding_config):
     for channel in notificationChannels:
-        if channel == 'telegram':
-            sendTelegramMessage(
-                message, telegram_config['token'], telegram_config['chatId']
-            )
-        elif channel == 'dingding':
-            sendDingDingMessage(
-                message, dingding_config['webhook'], dingding_config['secret']
-            )
-        else:
-            print(f"Unsupported notification channel: {channel}")
+        try:
+            if channel == 'telegram':
+                sendTelegramMessage(
+                    message, telegram_config['token'], telegram_config['chatId']
+                )
+            elif channel == 'dingding':
+                sendDingDingMessage(
+                    message, dingding_config['webhook'], dingding_config['secret']
+                )
+            else:
+                logging.warning(f"Unsupported notification channel: {channel}")
+        except Exception as e:
+            logging.error(f"Failed to send message via {channel}: {e}")
 
 
 def main():
-    config = loadConfig()
+    try:
+        config = loadConfig()
 
-    exchange = getExchange(config['exchange'])
-    symbolsFilePath = config['symbolsFilePath']
+        exchange = getExchange(config['exchange'])
 
-    if not symbolsFilePath:
-        print("Error: `symbolsFilePath` is not configured.")
-        return
+        symbols = loadSymbolsFromFile(config['symbolsFilePath'])
+        if not symbols:
+            logging.error("No symbols found in the specified file.")
+            return
 
-    symbols = loadSymbolsFromFile(symbolsFilePath)
-    if not symbols:
-        print("Error: No symbols found in the specified file.")
-        return
+        timeframe_minutes = parseTimeframe(config['defaultTimeframe'])
 
-    defaultTimeframe = config['defaultTimeframe']
-    defaultThreshold = config['defaultThreshold']
-    timeframe_minutes = parseTimeframe(defaultTimeframe)
+        message = monitorTopMovers(
+            timeframe_minutes, symbols, config['defaultThreshold'], is_custom=True, exchange=exchange
+        )
 
-    notificationChannels = config['notificationChannels']
-    telegram_config = config.get('telegram', {})
-    dingding_config = config.get('dingding', {})
+        if message:
+            logging.info(f"Message to be sent:\n{message}")
+            sendNotifications(message, config['notificationChannels'], config.get('telegram', {}), config.get('dingding', {}))
+        else:
+            logging.info("No price changes exceed the threshold.")
 
-    message = monitorTopMovers(
-        timeframe_minutes, symbols, defaultThreshold, is_custom=True, exchange=exchange
-    )
-    if message:
-        print(f"Message to be sent:\n{message}")
-        sendNotifications(message, notificationChannels, telegram_config, dingding_config)
-    else:
-        print("No price changes exceed the threshold.")
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":
