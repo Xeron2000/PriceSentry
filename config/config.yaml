@@ -5,7 +5,7 @@ exchange: "binance"  # Example: "binance"
 
 # The default timeframe (frequency of data retrieval).
 # Possible values: "1m", "5m", "15m", "1h", "1d".
-defaultTimeframe: "5m"  # Example: "5m"
+defaultTimeframe: "5m"  # Example: "5m", 
 
 # The default price change threshold. Only pairs exceeding this value will be notified.
 defaultThreshold: 1  # Example: 1

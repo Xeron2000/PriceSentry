@@ -1,53 +1,13 @@
-import yaml
 import logging
-from notifications.telegram import sendTelegramMessage
-from notifications.dingding import sendDingDingMessage
-from exchanges.exchanges import Exchange
-from utils.fileUtils import loadSymbolsFromFile
-from utils.priceUtils import monitorTopMovers
-from utils.timeUtils import parseTimeframe
+from utils.loadConfig import loadConfig
+from utils.getExchange import getExchange
+from utils.sendNotifications import sendNotifications
+from utils.loadSymbolsFromFile import loadSymbolsFromFile
+from utils.monitorTopMovers import monitorTopMovers
+from utils.parseTimeframe import parseTimeframe
+from utils.matchSymbols import matchSymbols
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-
-def loadConfig(configPath='config/config.yaml'):
-    try:
-        with open(configPath, 'r') as file:
-            config = yaml.safe_load(file)
-        required_keys = ['exchange', 'symbolsFilePath', 'defaultTimeframe', 'defaultThreshold', 'notificationChannels']
-        for key in required_keys:
-            if key not in config:
-                raise ValueError(f"Missing required config key: {key}")
-        return config
-    except Exception as e:
-        logging.error(f"Failed to load config: {e}")
-        raise
-
-
-def getExchange(exchangeName):
-    try:
-        return Exchange(exchangeName)
-    except ValueError as e:
-        logging.error(e)
-        raise
-
-
-def sendNotifications(message, notificationChannels, telegram_config, dingding_config):
-    for channel in notificationChannels:
-        try:
-            if channel == 'telegram':
-                sendTelegramMessage(
-                    message, telegram_config['token'], telegram_config['chatId']
-                )
-            elif channel == 'dingding':
-                sendDingDingMessage(
-                    message, dingding_config['webhook'], dingding_config['secret']
-                )
-            else:
-                logging.warning(f"Unsupported notification channel: {channel}")
-        except Exception as e:
-            logging.error(f"Failed to send message via {channel}: {e}")
-
 
 def main():
     try:
@@ -55,7 +15,10 @@ def main():
 
         exchange = getExchange(config['exchange'])
 
-        symbols = loadSymbolsFromFile(config['symbolsFilePath'])
+        unmatched_symbols = loadSymbolsFromFile(config['symbolsFilePath'])
+
+        symbols = matchSymbols(unmatched_symbols, config['exchange'])
+
         if not symbols:
             logging.error("No symbols found in the specified file.")
             return
@@ -63,7 +26,7 @@ def main():
         timeframe_minutes = parseTimeframe(config['defaultTimeframe'])
 
         message = monitorTopMovers(
-            timeframe_minutes, symbols, config['defaultThreshold'], is_custom=True, exchange=exchange
+            timeframe_minutes, symbols, config['defaultThreshold'], exchange=exchange
         )
 
         if message:
@@ -74,7 +37,6 @@ def main():
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
-
 
 if __name__ == "__main__":
     main()
