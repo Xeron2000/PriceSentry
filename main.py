@@ -26,7 +26,7 @@ def main():
         timeframe_minutes = parseTimeframe(config['defaultTimeframe'])
 
         message = monitorTopMovers(
-            timeframe_minutes, symbols, config['defaultThreshold'], exchange=exchange
+            timeframe_minutes, symbols, config['defaultThreshold'], exchange=exchange, config=config
         )
 
         if message:

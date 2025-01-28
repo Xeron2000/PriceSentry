@@ -1,6 +1,7 @@
 from datetime import datetime
+import pytz
 
-def monitorTopMovers(minutes, symbols, threshold, exchange):
+def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     """
     Retrieves the top movers for the given symbols on the given exchange over the given time period.
 
@@ -10,6 +11,7 @@ def monitorTopMovers(minutes, symbols, threshold, exchange):
         threshold (float): The minimum percentage price change required to be a "top mover".
         exchange (Exchange): An instance of the Exchange class which implements the
             'getPriceMinutesAgo' and 'getCurrentPrices' methods.
+        config (dict): Configuration dictionary loaded from config.yaml
 
     Returns:
         str or None: A message string detailing the top movers, or None if no movers meet the threshold.
@@ -32,7 +34,9 @@ def monitorTopMovers(minutes, symbols, threshold, exchange):
         return None
 
     top_movers_sorted = sorted(price_changes.items(), key=lambda x: abs(x[1]), reverse=True)
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timezone_str = config.get('notificationTimezone', 'Asia/Shanghai')
+    timezone = pytz.timezone(timezone_str)
+    current_time = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
     message = (f"\nTop Movers for symbols on {exchange.exchangeName} in the last {minutes} minutes (Threshold: {threshold}%):\n"
                 f"Timestamp: {current_time}\n")
 

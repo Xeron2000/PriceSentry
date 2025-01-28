@@ -27,10 +27,14 @@ def loadConfig(configPath='config/config.yaml'):
     try:
         with open(configPath, 'r') as file:
             config = yaml.safe_load(file)
-        required_keys = ['exchange', 'symbolsFilePath', 'defaultTimeframe', 'defaultThreshold', 'notificationChannels']
+        required_keys = ['exchange', 'symbolsFilePath', 'defaultTimeframe', 'defaultThreshold', 'notificationChannels', 'notificationTimezone']
         for key in required_keys:
             if key not in config:
                 raise ValueError(f"Missing required config key: {key}")
+        
+        if 'notificationTimezone' not in config or not config['notificationTimezone']:
+            config['notificationTimezone'] = 'Asia/Shanghai' # Default timezone
+
         return config
     except Exception as e:
         logging.error(f"Failed to load config: {e}")
