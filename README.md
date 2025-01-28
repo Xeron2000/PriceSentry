@@ -136,6 +136,9 @@ dingding:
   # The DingDing robot secret used to generate the signature for secure notifications.
   secret: ""  # Example: "your_sign_secret"
 
+# Timezone for notification messages.
+# Default is Asia/Shanghai. If not set, Asia/Shanghai will be used.
+notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
 ```
 
 ### Setting Up Scheduled Script Execution
