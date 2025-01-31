@@ -1,17 +1,12 @@
-<p align="center">
-  <span style="font-size: 5rem; background-color: #ffffff; padding: 20px; border-radius: 15px; color: #007bff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">📈</span>
-</p>
-
-<p align="center">
+<div align="center">
   <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=34&pause=1000&center=true&vCenter=true&width=435&lines=PriceSentry" alt="Typing SVG">
-</p>
+</div>
 
-<p align="center">
-  <a href="README.md" style="font-size: 1.2rem;; margin-right: 20px;">English</a>
-  <a href="README_zh.md" style="font-size: 1.2rem; ;">中文</a>
-</p>
+<div align="center">
+  <a href="README.md">English</a> | <a href="README_zh.md">中文</a>
+</div>
 
-<p align="center">
+<div align="center">
   <a href="https://www.python.org/">
     <img src="https://img.shields.io/badge/Python-3.6%2B-blue?logo=python&logoColor=white" alt="Python 3.6+">
   </a>
@@ -21,8 +16,10 @@
   <a href="https://github.com/Xeron2000/PriceSentry/stargazers">
     <img src="https://img.shields.io/github/stars/Xeron2000/PriceSentry?style=social" alt="Star on GitHub">
   </a>
-</p>
-</div><h3 align="center">交易者和爱好者打造的轻量级加密货币合约价格监控工具🚨</h3> <h4 align="center" style="color: #666;">追踪·分析·保持敏锐</h4>
+</div>
+
+<h3 align="center">交易者和爱好者打造的轻量级加密货币合约价格监控工具🚨</h3>
+<h4 align="center" style="color: #666;">追踪·分析·保持敏锐</h4>
 
 ---
 
