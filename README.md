@@ -1,112 +1,99 @@
-## PriceSentry
+<p align="center">
+  <span style="font-size: 5rem; background-color: #ffffff; padding: 20px; border-radius: 15px; color: #007bff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">📈</span>
+</p>
 
-### Project Overview
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=34&pause=1000&center=true&vCenter=true&width=435&lines=PriceSentry" alt="Typing SVG">
+</p>
 
-PriceSentry is an open-source tool designed to monitor the price movements of cryptocurrency trading pairs and send alerts when significant price changes occur. Users can choose to monitor the top gainers and losers in the market or specify custom trading pairs to track. The tool allows users to set the monitoring frequency and define the minimum percentage change required to trigger an alert. With its high extensibility, it will support additional exchanges and notification channels in the future, making it suitable for a variety of trader needs. Contributions to the code are welcome, and we encourage participation in the development and improvement of the project.
+<p align="center">
+  <a href="README.md" style="font-size: 1.2rem;; margin-right: 20px;">English</a>
+  <a href="README_zh.md" style="font-size: 1.2rem; ;">中文</a>
+</p>
 
-### Table of Contents
+<p align="center">
+  <a href="https://www.python.org/">
+    <img src="https://img.shields.io/badge/Python-3.6%2B-blue?logo=python&logoColor=white" alt="Python 3.6+">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT">
+  </a>
+  <a href="https://github.com/Xeron2000/PriceSentry/stargazers">
+    <img src="https://img.shields.io/github/stars/Xeron2000/PriceSentry?style=social" alt="Star on GitHub">
+  </a>
+</p>
+</div><h3 align="center">A lightweight cryptocurrency contract price monitoring tool built for traders and enthusiasts🚨</h3> <h4 align="center" style="color: #666;">Track. Analyze. Stay Informed.</h4>
 
-1. [Project Overview](#project-overview)
-2. [System Requirements](#system-requirements)
-3. [Installation Steps](#installation-steps)
-   - [Install Python and pip](#install-python-and-pip)
-   - [Clone the Project Code](#clone-the-project-code)
-   - [Install Required Libraries](#install-required-libraries)
-4. [Setting Up the Telegram Bot](#setting-up-the-telegram-bot)
-   - [Create a Telegram Bot](#create-a-telegram-bot)
-   - [Get Chat ID](#get-chat-id)
-5. [Setting Up the DingDing Robot](#setting-up-the-dingding-robot)
-   - [Create a Group and Add the Robot](#create-a-group-and-add-the-robot)
-   - [Get the Webhook URL](#get-the-webhook-url)
-   - [Enable Signature](#enable-signature)
-6. [Example Configuration File](#example-configuration-file)
-7. [Setting Up Scheduled Script Execution](#setting-up-scheduled-script-execution)
-8. [Frequently Asked Questions](#frequently-asked-questions)
-9. [License](#license)
+---
 
-### System Requirements
+## 🌟 Features
 
-- Python 3.6 or higher
-- pip
+- 🔔 Multi-channel smart alerts (Telegram & DingDing)
+- 🌐 Support for Binance and OKX exchanges
+- 📆 Timezone-aware notifications
+- 🔒 Secure configuration with YAML files
 
-### Installation Steps
+---
 
-#### Install Python and pip
+## 🛠 System Requirements
 
-Open the terminal and run the following commands:
+| Component       | Requirement              |
+|-----------------|--------------------------|
+| Python          | 3.6 or higher            |
+| RAM             | 512MB+                   |
+| Storage         | 100MB available space    |
+| Network         | Stable internet connection |
 
+---
+
+## 🚀 Quick Installation
+
+### 1. Install Dependencies
 ```bash
-sudo apt update
-sudo apt install python3 python3-pip
+sudo apt update && sudo apt install -y python3 python3-pip
 ```
 
-#### Clone the Project Code
-
-Use Git to clone the project code:
-
+### 2. Clone Repository
 ```bash
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
 ```
 
-#### Install Required Libraries
-
-Use pip to install the necessary Python libraries:
-
+### 3. Install Packages
 ```bash
 pip install -r requirements.txt
 ```
 
-### Setting Up the Telegram Bot
+---
 
-#### Create a Telegram Bot
+## 🔧 Configuration Guide
 
-1. Open the Telegram app.
-2. Search for `@BotFather` and send the `/start` command.
-3. Send the `/newbot` command and follow the prompts to set up your bot's name and username.
-4. Once created, you will receive an access token (TOKEN) for your bot.
+### 🤖 Telegram Setup
+1. **Create Bot** via [@BotFather](https://t.me/BotFather)
+2. **Get Chat ID**:
+   ```bash
+   curl https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates | jq
+   ```
 
-#### Get Chat ID
+### 📟 DingDing Setup
+1. Create group robot with **Custom Security Settings**
+2. Enable signature verification and save:
+   - Webhook URL (`https://oapi.dingtalk.com/robot/...`)
+   - Secret Key
 
-1. Send a message to your newly created bot.
-2. In your browser, visit the following URL, replacing `<TELEGRAM_TOKEN>` with your bot's token:
+---
 
-```
-https://api.telegram.org/bot<TELEGRAM_TOKEN>/getUpdates
-```
-
-3. Locate the message you sent and record the `chat_id`.
-
-### Setting Up the DingDing Robot
-
-#### Create a Group and Add the Robot
-
-1. Create or select a group in DingDing.
-2. Click Group Settings > Group Robot > Add Robot > Custom Robot.
-3. Set the robot's name and choose the desired security settings.
-
-#### Get the Webhook URL
-
-- After adding the robot, retrieve the Webhook URL, e.g.:
-  ```
-  https://oapi.dingtalk.com/robot/send?access_token=your_access_token
-  ```
-
-#### Enable Signature
-
-- Enable signature verification in the security settings and note down the generated **secret** key.
-
-### Example Configuration File
+## ⚙️ Configuration File (`config/config.yaml`)
 
 ```yaml
 # Configuration for the exchange and default behavior
 # The name of the exchange to connect to.
 # Possible values: "binance", "okx"
-exchange: "binance"  # Example: "binance"
+exchange: "okx"  # Example: "binance"
 
 # The default timeframe (frequency of data retrieval).
 # Possible values: "1m", "5m", "15m", "1h", "1d".
-defaultTimeframe: "5m"  # Example: "5m"
+defaultTimeframe: "1d"  # Example: "5m", 
 
 # The default price change threshold. Only pairs exceeding this value will be notified.
 defaultThreshold: 1  # Example: 1
@@ -137,41 +124,41 @@ dingding:
   secret: ""  # Example: "your_sign_secret"
 
 # Timezone for notification messages.
-# Default is Asia/Shanghai. If not set, Asia/Shanghai will be used.
+# Default is Asia/Shanghai
 notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
+
 ```
 
-### Setting Up Scheduled Script Execution
+---
 
-You can use `cron` to set up a scheduled task to run the monitoring script regularly.
+## 🔔 Alert Examples
 
-#### Edit `cron` Tasks
+<div style="text-align: center;">
+  <img src="./img/tg.png" alt="Alert Examples">
+</div>
 
-Open the `crontab` file:
+---
+
+## 🕒 Cron Job Setup
 
 ```bash
+# Edit cron jobs
 crontab -e
+
+# Add line (runs every 5 minutes)
+*/5 * * * * /usr/bin/python3 /path/to/PriceSentry/main.py >> /path/to/logs.txt 2>&1
 ```
 
-At the end of the file, add the following line to run the script every 5 minutes:
+---
 
-```bash
-*/5 * * * * /usr/bin/python3 /path/to/yourproject/main.py >> /path/to/yourproject/log.txt 2>&1
-```
+## 📜 License
 
-- Ensure you replace `/path/to/yourproject/main.py` with the actual path to your script.
-- The log will be output to the `log.txt` file, which you can check for information about the execution status.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
-### Frequently Asked Questions
+---
 
-#### Unable to Send Messages
+<p align="center">
+  <em>Made with ❤️ by Xeron</em><br>
+  <a href="https://github.com/Xeron2000/PriceSentry/issues">Report Bug</a>
+</p>
 
-Ensure that you have correctly set the Telegram Bot token and chat ID, and that the bot has sent a message to your chat.
-
-#### Failed to Retrieve Price Data
-
-Check your network connection and ensure that the Binance API is available.
-
-### License
-
-MIT License. Please refer to the [LICENSE](LICENSE) file for more information.

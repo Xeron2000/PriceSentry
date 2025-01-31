@@ -37,10 +37,28 @@ def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     timezone_str = config.get('notificationTimezone', 'Asia/Shanghai')
     timezone = pytz.timezone(timezone_str)
     current_time = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
-    message = (f"\nTop Movers for symbols on {exchange.exchangeName} in the last {minutes} minutes (Threshold: {threshold}%):\n"
-                f"Timestamp: {current_time}\n")
 
-    for symbol, change in top_movers_sorted[:5]:
-        message += f"Symbol: {symbol}, Price Change: {change:.2f}%\n"
+    message = (
+        f"📊 **{exchange.exchangeName} Price Alert** ({minutes} minutes)\n"
+        f"▫️ Time: {current_time} ({timezone_str})\n"
+        f"▫️ Threshold: {threshold}% | Symbols: {len(symbols)} → Alerts: {len(price_changes)}\n"
+        f"══════════════════\n"
+    )
+
+    for i, (symbol, change) in enumerate(top_movers_sorted[:5], 1):
+        price_diff = updated_prices[symbol] - initial_prices[symbol]
+        arrow = "↑" if change > 0 else "↓"
+        color = "🟢" if change > 0 else "🔴"
+        message += (
+            f"{color} **{i}. #{symbol.ljust(6)}** {arrow} {abs(change):.2f}%\n"
+            f"├ Current: {updated_prices[symbol]:.4f}\n"
+            f"└ Change: {price_diff:+.4f} ({initial_prices[symbol]:.4f} → {updated_prices[symbol]:.4f})\n\n"
+        )
+
+    message += (
+        f"══════════════════\n"
+        f"Note: Volatility threshold {threshold}% | Data precision: 4 decimal places\n"
+        f"⚠️ Market risk: Invest with caution"
+    )
 
     return message
