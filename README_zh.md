@@ -1,4 +1,8 @@
 <div align="center">
+  <img src="./img/logo.svg" width="100" alt="Project Logo">
+</div>
+
+<div align="center">
   <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=34&pause=1000&center=true&vCenter=true&width=435&lines=PriceSentry" alt="Typing SVG">
 </div>
 
