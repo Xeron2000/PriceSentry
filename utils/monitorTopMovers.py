@@ -1,9 +1,9 @@
 from datetime import datetime
 import pytz
 
-def monitorTopMovers(minutes, symbols, threshold, exchange, config):
+async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     """
-    Retrieves the top movers for the given symbols on the given exchange over the given time period.
+    Retrieves the top movers for the given symbols on the given exchange over the given time period asynchronously.
 
     Args:
         minutes (int): The number of minutes in the past to monitor.
@@ -21,8 +21,8 @@ def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     ):
         raise ValueError("Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' methods")
 
-    initial_prices = exchange.getPriceMinutesAgo(symbols, minutes)
-    updated_prices = exchange.getCurrentPrices(symbols)
+    initial_prices = await exchange.getPriceMinutesAgo(symbols, minutes)
+    updated_prices = await exchange.getCurrentPrices(symbols)
 
     price_changes = {
         symbol: ((updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]) * 100

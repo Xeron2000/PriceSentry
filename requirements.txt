@@ -2,3 +2,4 @@ requests
 pyyaml
 ccxt
 pytz
+expiringdict

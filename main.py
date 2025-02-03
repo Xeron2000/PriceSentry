@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from utils.loadConfig import loadConfig
 from utils.getExchange import getExchange
@@ -9,7 +10,7 @@ from utils.matchSymbols import matchSymbols
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def main():
+async def main():
     try:
         config = loadConfig()
 
@@ -25,7 +26,7 @@ def main():
 
         timeframe_minutes = parseTimeframe(config['defaultTimeframe'])
 
-        message = monitorTopMovers(
+        message = await monitorTopMovers(
             timeframe_minutes, symbols, config['defaultThreshold'], exchange=exchange, config=config
         )
 
@@ -37,6 +38,9 @@ def main():
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+    finally:
+        if 'exchange' in locals():
+            await exchange.close()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
