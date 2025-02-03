@@ -139,8 +139,8 @@ notificationTimezone: "Asia/Shanghai" # 示例："America/New_York"
 # 编辑定时任务
 crontab -e
 
-# 添加定时任务（每5分钟执行）
-*/5 * * * * /usr/bin/python3 /项目路径/PriceSentry/main.py >> /日志路径/logs.txt 2>&1
+# 添加定时任务（每5分钟执行），确保您位于 PriceSentry 目录中
+*/5 * * * * cd ~/PriceSentry && /usr/bin/python3 main.py >> logs.txt 2>&1
 ```
 
 ---
