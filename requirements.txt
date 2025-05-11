@@ -1,5 +1,5 @@
-requests
-pyyaml
-ccxt
-pytz
-expiringdict
+ccxt>=4.1.80
+PyYAML>=6.0.1
+expiringdict>=1.2.1
+pytz>=2024.1
+websockets>=11.0.3

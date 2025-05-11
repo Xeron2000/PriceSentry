@@ -21,7 +21,8 @@ async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     ):
         raise ValueError("Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' methods")
 
-    initial_prices = await exchange.getPriceMinutesAgo(symbols, minutes)
+    initial_prices = exchange.getPriceMinutesAgo(symbols, minutes)
+    
     updated_prices = await exchange.getCurrentPrices(symbols)
 
     price_changes = {
