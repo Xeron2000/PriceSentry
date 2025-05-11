@@ -133,18 +133,6 @@ notificationTimezone: "Asia/Shanghai" # 示例："America/New_York"
 
 ---
 
-## 🕒 定时任务设置
-
-```bash
-# 编辑定时任务
-crontab -e
-
-# 添加定时任务（每5分钟执行），确保您位于 PriceSentry 目录中
-*/5 * * * * cd ~/PriceSentry && /usr/bin/python3 main.py >> logs.txt 2>&1
-```
-
----
-
 ## 📜 开源协议
 
 本项目采用 MIT 开源协议，详见 [LICENSE](LICENSE)。

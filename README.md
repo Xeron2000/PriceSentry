@@ -140,18 +140,6 @@ notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
 
 ---
 
-## 🕒 Cron Job Setup
-
-```bash
-# Edit cron jobs
-crontab -e
-
-
-# Add line (runs every 5 minutes), ensure you are in the PriceSentry directory
-*/5 * * * * cd ~/PriceSentry && /usr/bin/python3 main.py >> logs.txt 2>&1
-```
----
-
 ## 📜 License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
