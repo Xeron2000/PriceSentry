@@ -1,0 +1,40 @@
+# Configuration for the exchange and default behavior
+# The name of the exchange to connect to.
+# Possible values: "binance", "okx"
+exchange: "okx"  # Example: "binance"
+
+# The default timeframe (frequency of data retrieval).
+# Possible values: "1m", "5m", "15m", "1h", "1d".
+defaultTimeframe: "5m"  # Example: "5m", 
+
+# The default price change threshold. Only pairs exceeding this value will be notified.
+defaultThreshold: 0.01  # Example: 1
+
+# The file path containing trading pair symbols. If empty, pairs will be auto-retrieved.
+symbolsFilePath: "config/symbols.txt"  # Example: "config/symbols.txt"
+
+# Notification channels and configuration
+# The channels for receiving notifications. Currently supports Telegram and DingDing.
+notificationChannels: 
+  - "telegram"
+  # - "dingding"
+
+# Telegram bot configuration
+# The token used to connect to the Telegram bot.
+telegram:
+  token: "YOUR_TELEGRAM_BOT_TOKEN"  # Example: "your_telegram_bot_token"
+  
+  # The Telegram chat ID where notifications will be sent.
+  chatId: "YOUR_CHAT_ID"  # Example: "your_chat_id"
+
+# DingDing robot configuration
+# The DingDing robot webhook URL for sending notifications.
+dingding:
+  webhook: ""  # Example: "https://oapi.dingtalk.com/robot/send?access_token=your_access_token"
+  
+  # The DingDing robot secret used to generate the signature for secure notifications.
+  secret: ""  # Example: "your_sign_secret"
+
+# Timezone for notification messages.
+# Default is Asia/Shanghai
+notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
