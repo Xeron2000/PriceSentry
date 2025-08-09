@@ -11,6 +11,7 @@ from .base import BaseExchange
 class BybitExchange(BaseExchange):
     def __init__(self):
         super().__init__("bybit")
+        self.exchange.options["defaultType"] = "swap"
 
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
@@ -26,7 +27,7 @@ class BybitExchange(BaseExchange):
             try:
                 # Bybit uses different endpoints for spot and derivatives
                 # This implementation will focus on the unified public endpoint
-                uri = "wss://stream.bybit.com/v5/public/spot"
+                uri = "wss://stream.bybit.com/v5/public/linear"
                 logging.debug(f"Bybit WebSocket URI: {uri}")
 
                 subscribe_msg = {"op": "subscribe", "args": []}
@@ -59,7 +60,7 @@ class BybitExchange(BaseExchange):
                                 await websocket.send(json.dumps(pong_msg))
                                 logging.debug("Heartbeat response sent")
                                 continue
-                            
+
                             if "topic" in data and "tickers" in data["topic"]:
                                 symbol = data["data"]["symbol"]
                                 price = float(data["data"]["lastPrice"])

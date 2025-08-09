@@ -1,5 +1,4 @@
-
-from exchanges import BinanceExchange, OkxExchange, BybitExchange
+from exchanges import BinanceExchange, BybitExchange, OkxExchange
 
 
 def get_exchange(exchange_name):

@@ -21,7 +21,7 @@ def load_config():
 def fetch_markets_for_exchange(exchange_name):
     """Fetches all market symbols for a given exchange."""
     try:
-        exchange = getattr(ccxt, exchange_name)()
+        exchange = getattr(ccxt, exchange_name)({"options": {"defaultType": "swap"}})
         markets = exchange.fetch_markets()
         return [market["symbol"] for market in markets]
     except (ccxt.ExchangeError, ccxt.NetworkError) as e:

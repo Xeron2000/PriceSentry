@@ -11,6 +11,7 @@ from .base import BaseExchange
 class BinanceExchange(BaseExchange):
     def __init__(self):
         super().__init__("binance")
+        self.exchange.options["defaultType"] = "future"
 
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
@@ -29,7 +30,7 @@ class BinanceExchange(BaseExchange):
                 streams = [
                     f"{symbol.lower().replace('/', '')}@ticker" for symbol in symbols
                 ]
-                uri = f"wss://stream.binance.com:9443/ws/{'/'.join(streams)}"
+                uri = f"wss://fstream.binance.com/ws/{'/'.join(streams)}"
                 logging.debug(f"Binance WebSocket URI: {uri}")
 
                 async with websockets.connect(uri) as websocket:

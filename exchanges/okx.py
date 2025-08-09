@@ -11,6 +11,7 @@ from .base import BaseExchange
 class OkxExchange(BaseExchange):
     def __init__(self):
         super().__init__("okx")
+        self.exchange.options["defaultType"] = "swap"
 
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
@@ -34,13 +35,9 @@ class OkxExchange(BaseExchange):
                 # OKX requires specific format for trading pairs
                 for symbol in symbols:
                     # Convert format, e.g., BTC/USDT:USDT to BTC-USDT-SWAP
-                    if ":USDT" in symbol:
-                        # Futures trading pair
-                        base_symbol = symbol.split("/")[0]
-                        formatted_symbol = f"{base_symbol}-USDT-SWAP"
-                    else:
-                        # Spot trading pair
-                        formatted_symbol = symbol.replace("/", "-")
+                    # Futures trading pair
+                    base_symbol = symbol.split("/")[0]
+                    formatted_symbol = f"{base_symbol}-USDT-SWAP"
 
                     subscribe_msg["args"].append(
                         {"channel": "tickers", "instId": formatted_symbol}
