@@ -1,9 +1,11 @@
-import time
-import hmac
-import hashlib
 import base64
+import hashlib
+import hmac
+import time
 import urllib.parse
+
 import requests
+
 
 def sendDingDingMessage(message, webhook_url, secret=None):
     if not webhook_url:
@@ -15,16 +17,15 @@ def sendDingDingMessage(message, webhook_url, secret=None):
     if secret:
         string_to_sign = f"{timestamp}\n{secret}"
         hmac_code = hmac.new(
-            secret.encode("utf-8"), string_to_sign.encode("utf-8"), digestmod=hashlib.sha256
+            secret.encode("utf-8"),
+            string_to_sign.encode("utf-8"),
+            digestmod=hashlib.sha256,
         ).digest()
         sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
         webhook_url = f"{webhook_url}&timestamp={timestamp}&sign={sign}"
 
     headers = {"Content-Type": "application/json"}
-    payload = {
-        "msgtype": "text",
-        "text": {"content": message}
-    }
+    payload = {"msgtype": "text", "text": {"content": message}}
 
     try:
         response = requests.post(webhook_url, json=payload, headers=headers)

@@ -1,6 +1,8 @@
 import logging
-from notifications.telegram import sendTelegramMessage
+
 from notifications.dingding import sendDingDingMessage
+from notifications.telegram import sendTelegramMessage
+
 
 def sendNotifications(message, notificationChannels, telegram_config, dingding_config):
     """
@@ -17,13 +19,13 @@ def sendNotifications(message, notificationChannels, telegram_config, dingding_c
     """
     for channel in notificationChannels:
         try:
-            if channel == 'telegram':
+            if channel == "telegram":
                 sendTelegramMessage(
-                    message, telegram_config['token'], telegram_config['chatId']
+                    message, telegram_config["token"], telegram_config["chatId"]
                 )
-            elif channel == 'dingding':
+            elif channel == "dingding":
                 sendDingDingMessage(
-                    message, dingding_config['webhook'], dingding_config['secret']
+                    message, dingding_config["webhook"], dingding_config["secret"]
                 )
             else:
                 logging.warning(f"Unsupported notification channel: {channel}")

@@ -1,5 +1,7 @@
-from exchanges.exchanges import Exchange
 import logging
+
+from exchanges.exchanges import Exchange
+
 
 def getExchange(exchangeName):
     """

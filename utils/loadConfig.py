@@ -1,9 +1,13 @@
-import yaml
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+import yaml
 
-def loadConfig(configPath='config/config.yaml'):
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+def loadConfig(configPath="config/config.yaml"):
     """
     Loads the configuration from a YAML file.
 
@@ -25,15 +29,22 @@ def loadConfig(configPath='config/config.yaml'):
         - 'notificationChannels': The channels for receiving notifications.
     """
     try:
-        with open(configPath, 'r') as file:
+        with open(configPath, "r") as file:
             config = yaml.safe_load(file)
-        required_keys = ['exchange', 'symbolsFilePath', 'defaultTimeframe', 'defaultThreshold', 'notificationChannels', 'notificationTimezone']
+        required_keys = [
+            "exchange",
+            "symbolsFilePath",
+            "defaultTimeframe",
+            "defaultThreshold",
+            "notificationChannels",
+            "notificationTimezone",
+        ]
         for key in required_keys:
             if key not in config:
                 raise ValueError(f"Missing required config key: {key}")
-        
-        if 'notificationTimezone' not in config or not config['notificationTimezone']:
-            config['notificationTimezone'] = 'Asia/Shanghai' # Default timezone
+
+        if "notificationTimezone" not in config or not config["notificationTimezone"]:
+            config["notificationTimezone"] = "Asia/Shanghai"  # Default timezone
 
         return config
     except Exception as e:

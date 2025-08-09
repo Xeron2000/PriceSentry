@@ -136,6 +136,9 @@ dingding:
 # Default is Asia/Shanghai
 notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
 
+# Log level for the application.
+# Possible values: "DEBUG", "INFO", "WARNING", "ERROR"
+logLevel: "INFO" # Default: "INFO"
 ```
 
 ---
@@ -145,6 +148,20 @@ notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
 <div style="text-align: center;">
   <img src="./img/tg.png" alt="Alert Examples">
 </div>
+
+---
+
+## 🎨 Code Style
+
+This project uses [Ruff](https://github.com/astral-sh/ruff) to format and lint the code. Before committing, please run the following commands to ensure your code adheres to the style guide:
+
+```bash
+# Format the code
+ruff format .
+
+# Lint the code and automatically fix issues
+ruff check --fix .
+```
 
 ---
 

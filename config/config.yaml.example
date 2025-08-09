@@ -38,3 +38,7 @@ dingding:
 # Timezone for notification messages.
 # Default is Asia/Shanghai
 notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
+
+# Log level for the application.
+# Possible values: "DEBUG", "INFO", "WARNING", "ERROR"
+logLevel: "INFO" # Default: "INFO"

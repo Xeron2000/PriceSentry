@@ -1,5 +1,6 @@
 import requests
 
+
 def sendTelegramMessage(message, telegram_token, chat_id):
     if not telegram_token or not chat_id:
         print("Telegram token or chat ID is missing.")
@@ -7,7 +8,7 @@ def sendTelegramMessage(message, telegram_token, chat_id):
 
     url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
     data = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
-    
+
     try:
         response = requests.post(url, data=data)
         if response.status_code == 200:

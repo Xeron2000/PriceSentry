@@ -3,7 +3,7 @@ def parseTimeframe(timeframe):
     Converts a timeframe string into minutes.
 
     The input string should represent a timeframe, ending with 'm', 'h', or 'd',
-    indicating minutes, hours, and days respectively. The numeric part of the string 
+    indicating minutes, hours, and days respectively. The numeric part of the string
     is parsed and converted to minutes.
 
     Args:

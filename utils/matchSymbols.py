@@ -1,6 +1,7 @@
 import json
 import re
 
+
 def matchSymbols(symbols, exchange):
     """
     Match a list of symbols to the markets supported by the given exchange.
@@ -17,15 +18,17 @@ def matchSymbols(symbols, exchange):
     list
         List of matched symbols
     """
-    
-    with open('config/supported_markets.json', 'r') as f:
+
+    with open("config/supported_markets.json", "r") as f:
         supported_markets = json.load(f)
 
     if exchange not in supported_markets:
         print(f"Exchange {exchange} not supported.")
         return []
 
-    usdt_pattern = re.compile(r'([A-Za-z]+)\d*/USDT:USDT$|(\d*[A-Za-z]+)\s*/\s*USDT:USDT$')
+    usdt_pattern = re.compile(
+        r"([A-Za-z]+)\d*/USDT:USDT$|(\d*[A-Za-z]+)\s*/\s*USDT:USDT$"
+    )
 
     matched_symbols = []
 

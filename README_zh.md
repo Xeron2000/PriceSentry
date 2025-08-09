@@ -129,6 +129,10 @@ dingding:
 # 通知时区配置
 # 默认亚洲/上海时间
 notificationTimezone: "Asia/Shanghai" # 示例："America/New_York"
+
+# 应用程序的日志级别
+# 可选值: "DEBUG", "INFO", "WARNING", "ERROR"
+logLevel: "INFO" # 默认: "INFO"
 ```
 
 ---
@@ -138,6 +142,20 @@ notificationTimezone: "Asia/Shanghai" # 示例："America/New_York"
 <div style="text-align: center;">
   <img src="./img/tg.png" alt="Alert Examples">
 </div>
+
+---
+
+## 🎨 代码风格
+
+本项目使用 [Ruff](https://github.com/astral-sh/ruff) 进行代码格式化和质量检查。在提交代码前，请运行以下命令以确保您的代码符合风格指南：
+
+```bash
+# 格式化代码
+ruff format .
+
+# 检查代码并自动修复问题
+ruff check --fix .
+```
 
 ---
 

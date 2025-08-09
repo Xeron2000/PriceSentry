@@ -19,3 +19,15 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/Xeron2000/PriceSentry"
 Issues = "https://github.com/Xeron2000/PriceSentry/issues"
+
+[project.optional-dependencies]
+dev = ["ruff"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.setuptools.packages.find]
+include = ["core", "exchanges", "notifications", "utils"]

@@ -1,5 +1,7 @@
 from datetime import datetime
+
 import pytz
+
 
 async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     """
@@ -17,25 +19,38 @@ async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
         str or None: A message string detailing the top movers, or None if no movers meet the threshold.
     """
     if exchange is None or not all(
-        hasattr(exchange, method) for method in ['getPriceMinutesAgo', 'getCurrentPrices']
+        hasattr(exchange, method)
+        for method in ["getPriceMinutesAgo", "getCurrentPrices"]
     ):
-        raise ValueError("Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' methods")
+        raise ValueError(
+            "Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' methods"
+        )
 
     initial_prices = exchange.getPriceMinutesAgo(symbols, minutes)
-    
+
     updated_prices = await exchange.getCurrentPrices(symbols)
 
     price_changes = {
-        symbol: ((updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]) * 100
-        for symbol in initial_prices if symbol in updated_prices
-        if abs((updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]) * 100 > threshold
+        symbol: (
+            (updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]
+        )
+        * 100
+        for symbol in initial_prices
+        if symbol in updated_prices
+        if abs(
+            (updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]
+        )
+        * 100
+        > threshold
     }
 
     if not price_changes:
         return None
 
-    top_movers_sorted = sorted(price_changes.items(), key=lambda x: abs(x[1]), reverse=True)
-    timezone_str = config.get('notificationTimezone', 'Asia/Shanghai')
+    top_movers_sorted = sorted(
+        price_changes.items(), key=lambda x: abs(x[1]), reverse=True
+    )
+    timezone_str = config.get("notificationTimezone", "Asia/Shanghai")
     timezone = pytz.timezone(timezone_str)
     current_time = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
 
