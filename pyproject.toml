@@ -1,0 +1,21 @@
+[project]
+name = "PriceSentry"
+version = "1.0.0"
+description = "A lightweight cryptocurrency contract price monitoring tool built for traders and enthusiasts"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Xeron", email = "xeron2333@gmail.com" },
+]
+dependencies = [
+    "ccxt>=4.1.80",
+    "PyYAML>=6.0.1",
+    "expiringdict>=1.2.1",
+    "pytz>=2024.1",
+    "websockets>=11.0.3",
+]
+
+[project.urls]
+Homepage = "https://github.com/Xeron2000/PriceSentry"
+Issues = "https://github.com/Xeron2000/PriceSentry/issues"

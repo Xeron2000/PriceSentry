@@ -49,20 +49,28 @@
 
 ## 🚀 快速安装
 
-### 1. 安装依赖
-```bash
-sudo apt update && sudo apt install -y python3 python3-pip
-```
-
-### 2. 克隆仓库
+### 1. 克隆仓库
 ```bash
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
 ```
 
-### 3. 安装依赖包
+### 2. 创建虚拟环境并安装依赖
 ```bash
-pip install -r requirements.txt
+# 安装 uv (如果尚未安装)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 创建虚拟环境
+uv venv
+
+# 激活虚拟环境
+# 在 Linux/macOS 上
+source .venv/bin/activate
+# 在 Windows 上
+.venv\Scripts\activate
+
+# 安装依赖
+uv sync
 ```
 
 ---

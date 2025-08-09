@@ -49,20 +49,28 @@
 
 ## 🚀 Quick Installation
 
-### 1. Install Dependencies
-```bash
-sudo apt update && sudo apt install -y python3 python3-pip
-```
-
-### 2. Clone Repository
+### 1. Clone Repository
 ```bash
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
 ```
 
-### 3. Install Packages
+### 2. Create Virtual Environment and Install Dependencies
 ```bash
-pip install -r requirements.txt
+# Install uv (if you haven't already)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create a virtual environment
+uv venv
+
+# Activate the virtual environment
+# On Linux/macOS
+source .venv/bin/activate
+# On Windows
+.venv\Scripts\activate
+
+# Install dependencies
+uv sync
 ```
 
 ---
