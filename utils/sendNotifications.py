@@ -12,7 +12,8 @@ def sendNotifications(message, notificationChannels, telegram_config, dingding_c
         message (str): The message to be sent
         notificationChannels (list[str]): The list of channels to send to
         telegram_config (dict): The configuration of the Telegram bot (token, chatId)
-        dingding_config (dict): The configuration of the DingDing robot (webhook, secret)
+        dingding_config (dict): The configuration of the DingDing robot (webhook,
+            secret)
 
     Returns:
         None

@@ -36,7 +36,8 @@ class Exchange:
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
         logging.info(
-            f"Attempting to establish WebSocket connection for {self.exchangeName}, subscribing symbols: {symbols}"
+            f"Attempting to establish WebSocket connection for {self.exchangeName}, "
+            f"subscribing symbols: {symbols}"
         )
 
         max_retries = 3
@@ -48,7 +49,8 @@ class Exchange:
                     uri = "wss://ws.okx.com:8443/ws/v5/public"
                     logging.debug(f"OKX WebSocket URI: {uri}")
 
-                    # Prepare subscription message - modify format to meet OKX requirements
+                    # Prepare subscription message - modify format to meet OKX
+                    # requirements
                     subscribe_msg = {"op": "subscribe", "args": []}
 
                     # OKX requires specific format for trading pairs
@@ -138,7 +140,8 @@ class Exchange:
 
             except Exception as e:
                 logging.error(
-                    f"Error establishing WebSocket connection (attempt {retry_count + 1}/{max_retries}): {e}"
+                    f"Error establishing WebSocket connection "
+                    f"(attempt {retry_count + 1}/{max_retries}): {e}"
                 )
                 retry_count += 1
                 await asyncio.sleep(5)  # Wait 5 seconds before retrying
@@ -151,7 +154,8 @@ class Exchange:
     def start_websocket(self, symbols):
         """Start WebSocket connection thread"""
         logging.info(
-            f"Starting WebSocket connection for {self.exchangeName}, number of symbols: {len(symbols)}"
+            f"Starting WebSocket connection for {self.exchangeName}, "
+            f"number of symbols: {len(symbols)}"
         )
 
         # Print symbol list for debugging
@@ -162,7 +166,8 @@ class Exchange:
 
         def run_websocket_loop():
             logging.info(
-                f"WebSocket thread started, creating new event loop for {self.exchangeName}"
+                f"WebSocket thread started, creating new event loop for "
+                f"{self.exchangeName}"
             )
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -193,7 +198,8 @@ class Exchange:
             raise ConnectionError("Failed to establish WebSocket connection")
 
         logging.info(
-            f"WebSocket connection successfully established, exchange: {self.exchangeName}"
+            "WebSocket connection successfully established, "
+            f"exchange: {self.exchangeName}"
         )
 
     def stop_websocket(self):
@@ -290,7 +296,8 @@ class Exchange:
                     key=lambda x: abs(x[0] - target_time),
                 )
 
-                # If the closest price differs from target time by more than 10 minutes, use API
+                # If the closest price differs from target time by more than 10
+                # minutes, use API
                 if abs(closest_price[0] - target_time) > (10 * 60 * 1000):
                     try:
                         # Get historical data
@@ -338,7 +345,8 @@ class Exchange:
         """Check WebSocket connection status and attempt to reconnect"""
         if not self.ws_connected and self.running:
             logging.warning(
-                f"{self.exchangeName} WebSocket connection disconnected, attempting to reconnect"
+                f"{self.exchangeName} WebSocket connection disconnected, "
+                "attempting to reconnect"
             )
             # Get currently subscribed symbols
             symbols = list(self.last_prices.keys())

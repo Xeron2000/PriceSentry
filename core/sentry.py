@@ -50,14 +50,16 @@ class PriceSentry:
         try:
             logging.info("Entering main loop, starting price movement monitoring")
             logging.info(
-                f"Check interval set to {self.minutes} minutes ({check_interval} seconds)"
+                f"Check interval set to {self.minutes} minutes "
+                f"({check_interval} seconds)"
             )
             while True:
                 current_time = time.time()
 
                 if current_time - last_check_time >= check_interval:
                     logging.info(
-                        f"Checking price movements, {int(current_time - last_check_time)} seconds since last check"
+                        "Checking price movements, %s seconds since last check",
+                        int(current_time - last_check_time),
                     )
 
                     message = await monitorTopMovers(
@@ -70,7 +72,8 @@ class PriceSentry:
 
                     if message:
                         logging.info(
-                            f"Detected price movements exceeding threshold, message content: {message}"
+                            "Detected price movements exceeding threshold, "
+                            f"message content: {message}"
                         )
                         self.notifier.send(message)
                     else:
@@ -87,7 +90,8 @@ class PriceSentry:
                         self.exchange.check_ws_connection()
                     if hasattr(self.exchange, "last_prices"):
                         logging.debug(
-                            f"Number of symbols with cached prices: {len(self.exchange.last_prices)}"
+                            "Number of symbols with cached prices: "
+                            f"{len(self.exchange.last_prices)}"
                         )
 
                 await asyncio.sleep(1)

@@ -5,25 +5,29 @@ import pytz
 
 async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     """
-    Retrieves the top movers for the given symbols on the given exchange over the given time period asynchronously.
+    Retrieves the top movers for the given symbols on the given exchange
+    over the given time period asynchronously.
 
     Args:
         minutes (int): The number of minutes in the past to monitor.
         symbols (list): A list of symbol strings for which to fetch prices.
-        threshold (float): The minimum percentage price change required to be a "top mover".
+        threshold (float): The minimum percentage price change required to be a
+            "top mover".
         exchange (Exchange): An instance of the Exchange class which implements the
             'getPriceMinutesAgo' and 'getCurrentPrices' methods.
         config (dict): Configuration dictionary loaded from config.yaml
 
     Returns:
-        str or None: A message string detailing the top movers, or None if no movers meet the threshold.
+        str or None: A message string detailing the top movers, or None if no
+            movers meet the threshold.
     """
     if exchange is None or not all(
         hasattr(exchange, method)
         for method in ["getPriceMinutesAgo", "getCurrentPrices"]
     ):
         raise ValueError(
-            "Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' methods"
+            "Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' "
+            "methods"
         )
 
     initial_prices = exchange.getPriceMinutesAgo(symbols, minutes)
@@ -57,7 +61,8 @@ async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     message = (
         f"📊 **{exchange.exchangeName} Price Alert** ({minutes} minutes)\n"
         f"▫️ Time: {current_time} ({timezone_str})\n"
-        f"▫️ Threshold: {threshold}% | Symbols: {len(symbols)} → Alerts: {len(price_changes)}\n"
+        f"▫️ Threshold: {threshold}% | Symbols: {len(symbols)} → Alerts: "
+        f"{len(price_changes)}\n"
         f"══════════════════\n"
     )
 
@@ -68,7 +73,8 @@ async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
         message += (
             f"{color} **{i}. #{symbol.ljust(6)}** {arrow} {abs(change):.2f}%\n"
             f"├ Current: {updated_prices[symbol]:.4f}\n"
-            f"└ Change: {price_diff:+.4f} ({initial_prices[symbol]:.4f} → {updated_prices[symbol]:.4f})\n\n"
+            f"└ Change: {price_diff:+.4f} ({initial_prices[symbol]:.4f} → "
+            f"{updated_prices[symbol]:.4f})\n\n"
         )
 
     message += (

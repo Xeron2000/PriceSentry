@@ -32,11 +32,11 @@ logging.getLogger("asyncio").setLevel(logging.WARNING)
 async def main():
     try:
         sentry = PriceSentry()
-        
+
         # Allow overriding log level from config
-        log_level = sentry.config.get('logLevel', 'INFO').upper()
+        log_level = sentry.config.get("logLevel", "INFO").upper()
         logger.setLevel(log_level)
-        
+
         await sentry.run()
     except Exception as e:
         logging.error(f"An error occurred in main: {e}")
