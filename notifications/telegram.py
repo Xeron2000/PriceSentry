@@ -1,7 +1,7 @@
 import requests
 
 
-def sendTelegramMessage(message, telegram_token, chat_id):
+def send_telegram_message(message, telegram_token, chat_id):
     if not telegram_token or not chat_id:
         print("Telegram token or chat ID is missing.")
         return False

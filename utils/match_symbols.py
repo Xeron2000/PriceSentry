@@ -2,7 +2,7 @@ import json
 import re
 
 
-def matchSymbols(symbols, exchange):
+def match_symbols(symbols, exchange):
     """
     Match a list of symbols to the markets supported by the given exchange.
 

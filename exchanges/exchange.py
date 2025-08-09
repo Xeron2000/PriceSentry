@@ -10,12 +10,12 @@ from expiringdict import ExpiringDict
 
 
 class Exchange:
-    def __init__(self, exchangeName):
-        if exchangeName not in ccxt.exchanges:
-            raise ValueError(f"Exchange {exchangeName} not supported by ccxt")
+    def __init__(self, exchange_name):
+        if exchange_name not in ccxt.exchanges:
+            raise ValueError(f"Exchange {exchange_name} not supported by ccxt")
 
-        self.exchangeName = exchangeName
-        self.exchange = getattr(ccxt, exchangeName)(
+        self.exchange_name = exchange_name
+        self.exchange = getattr(ccxt, exchange_name)(
             {
                 "enableRateLimit": True,
             }
@@ -36,7 +36,7 @@ class Exchange:
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
         logging.info(
-            f"Attempting to establish WebSocket connection for {self.exchangeName}, "
+            f"Attempting to establish WebSocket connection for {self.exchange_name}, "
             f"subscribing symbols: {symbols}"
         )
 
@@ -45,7 +45,7 @@ class Exchange:
 
         while retry_count < max_retries and self.running:
             try:
-                if self.exchangeName == "okx":
+                if self.exchange_name == "okx":
                     uri = "wss://ws.okx.com:8443/ws/v5/public"
                     logging.debug(f"OKX WebSocket URI: {uri}")
 
@@ -154,7 +154,7 @@ class Exchange:
     def start_websocket(self, symbols):
         """Start WebSocket connection thread"""
         logging.info(
-            f"Starting WebSocket connection for {self.exchangeName}, "
+            f"Starting WebSocket connection for {self.exchange_name}, "
             f"number of symbols: {len(symbols)}"
         )
 
@@ -167,7 +167,7 @@ class Exchange:
         def run_websocket_loop():
             logging.info(
                 f"WebSocket thread started, creating new event loop for "
-                f"{self.exchangeName}"
+                f"{self.exchange_name}"
             )
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -199,7 +199,7 @@ class Exchange:
 
         logging.info(
             "WebSocket connection successfully established, "
-            f"exchange: {self.exchangeName}"
+            f"exchange: {self.exchange_name}"
         )
 
     def stop_websocket(self):
@@ -208,9 +208,9 @@ class Exchange:
         if self.ws_thread:
             self.ws_thread.join(timeout=5)
             self.ws_thread = None
-        logging.info(f"WebSocket connection closed for {self.exchangeName}")
+        logging.info(f"WebSocket connection closed for {self.exchange_name}")
 
-    async def getCurrentPrices(self, symbols):
+    async def get_current_prices(self, symbols):
         """Get current prices (from WebSocket data)"""
         if not self.ws_connected:
             # If WebSocket not connected, use API call
@@ -261,7 +261,7 @@ class Exchange:
 
         return result
 
-    def getPriceMinutesAgo(self, symbols, minutes):
+    def get_price_minutes_ago(self, symbols, minutes):
         """Get prices from specified minutes ago (from historical data)"""
         if not self.ws_connected:
             # If WebSocket not connected, use API call
@@ -345,7 +345,7 @@ class Exchange:
         """Check WebSocket connection status and attempt to reconnect"""
         if not self.ws_connected and self.running:
             logging.warning(
-                f"{self.exchangeName} WebSocket connection disconnected, "
+                f"{self.exchange_name} WebSocket connection disconnected, "
                 "attempting to reconnect"
             )
             # Get currently subscribed symbols

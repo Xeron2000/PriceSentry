@@ -1,6 +1,6 @@
 # core/notifier.py
 
-from utils.sendNotifications import sendNotifications
+from utils.send_notifications import send_notifications
 
 
 class Notifier:
@@ -11,7 +11,7 @@ class Notifier:
 
     def send(self, message):
         if message:
-            sendNotifications(
+            send_notifications(
                 message,
                 self.notification_channels,
                 self.telegram_config,

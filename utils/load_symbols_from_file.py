@@ -1,7 +1,7 @@
 import os
 
 
-def loadSymbolsFromFile(file_path):
+def load_symbols_from_file(file_path):
     """
     Reads a file and returns a list of all non-empty lines.
 

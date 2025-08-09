@@ -5,33 +5,33 @@ import logging
 import time
 
 from core.notifier import Notifier
-from exchanges.exchanges import Exchange
-from utils.loadConfig import loadConfig
-from utils.loadSymbolsFromFile import loadSymbolsFromFile
-from utils.matchSymbols import matchSymbols
-from utils.monitorTopMovers import monitorTopMovers
-from utils.parseTimeframe import parseTimeframe
+from exchanges.exchange import Exchange
+from utils.load_config import load_config
+from utils.load_symbols_from_file import load_symbols_from_file
+from utils.match_symbols import match_symbols
+from utils.monitor_top_movers import monitor_top_movers
+from utils.parse_timeframe import parse_timeframe
 
 
 class PriceSentry:
     def __init__(self):
-        self.config = loadConfig()
+        self.config = load_config()
         self.notifier = Notifier(self.config)
 
         exchange_name = self.config.get("exchange", "binance")
         self.exchange = Exchange(exchange_name)
 
         symbols_file_path = self.config.get("symbolsFilePath", "config/symbols.txt")
-        symbols = loadSymbolsFromFile(symbols_file_path)
+        symbols = load_symbols_from_file(symbols_file_path)
 
-        self.matched_symbols = matchSymbols(symbols, exchange_name)
+        self.matched_symbols = match_symbols(symbols, exchange_name)
 
         if not self.matched_symbols:
             logging.warning("No matched symbols found. Please check your symbols file.")
             return
 
         default_timeframe = self.config.get("defaultTimeframe", "5m")
-        self.minutes = parseTimeframe(default_timeframe)
+        self.minutes = parse_timeframe(default_timeframe)
 
         self.threshold = self.config.get("defaultThreshold", 1)
 
@@ -62,7 +62,7 @@ class PriceSentry:
                         int(current_time - last_check_time),
                     )
 
-                    message = await monitorTopMovers(
+                    message = await monitor_top_movers(
                         self.minutes,
                         self.matched_symbols,
                         self.threshold,

@@ -7,7 +7,7 @@ logging.basicConfig(
 )
 
 
-def loadConfig(configPath="config/config.yaml"):
+def load_config(configPath="config/config.yaml"):
     """
     Loads the configuration from a YAML file.
 

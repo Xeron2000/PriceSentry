@@ -7,7 +7,7 @@ import urllib.parse
 import requests
 
 
-def sendDingDingMessage(message, webhook_url, secret=None):
+def send_dingding_message(message, webhook_url, secret=None):
     if not webhook_url:
         print("DingDing webhook URL is missing.")
         return False

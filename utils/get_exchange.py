@@ -1,9 +1,9 @@
 import logging
 
-from exchanges.exchanges import Exchange
+from exchanges.exchange import Exchange
 
 
-def getExchange(exchangeName):
+def get_exchange(exchangeName):
     """
     Create an instance of an Exchange class based on the name provided.
 

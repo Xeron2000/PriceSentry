@@ -1,4 +1,4 @@
-def parseTimeframe(timeframe):
+def parse_timeframe(timeframe):
     """
     Converts a timeframe string into minutes.
 

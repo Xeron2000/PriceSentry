@@ -3,7 +3,7 @@ from datetime import datetime
 import pytz
 
 
-async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
+async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
     """
     Retrieves the top movers for the given symbols on the given exchange
     over the given time period asynchronously.
@@ -23,16 +23,16 @@ async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     """
     if exchange is None or not all(
         hasattr(exchange, method)
-        for method in ["getPriceMinutesAgo", "getCurrentPrices"]
+        for method in ["get_price_minutes_ago", "get_current_prices"]
     ):
         raise ValueError(
-            "Exchange must implement 'getPriceMinutesAgo' and 'getCurrentPrices' "
+            "Exchange must implement 'get_price_minutes_ago' and 'get_current_prices' "
             "methods"
         )
 
-    initial_prices = exchange.getPriceMinutesAgo(symbols, minutes)
+    initial_prices = exchange.get_price_minutes_ago(symbols, minutes)
 
-    updated_prices = await exchange.getCurrentPrices(symbols)
+    updated_prices = await exchange.get_current_prices(symbols)
 
     price_changes = {
         symbol: (
@@ -59,7 +59,7 @@ async def monitorTopMovers(minutes, symbols, threshold, exchange, config):
     current_time = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
 
     message = (
-        f"📊 **{exchange.exchangeName} Price Alert** ({minutes} minutes)\n"
+        f"📊 **{exchange.exchange_name} Price Alert** ({minutes} minutes)\n"
         f"▫️ Time: {current_time} ({timezone_str})\n"
         f"▫️ Threshold: {threshold}% | Symbols: {len(symbols)} → Alerts: "
         f"{len(price_changes)}\n"

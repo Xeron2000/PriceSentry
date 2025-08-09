@@ -1,10 +1,10 @@
 import logging
 
-from notifications.dingding import sendDingDingMessage
-from notifications.telegram import sendTelegramMessage
+from notifications.dingding import send_dingding_message
+from notifications.telegram import send_telegram_message
 
 
-def sendNotifications(message, notificationChannels, telegram_config, dingding_config):
+def send_notifications(message, notificationChannels, telegram_config, dingding_config):
     """
     Send a message to each of the specified notification channels.
 
@@ -21,11 +21,11 @@ def sendNotifications(message, notificationChannels, telegram_config, dingding_c
     for channel in notificationChannels:
         try:
             if channel == "telegram":
-                sendTelegramMessage(
+                send_telegram_message(
                     message, telegram_config["token"], telegram_config["chatId"]
                 )
             elif channel == "dingding":
-                sendDingDingMessage(
+                send_dingding_message(
                     message, dingding_config["webhook"], dingding_config["secret"]
                 )
             else:

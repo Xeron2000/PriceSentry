@@ -92,11 +92,56 @@ uv sync
 
 ---
 
-## ⚙️ 配置文件 
+## ⚙️ 配置文件
 
-默认配置文件位于`config/config.yaml`
+将示例配置文件 `config/config.yaml.example` 复制一份并重命名为 `config/config.yaml`，然后根据您的需求进行修改。下面是一个配置示例：
 
----
+```yaml
+# 交易所和默认行为配置
+# 要连接的交易所名称
+# 可选值："binance", "okx"
+exchange: "okx"  # 示例："binance"
+
+# 要获取市场数据的交易所列表。
+# `tools/update_markets.py` 脚本会使用此列表。
+exchanges:
+  - "binance"
+  - "okx"
+
+# 默认时间周期（数据获取频率）
+# 可选值："1m", "5m", "15m", "1h", "1d"
+defaultTimeframe: "1d"  # 示例："5m"
+
+# 默认价格变化阈值，仅超过该值的交易对会触发通知
+defaultThreshold: 1  # 示例：1
+
+# 交易对文件路径，留空则自动获取
+symbolsFilePath: "config/symbols.txt"  # 示例："config/symbols.txt"
+
+# 通知渠道配置
+# 当前支持 Telegram 和钉钉
+notificationChannels:
+  - "telegram"
+  - "dingding"
+
+# Telegram 机器人配置
+telegram:
+  token: ""  # 示例："你的机器人令牌"
+  chatId: ""  # 示例："你的聊天ID"
+
+# 钉钉机器人配置
+dingding:
+  webhook: ""  # 示例："https://oapi.dingtalk.com/robot/send?access_token=你的访问令牌"
+  secret: ""  # 示例："你的签名密钥"
+
+# 通知时区配置
+# 默认亚洲/上海时间
+notificationTimezone: "Asia/Shanghai" # 示例："America/New_York"
+
+# 应用程序的日志级别
+# 可选值: "DEBUG", "INFO", "WARNING", "ERROR"
+logLevel: "INFO" # 默认: "INFO"
+```
 
 ## 🔔 通知示例
 
