@@ -5,7 +5,7 @@ import logging
 import time
 
 from core.notifier import Notifier
-from exchanges.exchange import Exchange
+from utils.get_exchange import get_exchange
 from utils.load_config import load_config
 from utils.load_symbols_from_file import load_symbols_from_file
 from utils.match_symbols import match_symbols
@@ -19,7 +19,7 @@ class PriceSentry:
         self.notifier = Notifier(self.config)
 
         exchange_name = self.config.get("exchange", "binance")
-        self.exchange = Exchange(exchange_name)
+        self.exchange = get_exchange(exchange_name)
 
         symbols_file_path = self.config.get("symbolsFilePath", "config/symbols.txt")
         symbols = load_symbols_from_file(symbols_file_path)
