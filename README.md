@@ -92,54 +92,9 @@ uv sync
 
 ---
 
-## ⚙️ Configuration File (`config/config.yaml`)
+## ⚙️ Configuration File
 
-```yaml
-# Configuration for the exchange and default behavior
-# The name of the exchange to connect to.
-# Possible values: "binance", "okx"
-exchange: "okx"  # Example: "binance"
-
-# The default timeframe (frequency of data retrieval).
-# Possible values: "1m", "5m", "15m", "1h", "1d".
-defaultTimeframe: "1d"  # Example: "5m", 
-
-# The default price change threshold. Only pairs exceeding this value will be notified.
-defaultThreshold: 1  # Example: 1
-
-# The file path containing trading pair symbols. If empty, pairs will be auto-retrieved.
-symbolsFilePath: "config/symbols.txt"  # Example: "config/symbols.txt"
-
-# Notification channels and configuration
-# The channels for receiving notifications. Currently supports Telegram and DingDing.
-notificationChannels: 
-  - "telegram"
-  - "dingding"
-
-# Telegram bot configuration
-# The token used to connect to the Telegram bot.
-telegram:
-  token: ""  # Example: "your_telegram_bot_token"
-  
-  # The Telegram chat ID where notifications will be sent.
-  chatId: ""  # Example: "your_chat_id"
-
-# DingDing robot configuration
-# The DingDing robot webhook URL for sending notifications.
-dingding:
-  webhook: ""  # Example: "https://oapi.dingtalk.com/robot/send?access_token=your_access_token"
-  
-  # The DingDing robot secret used to generate the signature for secure notifications.
-  secret: ""  # Example: "your_sign_secret"
-
-# Timezone for notification messages.
-# Default is Asia/Shanghai
-notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
-
-# Log level for the application.
-# Possible values: "DEBUG", "INFO", "WARNING", "ERROR"
-logLevel: "INFO" # Default: "INFO"
-```
+Default configuration file is located at `config/config.yaml`
 
 ---
 
@@ -162,12 +117,58 @@ ruff format .
 # Lint the code and automatically fix issues
 ruff check --fix .
 ```
+---
+
+## 🛠️ Tools
+
+### Update Supported Markets
+
+The `tools/update_markets.py` script is used to fetch the latest list of supported trading pairs from the exchanges defined in your `config/config.yaml`. This ensures that the application has an up-to-date list of available markets for symbol matching.
+
+**Usage:**
+
+To update the markets for all exchanges listed in your `config.yaml`:
+
+```bash
+python tools/update_markets.py
+```
+
+To update the markets for specific exchanges, you can pass their names as arguments:
+
+```bash
+python tools/update_markets.py --exchanges binance okx
+```
+
+The script will create or update the `config/supported_markets.json` file with the fetched data.
 
 ---
 
+## 🛠️ Tools
+
+### Update Supported Markets
+
+The `tools/update_markets.py` script is used to fetch the latest list of supported trading pairs from the exchanges defined in your `config/config.yaml`. This ensures that the application has an up-to-date list of available markets for symbol matching.
+
+**Usage:**
+
+To update the markets for all exchanges listed in your `config.yaml`:
+
+```bash
+python tools/update_markets.py
+```
+
+To update the markets for specific exchanges, you can pass their names as arguments:
+
+```bash
+python tools/update_markets.py --exchanges binance okx
+```
+
+The script will create or update the `config/supported_markets.json` file with the fetched data.
+
+---
 ## 📜 License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 

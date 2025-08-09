@@ -3,6 +3,12 @@
 # Possible values: "binance", "okx"
 exchange: "okx"  # Example: "binance"
 
+# A list of exchanges to fetch market data from.
+# This is used by the `tools/update_markets.py` script.
+exchanges:
+  - "binance"
+  - "okx"
+
 # The default timeframe (frequency of data retrieval).
 # Possible values: "1m", "5m", "15m", "1h", "1d".
 defaultTimeframe: "5m"  # Example: "5m", 

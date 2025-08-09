@@ -92,48 +92,9 @@ uv sync
 
 ---
 
-## ⚙️ 配置文件 (`config/config.yaml`)
+## ⚙️ 配置文件 
 
-```yaml
-# 交易所和默认行为配置
-# 要连接的交易所名称
-# 可选值："binance", "okx"
-exchange: "okx"  # 示例："binance"
-
-# 默认时间周期（数据获取频率）
-# 可选值："1m", "5m", "15m", "1h", "1d"
-defaultTimeframe: "1d"  # 示例："5m"
-
-# 默认价格变化阈值，仅超过该值的交易对会触发通知
-defaultThreshold: 1  # 示例：1
-
-# 交易对文件路径，留空则自动获取
-symbolsFilePath: "config/symbols.txt"  # 示例："config/symbols.txt"
-
-# 通知渠道配置
-# 当前支持 Telegram 和钉钉
-notificationChannels: 
-  - "telegram"
-  - "dingding"
-
-# Telegram 机器人配置
-telegram:
-  token: ""  # 示例："你的机器人令牌"
-  chatId: ""  # 示例："你的聊天ID"
-
-# 钉钉机器人配置
-dingding:
-  webhook: ""  # 示例："https://oapi.dingtalk.com/robot/send?access_token=你的访问令牌"
-  secret: ""  # 示例："你的签名密钥"
-
-# 通知时区配置
-# 默认亚洲/上海时间
-notificationTimezone: "Asia/Shanghai" # 示例："America/New_York"
-
-# 应用程序的日志级别
-# 可选值: "DEBUG", "INFO", "WARNING", "ERROR"
-logLevel: "INFO" # 默认: "INFO"
-```
+默认配置文件位于`config/config.yaml`
 
 ---
 
@@ -159,6 +120,29 @@ ruff check --fix .
 
 ---
 
+## 🛠️ 工具
+
+### 更新支持的市场
+
+`tools/update_markets.py` 脚本用于从 `config/config.yaml` 中定义的交易所获取最新的支持交易对列表。这可以确保应用程序拥有最新的可用市场列表以进行交易对匹配。
+
+**用法:**
+
+要更新 `config.yaml` 中列出的所有交易所的市场：
+
+```bash
+python tools/update_markets.py
+```
+
+要更新特定交易所的市场，您可以将其名称作为参数传递：
+
+```bash
+python tools/update_markets.py --exchanges binance okx
+```
+
+该脚本将使用获取的数据创建或更新 `config/supported_markets.json` 文件。
+
+---
 ## 📜 开源协议
 
 本项目采用 MIT 开源协议，详见 [LICENSE](LICENSE)。
