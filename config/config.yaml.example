@@ -1,6 +1,6 @@
 # Configuration for the exchange and default behavior
 # The name of the exchange to connect to.
-# Possible values: "binance", "okx"
+# Possible values: "binance", "okx", "bybit"
 exchange: "okx"  # Example: "binance"
 
 # A list of exchanges to fetch market data from.
@@ -8,6 +8,7 @@ exchange: "okx"  # Example: "binance"
 exchanges:
   - "binance"
   - "okx"
+  - "bybit"
 
 # The default timeframe (frequency of data retrieval).
 # Possible values: "1m", "5m", "15m", "1h", "1d".

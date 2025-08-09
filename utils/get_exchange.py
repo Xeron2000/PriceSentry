@@ -1,5 +1,5 @@
 
-from exchanges import BinanceExchange, OkxExchange
+from exchanges import BinanceExchange, OkxExchange, BybitExchange
 
 
 def get_exchange(exchange_name):
@@ -19,5 +19,7 @@ def get_exchange(exchange_name):
         return OkxExchange()
     elif exchange_name.lower() == "binance":
         return BinanceExchange()
+    elif exchange_name.lower() == "bybit":
+        return BybitExchange()
     else:
         raise ValueError(f"Exchange {exchange_name} not supported.")

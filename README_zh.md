@@ -30,7 +30,7 @@
 ## 🌟 核心功能
 
 - 🔔 多渠道智能提醒（Telegram & 钉钉）
-- 🌐 支持 Binance 和 OKX 交易所
+- 🌐 支持 Binance、OKX 和 Bybit 交易所
 - 📆 时区感知通知
 - 🔒 使用 YAML 文件安全配置
 
@@ -99,14 +99,15 @@ uv sync
 ```yaml
 # 交易所和默认行为配置
 # 要连接的交易所名称
-# 可选值："binance", "okx"
-exchange: "okx"  # 示例："binance"
+# 可选值："binance", "okx", "bybit"
+exchange: "bybit"  # 示例："binance"
 
 # 要获取市场数据的交易所列表。
 # `tools/update_markets.py` 脚本会使用此列表。
 exchanges:
   - "binance"
   - "okx"
+  - "bybit"
 
 # 默认时间周期（数据获取频率）
 # 可选值："1m", "5m", "15m", "1h", "1d"
@@ -182,7 +183,7 @@ python tools/update_markets.py
 要更新特定交易所的市场，您可以将其名称作为参数传递：
 
 ```bash
-python tools/update_markets.py --exchanges binance okx
+python tools/update_markets.py --exchanges binance okx bybit
 ```
 
 该脚本将使用获取的数据创建或更新 `config/supported_markets.json` 文件。

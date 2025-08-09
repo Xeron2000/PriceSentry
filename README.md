@@ -30,7 +30,7 @@
 ## 🌟 Features
 
 - 🔔 Multi-channel smart alerts (Telegram & DingDing)
-- 🌐 Support for Binance and OKX exchanges
+- 🌐 Support for Binance, OKX, and Bybit exchanges
 - 📆 Timezone-aware notifications
 - 🔒 Secure configuration with YAML files
 
@@ -101,14 +101,15 @@ Here is an example configuration:
 ```yaml
 # Configuration for the exchange and default behavior
 # The name of the exchange to connect to.
-# Possible values: "binance", "okx"
-exchange: "okx"  # Example: "binance"
+# Possible values: "binance", "okx", "bybit"
+exchange: "bybit"  # Example: "binance"
 
 # A list of exchanges to fetch market data from.
 # This is used by the `tools/update_markets.py` script.
 exchanges:
   - "binance"
   - "okx"
+  - "bybit"
 
 # The default timeframe (frequency of data retrieval).
 # Possible values: "1m", "5m", "15m", "1h", "1d".
@@ -185,31 +186,7 @@ python tools/update_markets.py
 To update the markets for specific exchanges, you can pass their names as arguments:
 
 ```bash
-python tools/update_markets.py --exchanges binance okx
-```
-
-The script will create or update the `config/supported_markets.json` file with the fetched data.
-
----
-
-## 🛠️ Tools
-
-### Update Supported Markets
-
-The `tools/update_markets.py` script is used to fetch the latest list of supported trading pairs from the exchanges defined in your `config/config.yaml`. This ensures that the application has an up-to-date list of available markets for symbol matching.
-
-**Usage:**
-
-To update the markets for all exchanges listed in your `config.yaml`:
-
-```bash
-python tools/update_markets.py
-```
-
-To update the markets for specific exchanges, you can pass their names as arguments:
-
-```bash
-python tools/update_markets.py --exchanges binance okx
+python tools/update_markets.py --exchanges binance okx bybit
 ```
 
 The script will create or update the `config/supported_markets.json` file with the fetched data.
