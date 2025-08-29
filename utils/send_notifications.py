@@ -44,6 +44,15 @@ def send_notifications(
                             telegram_config["token"],
                             telegram_config["chatId"],
                         )
+                    else:
+                        # Also send the full text message so all top movers are visible
+                        # Avoid duplication if caption already equals the full message
+                        if (image_caption or "") != (message or ""):
+                            send_telegram_message(
+                                message,
+                                telegram_config["token"],
+                                telegram_config["chatId"],
+                            )
                 else:
                     send_telegram_message(
                         message, telegram_config["token"], telegram_config["chatId"]
