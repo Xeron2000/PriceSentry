@@ -49,3 +49,13 @@ notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
 # Log level for the application.
 # Possible values: "DEBUG", "INFO", "WARNING", "ERROR"
 logLevel: "INFO" # Default: "INFO"
+
+# Chart attachment (optional)
+# When enabled, Telegram alerts will include a recent price chart image
+attachChart: true
+
+# Chart rendering settings
+chartTimeframe: "1m"           # Candlestick timeframe for the chart
+chartLookbackMinutes: 60        # How many minutes of history to include
+chartTheme: "dark"              # "dark" | "light"
+chartIncludeMA: [7, 25]         # Moving average windows; empty list to disable

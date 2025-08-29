@@ -18,8 +18,9 @@ async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
         config (dict): Configuration dictionary loaded from config.yaml
 
     Returns:
-        str or None: A message string detailing the top movers, or None if no
-            movers meet the threshold.
+        tuple[str, list[tuple[str, float]]] | None: (message, top_movers_sorted) where
+            top_movers_sorted is a list of (symbol, percent_change). Returns None if
+            no movers meet the threshold.
     """
     if exchange is None or not all(
         hasattr(exchange, method)
@@ -79,4 +80,4 @@ async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
             f"   - **Diff:** {price_diff:+.4f} {price_range}\n\n"
         )
 
-    return message
+    return message, top_movers_sorted

@@ -10,6 +10,7 @@ from utils.load_config import load_config
 from utils.load_symbols_from_file import load_symbols_from_file
 from utils.match_symbols import match_symbols
 from utils.monitor_top_movers import monitor_top_movers
+from utils.chart import generate_candlestick_png
 from utils.parse_timeframe import parse_timeframe
 
 
@@ -62,7 +63,7 @@ class PriceSentry:
                         int(current_time - last_check_time),
                     )
 
-                    message = await monitor_top_movers(
+                    result = await monitor_top_movers(
                         self.minutes,
                         self.matched_symbols,
                         self.threshold,
@@ -70,12 +71,53 @@ class PriceSentry:
                         self.config,
                     )
 
-                    if message:
+                    if result:
+                        message, top_movers_sorted = result
                         logging.info(
                             "Detected price movements exceeding threshold, "
                             f"message content: {message}"
                         )
-                        self.notifier.send(message)
+                        # Attempt to attach chart (Telegram) for the top mover
+                        attach_chart = self.config.get("attachChart", False)
+                        image_bytes = None
+                        image_caption = None
+                        if attach_chart and top_movers_sorted:
+                            try:
+                                top_symbol, top_change = top_movers_sorted[0]
+                                chart_timeframe = self.config.get(
+                                    "chartTimeframe", "1m"
+                                )
+                                chart_lookback = int(
+                                    self.config.get("chartLookbackMinutes", 60)
+                                )
+                                chart_theme = self.config.get("chartTheme", "dark")
+                                ma_windows = self.config.get(
+                                    "chartIncludeMA", [7, 25]
+                                )
+
+                                image_bytes = generate_candlestick_png(
+                                    self.exchange.exchange,
+                                    top_symbol,
+                                    chart_timeframe,
+                                    chart_lookback,
+                                    chart_theme,
+                                    ma_windows,
+                                )
+                                arrow = "🔼" if top_change > 0 else "🔽"
+                                image_caption = (
+                                    f"{top_symbol} {chart_timeframe} {arrow} "
+                                    f"{abs(top_change):.2f}% in {self.minutes}m"
+                                )
+                            except Exception as e:
+                                logging.warning(
+                                    f"Failed to generate chart image: {e}. Sending text only."
+                                )
+
+                        self.notifier.send(
+                            message,
+                            image_bytes=image_bytes,
+                            image_caption=image_caption,
+                        )
                     else:
                         logging.info("No price movements exceeding threshold detected")
 
