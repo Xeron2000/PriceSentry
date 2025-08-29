@@ -95,6 +95,10 @@ class PriceSentry:
                                     "chartIncludeMA", [7, 25]
                                 )
 
+                                img_width = int(self.config.get("chartImageWidth", 1200))
+                                img_height = int(self.config.get("chartImageHeight", 900))
+                                img_scale = int(self.config.get("chartImageScale", 2))
+
                                 image_bytes = generate_multi_candlestick_png(
                                     self.exchange.exchange,
                                     symbols_for_chart,
@@ -102,6 +106,9 @@ class PriceSentry:
                                     chart_lookback,
                                     chart_theme,
                                     ma_windows,
+                                    width=img_width,
+                                    height=img_height,
+                                    scale=img_scale,
                                 )
                             except Exception as e:
                                 logging.warning(

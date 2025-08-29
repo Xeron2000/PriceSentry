@@ -59,3 +59,6 @@ chartTimeframe: "1m"           # Candlestick timeframe for the chart
 chartLookbackMinutes: 60        # How many minutes of history to include
 chartTheme: "dark"              # "dark" | "light"
 chartIncludeMA: [7, 25]         # Moving average windows; empty list to disable
+chartImageWidth: 1600           # Image width (px) for composite chart
+chartImageHeight: 1200          # Image height (px)
+chartImageScale: 2              # Pixel ratio multiplier (2 = Retina-like)
