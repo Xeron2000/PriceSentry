@@ -10,7 +10,7 @@ from utils.load_config import load_config
 from utils.load_symbols_from_file import load_symbols_from_file
 from utils.match_symbols import match_symbols
 from utils.monitor_top_movers import monitor_top_movers
-from utils.chart import generate_candlestick_png
+from utils.chart import generate_candlestick_png, generate_multi_candlestick_png
 from utils.parse_timeframe import parse_timeframe
 
 
@@ -77,13 +77,13 @@ class PriceSentry:
                             "Detected price movements exceeding threshold, "
                             f"message content: {message}"
                         )
-                        # Attempt to attach chart (Telegram) for the top mover
+                        # Build a composite chart image for top 6 movers and send only the image via Telegram
                         attach_chart = self.config.get("attachChart", False)
                         image_bytes = None
-                        image_caption = None
+                        image_caption = ""  # no text per requirement
                         if attach_chart and top_movers_sorted:
                             try:
-                                top_symbol, top_change = top_movers_sorted[0]
+                                symbols_for_chart = [s for s, _ in top_movers_sorted[:6]]
                                 chart_timeframe = self.config.get(
                                     "chartTimeframe", "1m"
                                 )
@@ -95,22 +95,17 @@ class PriceSentry:
                                     "chartIncludeMA", [7, 25]
                                 )
 
-                                image_bytes = generate_candlestick_png(
+                                image_bytes = generate_multi_candlestick_png(
                                     self.exchange.exchange,
-                                    top_symbol,
+                                    symbols_for_chart,
                                     chart_timeframe,
                                     chart_lookback,
                                     chart_theme,
                                     ma_windows,
                                 )
-                                arrow = "🔼" if top_change > 0 else "🔽"
-                                image_caption = (
-                                    f"{top_symbol} {chart_timeframe} {arrow} "
-                                    f"{abs(top_change):.2f}% in {self.minutes}m"
-                                )
                             except Exception as e:
                                 logging.warning(
-                                    f"Failed to generate chart image: {e}. Sending text only."
+                                    f"Failed to generate composite chart image: {e}. Skipping Telegram image."
                                 )
 
                         self.notifier.send(

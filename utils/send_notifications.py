@@ -29,34 +29,15 @@ def send_notifications(
     for channel in notificationChannels:
         try:
             if channel == "telegram":
+                # Only send a single photo. No text messages for Telegram.
                 if image_bytes is not None:
-                    # Prefer sending photo if available
-                    sent = send_telegram_photo(
-                        image_caption or message,
+                    _ = send_telegram_photo(
+                        image_caption or "",
                         telegram_config["token"],
                         telegram_config["chatId"],
                         image_bytes,
                     )
-                    if not sent:
-                        # Fallback to text message
-                        send_telegram_message(
-                            message,
-                            telegram_config["token"],
-                            telegram_config["chatId"],
-                        )
-                    else:
-                        # Also send the full text message so all top movers are visible
-                        # Avoid duplication if caption already equals the full message
-                        if (image_caption or "") != (message or ""):
-                            send_telegram_message(
-                                message,
-                                telegram_config["token"],
-                                telegram_config["chatId"],
-                            )
-                else:
-                    send_telegram_message(
-                        message, telegram_config["token"], telegram_config["chatId"]
-                    )
+                # If no image is provided, do not send Telegram text (as requested)
             elif channel == "dingding":
                 # Append image URL if provided (DingDing text message)
                 final_message = (

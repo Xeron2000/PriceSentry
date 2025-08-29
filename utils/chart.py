@@ -145,3 +145,139 @@ def generate_candlestick_png(
         raise RuntimeError(
             "Plotly image export failed. Ensure 'kaleido' is installed."
         ) from e
+
+
+def generate_multi_candlestick_png(
+    ccxt_exchange,
+    symbols: List[str],
+    timeframe: str = "1m",
+    lookback_minutes: int = 60,
+    theme: str = "dark",
+    moving_averages: Optional[List[int]] = None,
+    width: int = 1200,
+    height: int = 900,
+    scale: int = 2,
+) -> bytes:
+    """Generate a composite PNG with up to 6 candlestick charts (2xN grid)."""
+    # Lazy import
+    try:
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
+        import plotly.io as pio  # noqa: F401
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError(
+            "Plotly (and kaleido) are required for chart generation. Install with: "
+            "pip install plotly kaleido"
+        ) from e
+
+    if moving_averages is None:
+        moving_averages = [7, 25]
+
+    # Limit to 6 symbols
+    symbols = list(symbols)[:6]
+    if not symbols:
+        raise ValueError("No symbols provided for multi-candlestick chart")
+
+    # Determine grid size: 2 columns, rows = ceil(n/2)
+    num = len(symbols)
+    cols = 2
+    rows = (num + cols - 1) // cols
+
+    subplot_titles = [f"{s} ({timeframe})" for s in symbols]
+    fig = make_subplots(
+        rows=rows,
+        cols=cols,
+        shared_xaxes=False,
+        vertical_spacing=0.08,
+        horizontal_spacing=0.05,
+        subplot_titles=subplot_titles,
+    )
+
+    # Fetch and plot each symbol
+    for idx, symbol in enumerate(symbols):
+        r = idx // cols + 1
+        c = idx % cols + 1
+
+        try:
+            tf_minutes = parse_timeframe(timeframe)
+        except Exception:
+            unit = timeframe[-1]
+            numv = int(timeframe[:-1])
+            if unit == "m":
+                tf_minutes = numv
+            elif unit == "h":
+                tf_minutes = numv * 60
+            elif unit == "d":
+                tf_minutes = numv * 1440
+            else:
+                tf_minutes = 1
+
+        extra = (max(moving_averages) if moving_averages else 0) + 5
+        approx_candles = int((lookback_minutes + tf_minutes - 1) // tf_minutes)
+        limit = max(20, approx_candles + extra)
+        since_ms = int((time.time() - lookback_minutes * 60) * 1000)
+
+        try:
+            ohlcv = ccxt_exchange.fetch_ohlcv(
+                symbol, timeframe, since=since_ms, limit=limit
+            )
+        except Exception:
+            ohlcv = ccxt_exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+
+        if not ohlcv or len(ohlcv) < 5:
+            # Skip this subplot if no data
+            continue
+
+        ts = [row[0] for row in ohlcv]
+        opens = [float(row[1]) for row in ohlcv]
+        highs = [float(row[2]) for row in ohlcv]
+        lows = [float(row[3]) for row in ohlcv]
+        closes = [float(row[4]) for row in ohlcv]
+
+        fig.add_trace(
+            go.Candlestick(
+                x=ts,
+                open=opens,
+                high=highs,
+                low=lows,
+                close=closes,
+                name=symbol,
+                increasing_line_color="#26a69a",
+                decreasing_line_color="#ef5350",
+                showlegend=False,
+            ),
+            row=r,
+            col=c,
+        )
+
+        for window in moving_averages:
+            if window and window > 1 and window <= len(closes):
+                ma = _compute_sma(closes, window)
+                fig.add_trace(
+                    go.Scatter(
+                        x=ts,
+                        y=ma,
+                        mode="lines",
+                        name=f"MA{window}",
+                        line=dict(width=1.2),
+                        showlegend=False,
+                    ),
+                    row=r,
+                    col=c,
+                )
+
+        fig.update_xaxes(rangeslider_visible=False, row=r, col=c)
+
+    fig.update_layout(
+        template="plotly_dark" if theme.lower() == "dark" else "plotly_white",
+        margin=dict(l=20, r=20, t=60, b=20),
+        height=height,
+        width=width,
+    )
+
+    try:
+        return fig.to_image(format="png", width=width, height=height, scale=scale)
+    except Exception as e:
+        raise RuntimeError(
+            "Plotly image export failed. Ensure 'kaleido' is installed."
+        ) from e

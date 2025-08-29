@@ -59,7 +59,7 @@ async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
     timezone = pytz.timezone(timezone_str)
     current_time = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
 
-    header = f"**📈 {exchange.exchange_name} Top 5 Movers ({minutes}m)**\n\n"
+    header = f"**📈 {exchange.exchange_name} Top 6 Movers ({minutes}m)**\n\n"
     time_info = f"**Time:** {current_time} ({timezone_str})\n"
     stats = (
         f"**Threshold:** {threshold}% | **Symbols:** {len(symbols)} | "
@@ -67,7 +67,7 @@ async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
     )
     message = header + time_info + stats
 
-    for i, (symbol, change) in enumerate(top_movers_sorted[:5], 1):
+    for i, (symbol, change) in enumerate(top_movers_sorted[:6], 1):
         price_diff = updated_prices[symbol] - initial_prices[symbol]
         arrow = "🔼" if change > 0 else "🔽"
         color = "🟢" if change > 0 else "🔴"
