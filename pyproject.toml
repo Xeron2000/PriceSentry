@@ -23,7 +23,13 @@ Homepage = "https://github.com/Xeron2000/PriceSentry"
 Issues = "https://github.com/Xeron2000/PriceSentry/issues"
 
 [project.optional-dependencies]
-dev = ["ruff"]
+dev = [
+    "ruff",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "pytest-asyncio>=0.21.1"
+]
 
 [tool.ruff]
 line-length = 88
