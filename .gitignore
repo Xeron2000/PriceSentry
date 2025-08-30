@@ -1,6 +1,9 @@
-.env
-venv/
+*.env
+*venv/
 __pycache__/
 config/config.yaml
 *.log*
 *.egg-info/
+.spec-workflow/
+.crush/
+.ruff_cache/
