@@ -7,3 +7,6 @@ config/config.yaml
 .spec-workflow/
 .crush/
 .ruff_cache/
+.claude/
+.bmad-core/
+*CLAUDE.md
