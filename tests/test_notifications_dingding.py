@@ -23,6 +23,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             result = send_dingding_message(
@@ -99,6 +100,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             # Mock HMAC and encoding
@@ -142,6 +144,7 @@ class TestDingDingNotification:
                 # Mock successful response
                 mock_response = Mock()
                 mock_response.status_code = 200
+                mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
                 mock_post.return_value = mock_response
 
                 result = send_dingding_message(
@@ -165,6 +168,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             long_message = "A" * 1000  # 1000 character message
@@ -183,6 +187,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             message = "Price 🚀 UP! BTC: ¥50,000.00"
@@ -200,6 +205,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             result = send_dingding_message(
@@ -217,6 +223,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             result = send_dingding_message(
@@ -234,6 +241,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             result = send_dingding_message(
@@ -257,6 +265,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             result = send_dingding_message(
@@ -279,6 +288,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             # Mock signature generation
@@ -310,6 +320,7 @@ class TestDingDingNotification:
             # Mock successful response
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.json.return_value = {"errcode": 0, "errmsg": "ok"}
             mock_post.return_value = mock_response
 
             with patch("notifications.dingding.hmac.new") as mock_hmac, patch(

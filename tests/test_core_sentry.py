@@ -170,7 +170,10 @@ class TestPriceSentry:
 
             # Verify that notification was sent
             mock_notifier.send.assert_called_once_with(
-                "Price movement detected", image_bytes=None, image_caption=""
+                "Price movement detected",
+                image_bytes=None,
+                image_caption="",
+                dingding_image_url=None,
             )
 
     def test_default_config_values(self, mock_exchange, mock_notifier):
