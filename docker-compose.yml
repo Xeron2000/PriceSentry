@@ -1,0 +1,35 @@
+services:
+  pricesentry:
+    build: .
+    container_name: pricesentry
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    networks:
+      - pricesentry-network
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: pricesentry-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pricesentry-network
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:
+
+networks:
+  pricesentry-network:
+    driver: bridge

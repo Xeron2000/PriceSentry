@@ -1,0 +1,38 @@
+name: Dependency Analysis
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # 每周日运行
+  push:
+    branches: [ main ]
+    paths:
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run dependency review
+      run: |
+        uv run pip-audit
+
+    - name: Check for outdated dependencies
+      run: |
+        uv pip list --outdated
