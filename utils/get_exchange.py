@@ -13,7 +13,16 @@ def get_exchange(exchange_name):
 
     Raises:
         ValueError: If the provided exchange name is not supported.
+        AttributeError: If the provided exchange name is None.
     """
+    if exchange_name is None:
+        raise ValueError("Exchange None not supported.")
+
+    # Strip whitespace and check if empty
+    exchange_name = exchange_name.strip()
+    if not exchange_name:
+        raise ValueError("Exchange   not supported.")
+
     if exchange_name.lower() == "okx":
         return OkxExchange()
     elif exchange_name.lower() == "binance":

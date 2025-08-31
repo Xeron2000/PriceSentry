@@ -19,15 +19,18 @@ def match_symbols(symbols, exchange):
         List of matched symbols
     """
 
-    with open("config/supported_markets.json", "r") as f:
-        supported_markets = json.load(f)
+    try:
+        with open("config/supported_markets.json", "r") as f:
+            supported_markets = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
 
     if exchange not in supported_markets:
         print(f"Exchange {exchange} not supported.")
         return []
 
     usdt_pattern = re.compile(
-        r"([A-Za-z]+)\d*/USDT:USDT$|(\d*[A-Za-z]+)\s*/\s*USDT:USDT$"
+        r"(\d*[A-Za-z]+)\d*/USDT:USDT$|(\d*[A-Za-z]+)\s*/\s*USDT:USDT$"
     )
 
     matched_symbols = []
@@ -43,7 +46,7 @@ def match_symbols(symbols, exchange):
                     if shortest_match is None or len(base_symbol) < len(shortest_match):
                         shortest_match = base_symbol
                         matched_symbol = market
-        if matched_symbol:
+        if matched_symbol and matched_symbol not in matched_symbols:
             matched_symbols.append(matched_symbol)
 
     return matched_symbols

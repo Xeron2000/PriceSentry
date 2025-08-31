@@ -1,7 +1,7 @@
 import logging
 
 from notifications.dingding import send_dingding_message
-from notifications.telegram import send_telegram_message, send_telegram_photo
+from notifications.telegram import send_telegram_photo
 
 
 def send_notifications(

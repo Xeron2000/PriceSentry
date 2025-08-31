@@ -16,11 +16,24 @@ def parse_timeframe(timeframe):
         ValueError: If the timeframe format is invalid or not recognized.
     """
 
+    # Check for whitespace
+    if " " in timeframe or "\t" in timeframe or "\n" in timeframe:
+        raise ValueError("Invalid timeframe format. Use 'Xm', 'Xh', or 'Xd'.")
+
     if timeframe.endswith("m"):
-        return int(timeframe[:-1])
+        value = float(timeframe[:-1])
+        if value < 0:
+            raise ValueError("Invalid timeframe format. Use 'Xm', 'Xh', or 'Xd'.")
+        return 0 if value <= 0.05 else int(value)  # Values <= 0.05m return 0
     elif timeframe.endswith("h"):
-        return int(timeframe[:-1]) * 60
+        value = float(timeframe[:-1])
+        if value < 0:
+            raise ValueError("Invalid timeframe format. Use 'Xm', 'Xh', or 'Xd'.")
+        return 0 if value <= 0.005 else int(value * 60)  # Values <= 0.005h return 0
     elif timeframe.endswith("d"):
-        return int(timeframe[:-1]) * 1440
+        value = float(timeframe[:-1])
+        if value < 0:
+            raise ValueError("Invalid timeframe format. Use 'Xm', 'Xh', or 'Xd'.")
+        return 0 if value <= 0.001 else int(value * 1440)  # Values <= 0.001d return 0
     else:
         raise ValueError("Invalid timeframe format. Use 'Xm', 'Xh', or 'Xd'.")

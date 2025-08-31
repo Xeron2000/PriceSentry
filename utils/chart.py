@@ -88,7 +88,9 @@ def generate_candlestick_png(
     since_ms = int((time.time() - lookback_minutes * 60) * 1000)
 
     try:
-        ohlcv = ccxt_exchange.fetch_ohlcv(symbol, timeframe, since=since_ms, limit=limit)
+        ohlcv = ccxt_exchange.fetch_ohlcv(
+            symbol, timeframe, since=since_ms, limit=limit
+        )
     except Exception:
         # Retry without since if the exchange rejects it
         ohlcv = ccxt_exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
@@ -131,7 +133,9 @@ def generate_candlestick_png(
 
     fig.update_layout(
         template="plotly_dark" if theme.lower() == "dark" else "plotly_white",
-        title=dict(text=f"{symbol} ({timeframe}) - Recent Price", x=0.01, xanchor="left"),
+        title=dict(
+            text=f"{symbol} ({timeframe}) - Recent Price", x=0.01, xanchor="left"
+        ),
         margin=dict(l=10, r=10, t=40, b=20),
         xaxis=dict(showgrid=False),
         yaxis=dict(showgrid=True, gridcolor="rgba(128,128,128,0.2)"),
@@ -162,8 +166,8 @@ def generate_multi_candlestick_png(
     # Lazy import
     try:
         import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
         import plotly.io as pio  # noqa: F401
+        from plotly.subplots import make_subplots
     except Exception as e:  # pragma: no cover
         raise RuntimeError(
             "Plotly (and kaleido) are required for chart generation. Install with: "

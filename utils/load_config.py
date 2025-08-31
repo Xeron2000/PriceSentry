@@ -31,6 +31,11 @@ def load_config(configPath="config/config.yaml"):
     try:
         with open(configPath, "r") as file:
             config = yaml.safe_load(file)
+
+        # Handle empty file case
+        if config is None:
+            config = {}
+
         required_keys = [
             "exchange",
             "symbolsFilePath",
