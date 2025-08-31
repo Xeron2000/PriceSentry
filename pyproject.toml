@@ -31,7 +31,10 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.11.1",
-    "pytest-asyncio>=0.21.1"
+    "pytest-asyncio>=0.21.1",
+    "pip-audit>=2.6.0",
+    "bandit>=1.7.5",
+    "safety>=3.0.0"
 ]
 
 [tool.ruff]
@@ -42,3 +45,8 @@ select = ["E", "F", "W", "I"]
 
 [tool.setuptools.packages.find]
 include = ["core", "exchanges", "notifications", "utils"]
+
+[dependency-groups]
+dev = [
+    "pip-audit>=2.7.3",
+]
