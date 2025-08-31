@@ -1,64 +1,163 @@
-# Configuration for the exchange and default behavior
-# The name of the exchange to connect to.
-# Possible values: "binance", "okx", "bybit"
-exchange: "okx"  # Example: "binance"
+# PriceSentry 价格监控系统配置文件
+# =====================================
 
-# A list of exchanges to fetch market data from.
-# This is used by the `tools/update_markets.py` script.
+# 基础交易所配置
+# 要连接的交易所名称
+# 可选值: "binance", "okx", "bybit"
+exchange: "okx"  # 示例: "binance"
+
+# 用于获取市场数据的交易所列表
+# `tools/update_markets.py` 脚本会使用此列表
 exchanges:
   - "binance"
   - "okx"
   - "bybit"
 
-# The default timeframe (frequency of data retrieval).
-# Possible values: "1m", "5m", "15m", "1h", "1d".
-defaultTimeframe: "5m"  # Example: "5m", 
+# 默认时间周期（数据获取频率）
+# 可选值: "1m", "5m", "15m", "1h", "1d"
+defaultTimeframe: "5m"  # 示例: "5m"
 
-# The default price change threshold. Only pairs exceeding this value will be notified.
-defaultThreshold: 0.01  # Example: 1
+# 默认价格变化阈值，超过此值的交易对才会触发通知
+defaultThreshold: 0.01  # 示例: 1
 
-# The file path containing trading pair symbols. If empty, pairs will be auto-retrieved.
-symbolsFilePath: "config/symbols.txt"  # Example: "config/symbols.txt"
+# 交易对文件路径，如果为空则自动获取
+symbolsFilePath: "config/symbols.txt"  # 示例: "config/symbols.txt"
 
-# Notification channels and configuration
-# The channels for receiving notifications. Currently supports Telegram and DingDing.
+# 通知渠道配置
+# 当前支持 Telegram 和钉钉
 notificationChannels: 
   - "telegram"
   # - "dingding"
 
-# Telegram bot configuration
-# The token used to connect to the Telegram bot.
+# Telegram 机器人配置
 telegram:
-  token: "YOUR_TELEGRAM_BOT_TOKEN"  # Example: "your_telegram_bot_token"
-  
-  # The Telegram chat ID where notifications will be sent.
-  chatId: "YOUR_CHAT_ID"  # Example: "your_chat_id"
+  token: "YOUR_TELEGRAM_BOT_TOKEN"  # 示例: "你的机器人令牌"
+  chatId: "YOUR_CHAT_ID"  # 示例: "你的聊天ID"
 
-# DingDing robot configuration
-# The DingDing robot webhook URL for sending notifications.
+# 钉钉机器人配置
 dingding:
-  webhook: ""  # Example: "https://oapi.dingtalk.com/robot/send?access_token=your_access_token"
-  
-  # The DingDing robot secret used to generate the signature for secure notifications.
-  secret: ""  # Example: "your_sign_secret"
+  webhook: ""  # 示例: "https://oapi.dingtalk.com/robot/send?access_token=你的访问令牌"
+  secret: ""  # 示例: "你的签名密钥"
 
-# Timezone for notification messages.
-# Default is Asia/Shanghai
-notificationTimezone: "Asia/Shanghai" # Example: "America/New_York"
+# 通知时区配置
+# 默认为亚洲/上海时间
+notificationTimezone: "Asia/Shanghai"  # 示例: "America/New_York"
 
-# Log level for the application.
-# Possible values: "DEBUG", "INFO", "WARNING", "ERROR"
-logLevel: "INFO" # Default: "INFO"
+# 应用程序日志级别
+# 可选值: "DEBUG", "INFO", "WARNING", "ERROR"
+logLevel: "INFO"  # 默认: "INFO"
 
-# Chart attachment (optional)
-# When enabled, Telegram alerts will include a recent price chart image
+# =====================================
+# 高级配置选项
+# =====================================
+
+# 缓存系统配置
+cache:
+  enabled: true                    # 启用缓存系统
+  max_size: 1000                   # 最大缓存条目数
+  default_ttl: 300                 # 默认TTL（秒）
+  strategy: "lru"                  # 缓存策略: "lru", "lfu", "fifo", "ttl"
+  cleanup_interval: 60             # 清理间隔（秒）
+
+# 错误处理配置
+error_handling:
+  max_retries: 3                   # 最大重试次数
+  base_delay: 1.0                  # 基础延迟（秒）
+  max_delay: 60.0                  # 最大延迟（秒）
+  circuit_breaker_threshold: 5     # 熔断器阈值（连续失败次数）
+  circuit_breaker_timeout: 60      # 熔断器超时（秒）
+  retry_on_errors:                # 需要重试的错误类型
+    - "ConnectionError"
+    - "TimeoutError"
+    - "RateLimitError"
+
+# 性能监控配置
+performance_monitoring:
+  enabled: true                    # 启用性能监控
+  collect_interval: 60             # 数据收集间隔（秒）
+  log_performance: true            # 记录性能日志
+  alert_thresholds:                # 告警阈值
+    cpu: 80.0                      # CPU使用率告警阈值(%)
+    memory: 80.0                   # 内存使用率告警阈值(%)
+    disk: 90.0                     # 磁盘使用率告警阈值(%)
+    response_time: 5.0             # 响应时间告警阈值(秒)
+  metrics_retention_days: 7       # 指标保留天数
+
+# 图表附件配置（可选）
+# 启用后，Telegram 提醒将包含最近的价格图表图片
 attachChart: true
 
-# Chart rendering settings
-chartTimeframe: "1m"           # Candlestick timeframe for the chart
-chartLookbackMinutes: 60        # How many minutes of history to include
-chartTheme: "dark"              # "dark" | "light"
-chartIncludeMA: [7, 25]         # Moving average windows; empty list to disable
-chartImageWidth: 1600           # Image width (px) for composite chart
-chartImageHeight: 1200          # Image height (px)
-chartImageScale: 2              # Pixel ratio multiplier (2 = Retina-like)
+# 图表渲染设置
+chartTimeframe: "1m"           # K线图时间周期
+chartLookbackMinutes: 60        # 包含的历史数据分钟数
+chartTheme: "dark"              # 主题: "dark" | "light"
+chartIncludeMA: [7, 25]         # 移动平均线窗口；空列表则禁用
+chartImageWidth: 1600           # 复合图表图片宽度（像素）
+chartImageHeight: 1200          # 图片高度（像素）
+chartImageScale: 2              # 像素比例倍数（2 = Retina 级别）
+chartBackgroundColor: "#1a1a1a"  # 图表背景色
+chartGridColor: "#333333"       # 网格线颜色
+chartUpColor: "#00ff88"          # 上涨颜色
+chartDownColor: "#ff3366"        # 下跌颜色
+
+# 数据获取配置
+data_fetch:
+  timeout: 30                    # API请求超时时间（秒）
+  batch_size: 50                 # 批量获取数量
+  rate_limit_delay: 0.1          # 速率限制延迟（秒）
+  enable_websocket: true         # 启用WebSocket实时数据
+
+# 监控配置
+monitoring:
+  check_interval: 60             # 监控检查间隔（秒）
+  top_movers_count: 10           # 显示最大变化交易对数量
+  min_volume_threshold: 1000000  # 最小交易量阈值
+  enable_correlation: true       # 启用相关性分析
+
+# 通知配置
+notification:
+  batch_size: 5                  # 批量通知大小
+  batch_interval: 30             # 批量通知间隔（秒）
+  retry_attempts: 3              # 通知重试次数
+  format: "markdown"             # 通知格式: "markdown" | "text"
+  include_metrics: true          # 包含性能指标
+
+# 日志配置
+logging:
+  level: "INFO"                  # 日志级别: "DEBUG", "INFO", "WARNING", "ERROR"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"  # 日志格式
+  file: "logs/app.log"           # 日志文件路径
+  max_file_size: "10MB"          # 最大文件大小
+  backup_count: 5                # 备份文件数量
+  console_output: true           # 控制台输出
+
+# 数据库配置（可选）
+database:
+  enabled: false                 # 启用数据库存储
+  type: "sqlite"                 # 数据库类型: "sqlite", "postgresql", "mysql"
+  connection_string: ""          # 数据库连接字符串
+  table_prefix: "pricesentry_"    # 表名前缀
+
+# 安全配置
+security:
+  enable_encryption: false       # 启用数据加密
+  encryption_key: ""             # 加密密钥
+  sanitize_logs: true            # 日志脱敏
+  allowed_hosts: []              # 允许的主机列表
+
+# API限制配置
+api_limits:
+  binance:
+    requests_per_minute: 1200    # 币安每分钟请求数限制
+    requests_per_second: 10     # 币安每秒请求数限制
+  okx:
+    requests_per_second: 20      # OKX每秒请求数限制
+  bybit:
+    requests_per_second: 100     # Bybit每秒请求数限制
+
+# 开发者配置（生产环境请禁用）
+development:
+  debug_mode: false              # 调试模式
+  enable_profiler: false         # 启用性能分析器
+  mock_api: false               # 模拟API调用
+  test_mode: false              # 测试模式

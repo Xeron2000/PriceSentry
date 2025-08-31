@@ -1,12 +1,83 @@
+# 环境和虚拟环境
 *.env
 *venv/
+.venv/
+
+# Python缓存和编译文件
 __pycache__/
-config/config.yaml
-*.log*
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
+.installed.cfg
+*.egg
+
+# 测试相关
+.coverage
+coverage.xml
+*.cover
+htmlcov/
+.pytest_cache/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# 日志文件
+*.log*
+logs/
+
+# 备份文件
+*.backup
+*.bak
+*.swp
+*.swo
+
+# AI和工具相关文件
 .spec-workflow/
 .crush/
 .ruff_cache/
 .claude/
 .bmad-core/
 *CLAUDE.md
+
+# IDE和编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 项目特定配置
+config/config.yaml
+config/config.simple.yaml
+
+# 临时文件
+*.tmp
+*.temp
+temp/
+tmp/
+monitoring_report.json
