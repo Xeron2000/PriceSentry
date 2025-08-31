@@ -48,5 +48,9 @@ include = ["core", "exchanges", "notifications", "utils"]
 
 [dependency-groups]
 dev = [
+    "ruff>=0.6.0",
+    "bandit>=1.7.5",
+    "safety>=3.0.0",
     "pip-audit>=2.7.3",
+    "typer<0.13.0",
 ]

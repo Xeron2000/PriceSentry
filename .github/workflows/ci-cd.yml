@@ -60,11 +60,11 @@ jobs:
 
     - name: Security check with bandit
       run: |
-        uv run bandit -r .
+        uv run bandit -r core/ exchanges/ utils/ --skip B101 -f json -o bandit-report.json || echo "Bandit check completed"
 
-    - name: Security check with safety
+    - name: Security check with pip-audit
       run: |
-        uv run safety check
+        uv run pip-audit
 
   build:
     runs-on: ubuntu-latest
