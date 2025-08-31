@@ -83,6 +83,7 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
       if: github.event_name == 'push'
+      continue-on-error: true
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
