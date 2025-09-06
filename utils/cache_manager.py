@@ -524,6 +524,136 @@ class PriceCacheManager(CacheManager):
         return self.cleanup_expired()
 
 
+class AlertHistoryManager:
+    """告警历史管理器 - 专门用于管理和存储告警历史记录"""
+
+    def __init__(self, max_alerts=1000):
+        """初始化告警历史管理器
+
+        Args:
+            max_alerts: 最大告警数量，超过后会自动清理最旧的告警
+        """
+        self.max_alerts = max_alerts
+        self.alerts = []
+        self.lock = threading.Lock()
+        self.logger = logging.getLogger(__name__)
+
+    def add_alert(self, alert_data: Dict[str, Any]) -> str:
+        """添加告警到历史记录
+
+        Args:
+            alert_data: 告警数据字典
+
+        Returns:
+            告警ID
+        """
+        with self.lock:
+            # 生成告警ID
+            alert_id = f"alert_{int(time.time() * 1000)}_{len(self.alerts)}"
+
+            # 创建告警记录
+            alert_entry = {
+                "id": alert_id,
+                "timestamp": time.time(),
+                "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                **alert_data,
+            }
+
+            # 添加到列表
+            self.alerts.append(alert_entry)
+
+            # 清理超过最大数量的告警
+            if len(self.alerts) > self.max_alerts:
+                self.alerts = self.alerts[-self.max_alerts :]
+
+            self.logger.debug(
+                f"Added alert: {alert_data.get('message', 'Unknown')} "
+                f"with ID: {alert_id}"
+            )
+            return alert_id
+
+    def get_recent_alerts(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """获取最近的告警
+
+        Args:
+            limit: 返回的告警数量
+
+        Returns:
+            告警列表
+        """
+        with self.lock:
+            return self.alerts[-limit:] if limit > 0 else []
+
+    def get_alerts_history(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """获取告警历史
+
+        Args:
+            limit: 返回的告警数量
+
+        Returns:
+            告警列表
+        """
+        with self.lock:
+            # 返回最新的告警，按时间倒序
+            alerts = self.alerts.copy()
+            alerts.reverse()
+            return alerts[:limit] if limit > 0 else alerts
+
+    def clear_alerts(self):
+        """清空所有告警"""
+        with self.lock:
+            self.alerts.clear()
+            self.logger.info("All alerts cleared")
+
+    def get_alert_by_id(self, alert_id: str) -> Optional[Dict[str, Any]]:
+        """根据ID获取告警
+
+        Args:
+            alert_id: 告警ID
+
+        Returns:
+            告警数据或None
+        """
+        with self.lock:
+            for alert in self.alerts:
+                if alert.get("id") == alert_id:
+                    return alert
+            return None
+
+    def get_stats(self) -> Dict[str, Any]:
+        """获取告警统计信息
+
+        Returns:
+            统计信息字典
+        """
+        with self.lock:
+            now = time.time()
+            last_hour = now - 3600
+            last_24h = now - 86400
+
+            alerts_last_hour = len(
+                [a for a in self.alerts if a.get("timestamp", 0) > last_hour]
+            )
+            alerts_last_24h = len(
+                [a for a in self.alerts if a.get("timestamp", 0) > last_24h]
+            )
+
+            severity_counts = {}
+            for alert in self.alerts:
+                severity = alert.get("severity", "unknown")
+                severity_counts[severity] = severity_counts.get(severity, 0) + 1
+
+            return {
+                "total_alerts": len(self.alerts),
+                "alerts_last_hour": alerts_last_hour,
+                "alerts_last_24h": alerts_last_24h,
+                "severity_distribution": severity_counts,
+                "max_alerts": self.max_alerts,
+                "usage_percent": round(len(self.alerts) / self.max_alerts * 100, 2),
+            }
+
+
 # Global cache instances
 default_cache = CacheManager(max_size=1000, default_ttl=300.0)
 price_cache = PriceCacheManager(max_size=1000, default_ttl=300.0)
+alert_cache = AlertHistoryManager(max_alerts=1000)

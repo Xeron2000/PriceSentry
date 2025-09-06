@@ -212,7 +212,7 @@ class PerformanceMonitor:
 
             # Network connections
             try:
-                network_connections = len(self.process.connections())
+                network_connections = len(self.process.net_connections())
             except Exception:
                 network_connections = 0
 

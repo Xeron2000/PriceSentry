@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from exchanges.base import BaseExchange
 
 
-class TestExchangeImpl(BaseExchange):
+class _TestExchangeImpl(BaseExchange):
     """Test implementation of BaseExchange for testing purposes."""
 
     def __init__(self, exchange_name):
@@ -42,7 +42,7 @@ class TestBaseExchange:
             mock_exchange = Mock()
             mock_binance.return_value = mock_exchange
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
 
             assert exchange.exchange_name == "binance"
             assert exchange.exchange == mock_exchange
@@ -60,14 +60,14 @@ class TestBaseExchange:
             with pytest.raises(
                 ValueError, match="Exchange invalid not supported by ccxt"
             ):
-                TestExchangeImpl("invalid")
+                _TestExchangeImpl("invalid")
 
     def test_init_with_price_cache(self):
         """Test that price cache is properly initialized."""
         with patch("exchanges.base.ccxt.exchanges", ["binance"]), patch(
             "exchanges.base.ccxt.binance"
         ):
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
 
             # Verify price cache exists
             assert hasattr(exchange, "priceCache")
@@ -88,7 +88,7 @@ class TestBaseExchange:
             # Mock the global price_cache to return cached data
             mock_price_cache.get_prices.return_value = {"BTC/USDT": 50000.0}
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = False
 
             result = await exchange.get_current_prices(["BTC/USDT", "ETH/USDT"])
@@ -121,7 +121,7 @@ class TestBaseExchange:
                 "symbol": "BTC/USDT",
             }
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = False
 
             result = await exchange.get_current_prices(["BTC/USDT"])
@@ -138,7 +138,7 @@ class TestBaseExchange:
         with patch("exchanges.base.ccxt.exchanges", ["binance"]), patch(
             "exchanges.base.ccxt.binance"
         ):
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = True
             exchange.last_prices = {"BTC/USDT": 50000.0}
 
@@ -161,7 +161,7 @@ class TestBaseExchange:
                 "symbol": "ETH/USDT",
             }
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = True
             exchange.last_prices = {"BTC/USDT": 50000.0}  # From WebSocket
 
@@ -183,7 +183,7 @@ class TestBaseExchange:
                 [1640995140000, 49900.0, 50100.0, 49800.0, 50000.0, 1000.0]
             ]
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = False
 
             result = exchange.get_price_minutes_ago(["BTC/USDT"], 1)
@@ -199,7 +199,7 @@ class TestBaseExchange:
             mock_exchange = Mock()
             mock_binance.return_value = mock_exchange
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = True
 
             # Pre-populate historical data
@@ -225,7 +225,7 @@ class TestBaseExchange:
                 [1640995140000, 49900.0, 50100.0, 49800.0, 50000.0, 1000.0]
             ]
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = True
 
             # Pre-populate old historical data (more than 10 minutes old)
@@ -245,7 +245,7 @@ class TestBaseExchange:
             mock_exchange = Mock()
             mock_binance.return_value = mock_exchange
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.running = True
 
             # Create a mock thread
@@ -269,7 +269,7 @@ class TestBaseExchange:
             mock_exchange = Mock()
             mock_binance.return_value = mock_exchange
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = False
             exchange.running = True
             exchange.last_prices = {"BTC/USDT": 50000.0}
@@ -291,7 +291,7 @@ class TestBaseExchange:
             mock_exchange = Mock()
             mock_binance.return_value = mock_exchange
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = False
             exchange.running = True
             exchange.last_prices = {}  # No symbols
@@ -308,7 +308,7 @@ class TestBaseExchange:
         with patch("exchanges.base.ccxt.exchanges", ["binance"]), patch(
             "exchanges.base.ccxt.binance"
         ):
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = True
             exchange.running = True
 
@@ -324,7 +324,7 @@ class TestBaseExchange:
         ), patch("exchanges.base.threading.Thread") as mock_thread, patch(
             "exchanges.base.time.sleep"
         ), patch("exchanges.base.logging"):
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
 
             # Mock thread creation
             mock_thread_instance = Mock()
@@ -351,7 +351,7 @@ class TestBaseExchange:
         ), patch("exchanges.base.logging"), patch(
             "exchanges.base.time.time", side_effect=[0, 5, 10, 11, 15]
         ):  # Multiple calls for timeout
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
 
             # Mock thread creation
             mock_thread_instance = Mock()
@@ -368,7 +368,7 @@ class TestBaseExchange:
         with patch("exchanges.base.ccxt.exchanges", ["binance"]), patch(
             "exchanges.base.ccxt.binance"
         ), patch("exchanges.base.logging"):
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.running = True
 
             # Create a mock thread and verify join is called
@@ -400,7 +400,7 @@ class TestBaseExchange:
             # Mock API error
             mock_exchange.fetch_ticker.side_effect = Exception("API Error")
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = False
 
             result = await exchange.get_current_prices(["BTC/USDT"])
@@ -420,7 +420,7 @@ class TestBaseExchange:
             # Mock API error
             mock_exchange.fetch_ohlcv.side_effect = Exception("API Error")
 
-            exchange = TestExchangeImpl("binance")
+            exchange = _TestExchangeImpl("binance")
             exchange.ws_connected = False
 
             result = exchange.get_price_minutes_ago(["BTC/USDT"], 1)

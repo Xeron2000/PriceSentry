@@ -20,6 +20,11 @@ dependencies = [
     "pytest-cov>=5.0.0",
     "psutil>=7.0.0",
     "pytest-asyncio>=0.24.0",
+    "fastapi>=0.104.1",
+    "uvicorn[standard]>=0.24.0",
+    "python-multipart>=0.0.6",
+    "ruff>=0.12.8",
+    "websocket-client>=1.8.0",
 ]
 
 [project.urls]

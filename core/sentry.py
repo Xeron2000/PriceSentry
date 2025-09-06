@@ -4,7 +4,14 @@ import asyncio
 import logging
 import time
 
+from core.api import (
+    set_exchange_instance,
+    set_sentry_instance,
+    start_api_server,
+    update_api_data,
+)
 from core.notifier import Notifier
+from utils.cache_manager import price_cache
 from utils.chart import generate_multi_candlestick_png
 from utils.config_validator import config_validator
 from utils.error_handler import ErrorSeverity, error_handler
@@ -77,6 +84,19 @@ class PriceSentry:
 
             self.threshold = self.config.get("defaultThreshold", 1)
 
+            # 启动API服务器
+            try:
+                self.api_thread = start_api_server()
+                logging.info("API server started successfully")
+
+                # 设置API数据存储的实例引用
+                set_sentry_instance(self)
+                set_exchange_instance(self.exchange)
+
+            except Exception as e:
+                logging.error(f"Failed to start API server: {e}")
+                # API服务器启动失败不应影响主要功能
+
             logging.info("PriceSentry initialized successfully")
 
         except Exception as e:
@@ -141,6 +161,47 @@ class PriceSentry:
                                 "Detected price movements exceeding threshold, "
                                 f"message content: {message}"
                             )
+
+                            # 更新API数据 - 发送告警信息
+                            try:
+                                alert_data = {
+                                    "message": message,
+                                    "severity": "warning",
+                                    "top_movers": top_movers_sorted,
+                                    "threshold": self.threshold,
+                                    "minutes": self.minutes,
+                                }
+
+                                # 为每个top mover创建单独的告警
+                                for symbol, change_percent in top_movers_sorted[
+                                    :5
+                                ]:  # 前5个
+                                    price = self.exchange.last_prices.get(symbol, 0)
+                                    individual_alert = {
+                                        "symbol": symbol,
+                                        "message": (
+                                            f"{symbol} 价格变动 {change_percent:.2f}%"
+                                        ),
+                                        "severity": "warning"
+                                        if abs(change_percent) > 5
+                                        else "info",
+                                        "price": price,
+                                        "change": change_percent,
+                                        "threshold": self.threshold,
+                                        "minutes": self.minutes,
+                                    }
+                                    update_api_data(
+                                        alerts=individual_alert, sentry_instance=self
+                                    )
+
+                                # 同时更新整体告警
+                                update_api_data(alerts=alert_data, sentry_instance=self)
+
+                                logging.debug("API data updated with alert information")
+                            except Exception as e:
+                                logging.error(
+                                    f"Failed to update API data with alerts: {e}"
+                                )
                             # Build a composite chart image for top 6 movers and
                             # send only the image via Telegram
                             attach_chart = self.config.get("attachChart", False)
@@ -237,6 +298,20 @@ class PriceSentry:
                             "Number of symbols with cached prices: "
                             f"{len(self.exchange.last_prices)}"
                         )
+
+                        # 定期更新API价格数据
+                        try:
+                            update_api_data(
+                                prices=self.exchange.last_prices.copy(),
+                                stats={
+                                    "cache": price_cache.get_stats(),
+                                    "performance": performance_monitor.get_stats(),
+                                },
+                                sentry_instance=self,
+                            )
+                            logging.debug("API price data updated")
+                        except Exception as e:
+                            logging.error(f"Failed to update API price data: {e}")
 
                 await asyncio.sleep(1)
 
