@@ -4,6 +4,7 @@
 """
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -70,7 +71,7 @@ def start_pricesentry():
     print("🚀 启动PriceSentry服务...")
 
     # 激活虚拟环境并启动服务
-    cmd = [f"{os.getcwd()}/.venv/bin/python", "main.py"]
+    cmd = [f"{os.getcwd()}/.venv/bin/python", "-m", "app.runner"]
 
     try:
         process = subprocess.Popen(

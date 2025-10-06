@@ -195,17 +195,17 @@ def main():
         print("🎉 所有检查通过！配置文件已就绪。")
         show_config_summary()
         print("\n🚀 启动应用:")
-        print("   python3 main.py")
+        print("   python3 -m app.runner")
         print("\n📊 查看配置:")
         print("   cat config/config.yaml")
         print("\n🔧 生成配置:")
-        print("   python3 generate_config.py")
+        print("   python3 -m app.config_generator")
     else:
         print("❌ 检查失败，请修复上述问题后重试。")
         print("\n💡 帮助:")
         print("   - 查看配置文档: docs/CONFIG.md")
         print("   - 查看示例配置: config/config.yaml.example")
-        print("   - 使用配置生成器: python3 generate_config.py")
+        print("   - 使用配置生成器: python3 -m app.config_generator")
         print("   - 提交问题: https://github.com/Xeron2000/PriceSentry/issues")
 
     return 0 if all_passed else 1

@@ -5,6 +5,9 @@
 
 set -e
 
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+export PYTHONPATH="$ROOT_DIR/src:${PYTHONPATH:-}"
+
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -70,6 +73,15 @@ check_dependencies() {
     print_success "依赖检查通过"
 }
 
+
+# 确保项目包已安装
+ensure_packages_installed() {
+    if ! uv pip show pricesentry >/dev/null 2>&1; then
+        print_info "首次安装项目包..."
+        uv pip install -e .
+    fi
+}
+
 # 安装依赖
 install_dependencies() {
     print_info "安装依赖..."
@@ -82,18 +94,22 @@ check_config() {
     print_info "检查配置文件..."
     
     if [[ ! -f "config/config.yaml" ]]; then
-        print_warning "配置文件不存在，使用简单配置"
-        cp config/config.simple.yaml config/config.yaml
-        print_info "已创建简单配置文件: config/config.yaml"
-        print_warning "请编辑配置文件，填入你的API密钥"
+        print_warning "配置文件不存在，已生成示例配置"
+        cp config/config.yaml.example config/config.yaml
+        print_info "示例文件路径: config/config.yaml"
+        print_warning "请编辑该文件后重新运行脚本"
+        return 1
     fi
-    
-    # 运行配置检查
-    if python3 simple_check.py; then
+
+    ensure_packages_installed
+
+    if uv run python -m app.config_check; then
         print_success "配置文件检查通过"
-    else
-        print_warning "配置文件有问题，请检查"
+        return 0
     fi
+
+    print_warning "配置文件有问题，请根据提示修复"
+    return 1
 }
 
 # 创建必要的目录
@@ -116,8 +132,9 @@ start_app() {
         exit 1
     fi
     
-    # 启动应用
-    python3 main.py
+    ensure_packages_installed
+
+    uv run python -m app.runner
 }
 
 # 显示帮助信息
@@ -152,7 +169,9 @@ main() {
             check_python
             check_venv
             check_dependencies
-            check_config
+            if ! check_config; then
+                exit 1
+            fi
             ;;
         -i|--install)
             check_python
@@ -166,18 +185,18 @@ main() {
             check_dependencies
             install_dependencies
             create_directories
-            check_config
+            if ! check_config; then
+                exit 1
+            fi
             print_success "设置完成！"
             ;;
         -d|--dev)
-            export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-            export LOG_LEVEL="DEBUG"
+                        export LOG_LEVEL="DEBUG"
             print_info "开发模式启动"
             start_app
             ;;
         -p|--prod)
-            export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-            export LOG_LEVEL="INFO"
+                        export LOG_LEVEL="INFO"
             print_info "生产模式启动"
             start_app
             ;;
@@ -186,7 +205,9 @@ main() {
             check_python
             check_dependencies
             create_directories
-            check_config
+            if ! check_config; then
+                exit 1
+            fi
             start_app
             ;;
         *)

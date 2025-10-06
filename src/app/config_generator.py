@@ -168,7 +168,7 @@ def main():
             print("\n🎉 配置文件生成完成！")
             print("\n📝 下一步:")
             print("   1. 运行配置检查: python check_config.py")
-            print("   2. 启动应用: python main.py")
+            print("   2. 启动应用: python -m app.runner")
             print("   3. 查看文档: docs/CONFIG.md")
         else:
             print("\n❌ 配置未保存")

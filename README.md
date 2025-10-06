@@ -37,27 +37,42 @@
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
 uv sync
-uv run python main.py
+uv run python -m app.runner
 ```
 
 ## 配置说明
 
 1. 复制 `config/config.yaml.example` 为 `config/config.yaml`
 2. 设置目标交易所、通知渠道与阈值
-3. 填写 Telegram 或钉钉机器人凭据
+3. 填写 Telegram 机器人凭据
 
-更多选项可参考示例文件注释，或运行 `python tools/update_markets.py` 更新支持的市场列表。
+更多选项可参考示例文件注释，或运行 `uv run python tools/update_markets.py` 更新支持的市场列表。
 
 
 ## 常用命令
 
 ```bash
-python main.py                 # 启动监控
-pytest                         # 运行测试
-python tools/update_markets.py # 刷新交易对数据
+uv run python -m app.runner           # 启动监控
+uv run pytest                          # 运行测试
+uv run python tools/update_markets.py  # 刷新交易对数据
 ```
 
 
+
+## 可用脚本
+
+| 功能 | 命令 |
+| --- | --- |
+| 启动监控 | `uv run python -m app.runner` |
+| 简化配置检查 | `uv run python -m app.config_check` |
+| 交互配置生成 | `uv run python -m app.config_generator` |
+| 监控仪表板 | `uv run python -m app.dashboard` |
+| 生成监控报告 | `uv run python -m app.monitoring_report` |
+| 更新交易对列表 | `uv run python tools/update_markets.py` |
+| 启动快速测试 | `uv run python tests/quick_test.py` |
+| 运行 API 端点手测 | `uv run python tools/manual_tests/api_endpoints.py` |
+
+启动脚本 `./start.sh` 会自动调用上述命令组合完成环境检测与运行。
 ## 项目结构
 
 ```

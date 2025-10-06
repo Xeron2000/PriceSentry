@@ -23,7 +23,7 @@ class TestRunner:
 
         try:
             # 启动服务
-            cmd = [self.venv_python, "main.py"]
+            cmd = [self.venv_python, "-m", "app.runner"]
             self.pricesentry_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
