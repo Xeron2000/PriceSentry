@@ -123,8 +123,7 @@ class ConfigValidator:
             data_type=list,
             custom_validator=self._validate_notification_channels,
             error_message=(
-                "Notification channels must be a list containing telegram and/or"
-                " dingding"
+                "Notification channels must list supported channels (telegram)"
             ),
         )
 
@@ -145,23 +144,6 @@ class ConfigValidator:
             data_type=str,
             pattern=r"^-?\d+$",
             error_message="Telegram chat ID must be a numeric string",
-        )
-
-        # DingDing configuration
-        self.rules["dingding.webhook"] = ValidationRule(
-            key_path="dingding.webhook",
-            required=False,
-            data_type=str,
-            pattern=r"^https://oapi\.dingtalk\.com/robot/send\?access_token=.+$",
-            error_message="DingDing webhook must be a valid DingTalk webhook URL",
-        )
-
-        self.rules["dingding.secret"] = ValidationRule(
-            key_path="dingding.secret",
-            required=False,
-            data_type=str,
-            min_length=1,
-            error_message="DingDing secret cannot be empty if provided",
         )
 
         # Timezone configuration
@@ -325,7 +307,7 @@ class ConfigValidator:
         if not isinstance(value, list):
             return False, "Notification channels must be a list"
 
-        valid_channels = ["telegram", "dingding"]
+        valid_channels = ["telegram"]
         for channel in value:
             if channel not in valid_channels:
                 return (
@@ -529,15 +511,6 @@ class ConfigValidator:
             if not telegram_chat_id:
                 result.add_error(
                     "Telegram notifications enabled but chat ID is missing"
-                )
-
-        # Check if DingDing is enabled but configuration is missing
-        if notification_channels and "dingding" in notification_channels:
-            dingding_webhook = self.get_value_by_path(config, "dingding.webhook")
-
-            if not dingding_webhook:
-                result.add_error(
-                    "DingDing notifications enabled but webhook is missing"
                 )
 
         # Check if chart is enabled but configuration is invalid

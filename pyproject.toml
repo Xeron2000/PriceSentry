@@ -49,8 +49,12 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
 [tool.setuptools.packages.find]
-include = ["core", "exchanges", "notifications", "utils"]
+where = ["src"]
+include = ["core", "exchanges", "notifications", "utils", "app"]
 
 [dependency-groups]
 dev = [

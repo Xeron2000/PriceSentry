@@ -4,11 +4,21 @@
 """
 
 import json
-import os
 import subprocess
+import sys
 import time
+from pathlib import Path
 
 import requests
+
+# Add project root and src to path so imports work when run manually
+CURRENT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = CURRENT_DIR.parent.parent
+SRC_DIR = ROOT_DIR / 'src'
+for candidate in (SRC_DIR, ROOT_DIR):
+    candidate_str = str(candidate)
+    if candidate_str not in sys.path:
+        sys.path.insert(0, candidate_str)
 
 
 def test_api_endpoints():

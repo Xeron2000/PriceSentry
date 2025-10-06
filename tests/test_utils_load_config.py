@@ -2,15 +2,10 @@
 Tests for utils/load_config.py - Configuration loading functionality.
 """
 
-import os
-import sys
 from unittest.mock import mock_open, patch
 
 import pytest
 import yaml
-
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.load_config import load_config
 
@@ -133,7 +128,7 @@ class TestLoadConfig:
             "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "15m",
             "defaultThreshold": 2.5,
-            "notificationChannels": ["telegram", "dingding"],
+            "notificationChannels": ["telegram"],
             "notificationTimezone": "UTC",
             "enableFeature": True,
             "maxRetries": 3,

@@ -1,21 +1,21 @@
+"""Compatibility wrapper for the main PriceSentry runner."""
+
+from pathlib import Path
 import asyncio
-import logging
-import traceback
+import sys
 
-from core.sentry import PriceSentry
-from utils.setup_logging import setup_logging
+ROOT_DIR = Path(__file__).resolve().parent
+SRC_DIR = ROOT_DIR / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from app.runner import main as _run_main
 
 
-async def main():
-    try:
-        sentry = PriceSentry()
-        log_level = sentry.config.get("logLevel", "INFO")
-        setup_logging(log_level)
-        await sentry.run()
-    except Exception as e:
-        logging.error(f"An error occurred in main: {e}")
-        traceback.print_exc()
+def main() -> None:
+    """Entry point used by CLI wrappers."""
+    asyncio.run(_run_main())
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

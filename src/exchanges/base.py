@@ -51,6 +51,10 @@ class BaseExchange(ABC):
             )
             raise
 
+    def _get_ohlcv_params(self, symbol):
+        """Parameters forwarded to fetch_ohlcv for historical data."""
+        return {}
+
     @abstractmethod
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
@@ -279,7 +283,7 @@ class BaseExchange(ABC):
                         (time.time() - minutes * 60) * 1000
                     )  # Convert to milliseconds
                     ohlcv = self.exchange.fetch_ohlcv(
-                        symbol, "1m", since=since, limit=1
+                        symbol, "1m", since=since, limit=1, params=self._get_ohlcv_params(symbol)
                     )
 
                     if ohlcv and len(ohlcv) > 0:
@@ -311,7 +315,7 @@ class BaseExchange(ABC):
                             (time.time() - minutes * 60) * 1000
                         )  # Convert to milliseconds
                         ohlcv = self.exchange.fetch_ohlcv(
-                            symbol, "1m", since=since, limit=1
+                            symbol, "1m", since=since, limit=1, params=self._get_ohlcv_params(symbol)
                         )
 
                         if ohlcv and len(ohlcv) > 0:
@@ -329,7 +333,7 @@ class BaseExchange(ABC):
                         (time.time() - minutes * 60) * 1000
                     )  # Convert to milliseconds
                     ohlcv = self.exchange.fetch_ohlcv(
-                        symbol, "1m", since=since, limit=1
+                        symbol, "1m", since=since, limit=1, params=self._get_ohlcv_params(symbol)
                     )
 
                     if ohlcv and len(ohlcv) > 0:

@@ -3,13 +3,8 @@ Tests for utils/match_symbols.py - Symbol matching functionality.
 """
 
 import json
-import os
 import re
-import sys
 from unittest.mock import mock_open, patch
-
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.match_symbols import match_symbols
 

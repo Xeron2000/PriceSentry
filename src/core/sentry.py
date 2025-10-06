@@ -255,8 +255,6 @@ class PriceSentry:
                                 message,
                                 image_bytes=image_bytes,
                                 image_caption=image_caption,
-                                # 钉钉不支持大图片，只发送文本消息
-                                dingding_image_url=None,
                             )
                         else:
                             logging.info(

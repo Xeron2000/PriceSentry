@@ -11,7 +11,29 @@ from .base import BaseExchange
 class OkxExchange(BaseExchange):
     def __init__(self):
         super().__init__("okx")
-        self.exchange.options["defaultType"] = "swap"
+        self.exchange.options.update(
+            {
+                "defaultType": "swap",
+                "defaultInstType": "SWAP",
+                "defaultMarket": "swap",
+                "instType": "SWAP",
+            }
+        )
+        try:
+            self.exchange.load_markets(reload=True, params={"instType": "SWAP"})
+        except Exception as exc:
+            logging.debug(f"Failed to preload OKX swap markets: {exc}")
+
+    def _get_ohlcv_params(self, symbol):
+        """Ensure only swap markets are requested for historical data."""
+        params = {"instType": "SWAP"}
+        try:
+            base, remainder = symbol.split("/")
+            quote = remainder.split(":")[0]
+            params["instId"] = f"{base}-{quote}-SWAP"
+        except ValueError:
+            pass
+        return params
 
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""

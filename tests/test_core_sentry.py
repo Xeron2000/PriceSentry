@@ -2,14 +2,9 @@
 Tests for core/sentry.py - PriceSentry main controller.
 """
 
-import os
-import sys
 from unittest.mock import Mock, patch
 
 import pytest
-
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.sentry import PriceSentry
 
@@ -69,9 +64,6 @@ class TestPriceSentry:
             "telegram": {
                 "token": "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk",
                 "chatId": "123456789",
-            },
-            "dingding": {
-                "webhook": "https://oapi.dingtalk.com/robot/send?access_token=test_token"
             },
         }
 
@@ -173,7 +165,6 @@ class TestPriceSentry:
                 "Price movement detected",
                 image_bytes=None,
                 image_caption="",
-                dingding_image_url=None,
             )
 
     def test_default_config_values(self, mock_exchange, mock_notifier):

@@ -2,14 +2,9 @@
 Tests for exchanges/base.py - Base exchange functionality.
 """
 
-import os
-import sys
 from unittest.mock import Mock, patch
 
 import pytest
-
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from exchanges.base import BaseExchange
 

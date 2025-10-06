@@ -151,24 +151,6 @@ class TestConfigValidator:
         assert not result.is_valid
         assert any("telegram" in str(error).lower() for error in result.errors)
 
-    def test_dingding_configuration_missing(self):
-        """
-        Test validation warns when DingDing is enabled but configuration is missing.
-        """
-        config = {
-            "exchange": "binance",
-            "exchanges": ["binance", "okx"],
-            "defaultTimeframe": "5m",
-            "defaultThreshold": 1.0,
-            "symbolsFilePath": "config/symbols.txt",
-            "notificationChannels": ["dingding"],
-            # Missing dingding configuration
-        }
-
-        result = config_validator.validate_config(config)
-        assert not result.is_valid
-        assert any("dingding" in str(error).lower() for error in result.errors)
-
     def test_invalid_chart_dimensions(self):
         """Test validation fails with invalid chart dimensions."""
         config = {

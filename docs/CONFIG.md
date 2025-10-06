@@ -55,17 +55,11 @@ symbolsFilePath: "config/symbols.txt"
 # 通知渠道
 notificationChannels: 
   - "telegram"
-  # - "dingding"
 
 # Telegram配置
 telegram:
   token: "YOUR_TELEGRAM_BOT_TOKEN"
   chatId: "YOUR_CHAT_ID"
-
-# 钉钉配置
-dingding:
-  webhook: "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN"
-  secret: "YOUR_SECRET"
 ```
 
 ## 高级配置
@@ -306,13 +300,10 @@ exchanges: ["binance", "okx", "bybit"]
 defaultTimeframe: "5m"
 defaultThreshold: 0.01
 symbolsFilePath: "config/symbols.txt"
-notificationChannels: ["telegram", "dingding"]
+notificationChannels: ["telegram"]
 telegram:
   token: "YOUR_TOKEN"
   chatId: "YOUR_CHAT_ID"
-dingding:
-  webhook: "YOUR_WEBHOOK"
-  secret: "YOUR_SECRET"
 
 # 高级配置
 cache:

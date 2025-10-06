@@ -2,14 +2,9 @@
 Tests for exchanges/binance.py - Binance exchange implementation.
 """
 
-import os
-import sys
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from exchanges.binance import BinanceExchange
 

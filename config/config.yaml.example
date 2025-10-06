@@ -24,20 +24,14 @@ defaultThreshold: 0.01  # 示例: 1
 symbolsFilePath: "config/symbols.txt"  # 示例: "config/symbols.txt"
 
 # 通知渠道配置
-# 当前支持 Telegram 和钉钉
+# 当前支持 Telegram
 notificationChannels: 
   - "telegram"
-  # - "dingding"
 
 # Telegram 机器人配置
 telegram:
   token: "YOUR_TELEGRAM_BOT_TOKEN"  # 示例: "你的机器人令牌"
   chatId: "YOUR_CHAT_ID"  # 示例: "你的聊天ID"
-
-# 钉钉机器人配置
-dingding:
-  webhook: ""  # 示例: "https://oapi.dingtalk.com/robot/send?access_token=你的访问令牌"
-  secret: ""  # 示例: "你的签名密钥"
 
 # 通知时区配置
 # 默认为亚洲/上海时间
