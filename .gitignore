@@ -81,3 +81,5 @@ config/config.simple.yaml
 temp/
 tmp/
 monitoring_report.json
+
+.serena/
