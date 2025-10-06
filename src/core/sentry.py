@@ -207,6 +207,7 @@ class PriceSentry:
                             attach_chart = self.config.get("attachChart", False)
                             image_bytes = None
                             image_caption = ""  # no text per requirement
+                            chart_metadata = None
                             if attach_chart and top_movers_sorted:
                                 try:
                                     symbols_for_chart = [
@@ -244,17 +245,28 @@ class PriceSentry:
                                         height=img_height,
                                         scale=img_scale,
                                     )
+                                    chart_metadata = {
+                                        "symbols": symbols_for_chart,
+                                        "timeframe": chart_timeframe,
+                                        "lookbackMinutes": chart_lookback,
+                                        "theme": chart_theme,
+                                        "width": img_width,
+                                        "height": img_height,
+                                        "scale": img_scale,
+                                    }
                                 except Exception as e:
                                     logging.warning(
                                         "Failed to generate composite chart image: "
                                         f"{e}. Skipping Telegram image."
                                     )
                                     image_bytes = None
+                                    chart_metadata = None
 
                             self.notifier.send(
                                 message,
                                 image_bytes=image_bytes,
                                 image_caption=image_caption,
+                                chart_metadata=chart_metadata,
                             )
                         else:
                             logging.info(

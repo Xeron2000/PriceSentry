@@ -287,6 +287,15 @@ class ConfigValidator:
             error_message="Chart image scale must be 1, 2, or 3",
         )
 
+        # Security configuration
+        self.rules["security.dashboardAccessKey"] = ValidationRule(
+            key_path="security.dashboardAccessKey",
+            required=False,
+            data_type=str,
+            min_length=4,
+            error_message="Dashboard access key must be at least 4 characters long",
+        )
+
     def _validate_exchanges_list(self, value: List[str]) -> Tuple[bool, str]:
         """Validate exchanges list."""
         if not isinstance(value, list):

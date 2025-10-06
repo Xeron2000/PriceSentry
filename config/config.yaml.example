@@ -138,6 +138,7 @@ security:
   encryption_key: ""             # 加密密钥
   sanitize_logs: true            # 日志脱敏
   allowed_hosts: []              # 允许的主机列表
+  dashboardAccessKey: "pricesentry"   # Dashboard访问密钥
 
 # API限制配置
 api_limits:

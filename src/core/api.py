@@ -10,12 +10,22 @@ import threading
 import time
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    Header,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # 导入现有模块
 from utils.cache_manager import alert_cache, price_cache
+from utils.config_io import write_config
+from utils.config_validator import config_validator
 from utils.load_config import load_config
 from utils.performance_monitor import performance_monitor
 
@@ -78,6 +88,39 @@ class ConfigResponse(BaseModel):
     chartTheme: str
 
 
+class ConfigUpdatePayload(BaseModel):
+    config: Dict[str, Any]
+
+
+class ConfigUpdateResult(BaseModel):
+    success: bool
+    errors: List[str] = []
+    warnings: List[str] = []
+    message: Optional[str] = None
+
+
+class VerifyKeyPayload(BaseModel):
+    key: Optional[str] = None
+
+
+class VerifyKeyResponse(BaseModel):
+    valid: bool
+
+
+class ChartMetadata(BaseModel):
+    symbols: List[str] = []
+    timeframe: Optional[str] = None
+    lookbackMinutes: Optional[int] = None
+    theme: Optional[str] = None
+    generatedAt: float
+
+
+class ChartImageResponse(BaseModel):
+    hasImage: bool
+    imageBase64: Optional[str] = None
+    metadata: Optional[ChartMetadata] = None
+
+
 class HealthResponse(BaseModel):
     status: str
     timestamp: float
@@ -94,6 +137,7 @@ class APIDataStore:
         self.system_stats: Dict[str, Any] = {}
         self.exchange_instance = None
         self.sentry_instance = None
+        self.latest_chart: Optional[Dict[str, Any]] = None
         self.logger = logging.getLogger(__name__)
 
         # WebSocket连接管理
@@ -118,6 +162,15 @@ class APIDataStore:
         self.system_stats = stats
         self.logger.debug("Updated system stats")
 
+    def set_latest_chart(self, chart_info: Dict[str, Any]):
+        """记录最新的K线图像快照"""
+        self.latest_chart = chart_info
+        self.logger.debug("Updated latest chart snapshot")
+
+    def get_latest_chart(self) -> Optional[Dict[str, Any]]:
+        """返回最新的K线图像快照"""
+        return self.latest_chart
+
     def get_recent_alerts(self, limit: int = 10) -> List[Dict[str, Any]]:
         """获取最近的告警"""
         return alert_cache.get_recent_alerts(limit)
@@ -129,6 +182,33 @@ class APIDataStore:
 
 # 全局数据存储实例
 data_store = APIDataStore()
+
+
+def _load_dashboard_access_key() -> Optional[str]:
+    """读取dashboard访问密钥，如果未配置则返回None"""
+    try:
+        config = load_config()
+    except Exception:
+        return None
+    security_cfg = config.get("security", {}) if isinstance(config, dict) else {}
+    key = security_cfg.get("dashboardAccessKey")
+    if not key:
+        key = config.get("dashboardAccessKey") if isinstance(config, dict) else None
+    return key
+
+
+def require_dashboard_key(x_dashboard_key: Optional[str] = Header(None)) -> None:
+    """FastAPI依赖: 验证请求头中的Dashboard密钥"""
+    expected_key = _load_dashboard_access_key()
+    if expected_key:
+        if not x_dashboard_key or x_dashboard_key != expected_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid dashboard key",
+            )
+    elif x_dashboard_key:
+        # 如果未配置密钥但客户端携带了值，直接忽略
+        return None
 
 
 # WebSocket连接管理器
@@ -185,6 +265,15 @@ async def health_check():
         websocket_connections=len(websocket_manager.active_connections),
         prices_count=len(data_store.current_prices),
     )
+
+
+@app.post("/api/auth/verify", response_model=VerifyKeyResponse)
+async def verify_dashboard_key(payload: VerifyKeyPayload):
+    """校验Dashboard访问密钥是否正确"""
+    expected = _load_dashboard_access_key()
+    if expected:
+        return VerifyKeyResponse(valid=(payload.key or "") == expected)
+    return VerifyKeyResponse(valid=True)
 
 
 @app.get("/api/prices")
@@ -261,7 +350,7 @@ async def get_system_stats():
 
 
 @app.get("/api/config")
-async def get_system_config():
+async def get_system_config(_: None = Depends(require_dashboard_key)):
     """获取系统配置（过滤敏感信息）"""
     try:
         config = load_config()
@@ -281,6 +370,48 @@ async def get_system_config():
         return {"success": True, "data": safe_config.dict(), "timestamp": time.time()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/config/full")
+async def get_full_config(_: None = Depends(require_dashboard_key)):
+    """获取完整配置（含敏感字段，需密钥访问）"""
+    try:
+        config = load_config()
+        return {"success": True, "data": config, "timestamp": time.time()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/config", response_model=ConfigUpdateResult)
+async def update_system_config_payload(
+    payload: ConfigUpdatePayload, _key_ok: None = Depends(require_dashboard_key)
+):
+    """更新系统配置文件"""
+    if not isinstance(payload.config, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Config payload must be an object",
+        )
+    validation = config_validator.validate_config(payload.config)
+    if not validation.is_valid:
+        return ConfigUpdateResult(
+            success=False,
+            errors=validation.errors,
+            warnings=validation.warnings,
+            message="Configuration validation failed",
+        )
+    try:
+        write_config(payload.config)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to write config: {exc}"
+        ) from exc
+    return ConfigUpdateResult(
+        success=True,
+        warnings=validation.warnings,
+        message="Configuration updated successfully",
+        errors=[],
+    )
 
 
 @app.get("/api/exchanges")
@@ -322,6 +453,21 @@ async def get_monitored_symbols():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/charts/latest", response_model=ChartImageResponse)
+async def get_latest_chart_image(_: None = Depends(require_dashboard_key)):
+    """获取最近推送的K线图像"""
+    chart = data_store.get_latest_chart()
+    if not chart:
+        return ChartImageResponse(hasImage=False, imageBase64=None, metadata=None)
+    metadata = chart.get("metadata")
+    image_base64 = chart.get("imageBase64")
+    if not image_base64:
+        return ChartImageResponse(hasImage=False, imageBase64=None, metadata=metadata)
+    return ChartImageResponse(
+        hasImage=True, imageBase64=image_base64, metadata=metadata
+    )
 
 
 @app.post("/api/monitor/check")
@@ -387,7 +533,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 # 数据更新接口（供现有系统调用）
-def update_api_data(prices=None, alerts=None, stats=None, sentry_instance=None):
+def update_api_data(prices=None, alerts=None, stats=None, chart_image=None, sentry_instance=None):
     """更新API数据（供现有系统调用）"""
     try:
         if prices is not None:
@@ -398,6 +544,9 @@ def update_api_data(prices=None, alerts=None, stats=None, sentry_instance=None):
 
         if stats is not None:
             data_store.update_stats(stats)
+
+        if chart_image is not None:
+            data_store.set_latest_chart(chart_image)
 
         if sentry_instance is not None:
             data_store.sentry_instance = sentry_instance
