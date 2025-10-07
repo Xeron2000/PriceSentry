@@ -13,6 +13,11 @@ class Notifier:
         self.notification_channels = config.get("notificationChannels", [])
         self.telegram_config = config.get("telegram", {})
 
+    def update_config(self, config) -> None:
+        """Refresh notifier settings after configuration hot reload."""
+        self.notification_channels = config.get("notificationChannels", [])
+        self.telegram_config = config.get("telegram", {})
+
     def send(
         self,
         message: str,

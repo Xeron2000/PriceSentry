@@ -7,7 +7,6 @@ import { Loader2, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { fetchLatestChart, type ChartImagePayload } from "@/lib/api"
 
 interface KLineViewerProps {
@@ -20,34 +19,18 @@ export function KLineViewer({ authKey }: KLineViewerProps) {
   const [error, setError] = useState<string | null>(null)
 
   const hasImage = chart?.hasImage && chart.imageBase64
-
-  const metadataEntries = useMemo(() => {
+  const { width: imageWidth, height: imageHeight } = useMemo(() => {
     const metadata = chart?.metadata
-    if (!metadata) return [] as Array<[string, string]>
-    const entries: Array<[string, string]> = []
-    if (metadata.symbols && metadata.symbols.length > 0) {
-      entries.push(["交易对", metadata.symbols.join(", ")])
+    if (
+      metadata &&
+      typeof metadata.width === "number" &&
+      typeof metadata.height === "number" &&
+      metadata.width > 0 &&
+      metadata.height > 0
+    ) {
+      return { width: metadata.width, height: metadata.height }
     }
-    if (metadata.timeframe) {
-      entries.push(["时间周期", metadata.timeframe])
-    }
-    if (typeof metadata.lookbackMinutes === "number") {
-      entries.push(["历史分钟", String(metadata.lookbackMinutes)])
-    }
-    if (metadata.theme) {
-      entries.push(["主题", metadata.theme])
-    }
-    if (metadata.generatedAt) {
-      const formatted = new Date(metadata.generatedAt * 1000).toLocaleString()
-      entries.push(["生成时间", formatted])
-    }
-    if (typeof metadata.width === "number" && typeof metadata.height === "number") {
-      entries.push(["图像尺寸", `${metadata.width} x ${metadata.height}`])
-    }
-    if (typeof metadata.scale === "number") {
-      entries.push(["绘制缩放", `x${metadata.scale}`])
-    }
-    return entries
+    return { width: 1600, height: 1200 }
   }, [chart?.metadata])
 
   const loadChart = useCallback(async () => {
@@ -97,41 +80,27 @@ export function KLineViewer({ authKey }: KLineViewerProps) {
           )}
         </Button>
       </div>
-      <ScrollArea className="flex-1">
-        <div className="flex flex-col gap-4 p-4">
-          {error && (
-            <div className="rounded-md border border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {error && (
+          <div className="mx-4 mt-4 rounded-md border border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+        <div className="flex flex-1 min-h-0 items-center justify-center px-4 pb-4">
           {hasImage ? (
-            <div className="space-y-4">
-              <div className="overflow-hidden rounded-lg border">
+            <div className="flex h-full w-full max-h-full max-w-4xl items-center justify-center overflow-hidden rounded-lg border border-border/50 bg-card p-2">
+              <div className="relative h-full w-full">
                 <Image
                   src={`data:image/png;base64,${chart.imageBase64}`}
                   alt="最新推送的 K 线图"
-                  width={chart.metadata?.width ?? 1600}
-                  height={chart.metadata?.height ?? 1200}
+                  width={imageWidth}
+                  height={imageHeight}
                   unoptimized
-                  className="h-auto w-full"
                   priority
+                  sizes="100vw"
+                  className="h-full w-full max-h-full object-contain"
                 />
               </div>
-              {metadataEntries.length > 0 && (
-                <div className="grid gap-2 text-sm">
-                  {metadataEntries.map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="flex flex-col rounded-md border border-border/60 bg-muted/40 px-3 py-2"
-                    >
-                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                        {label}
-                      </span>
-                      <span>{value}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
@@ -140,7 +109,7 @@ export function KLineViewer({ authKey }: KLineViewerProps) {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </Card>
   )
 }

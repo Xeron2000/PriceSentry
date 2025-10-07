@@ -23,10 +23,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # 导入现有模块
+from core.config_manager import ManagerUpdateResult, config_manager
 from utils.cache_manager import alert_cache, price_cache
-from utils.config_io import write_config
-from utils.config_validator import config_validator
-from utils.load_config import load_config
 from utils.performance_monitor import performance_monitor
 
 # 创建FastAPI应用
@@ -187,7 +185,7 @@ data_store = APIDataStore()
 def _load_dashboard_access_key() -> Optional[str]:
     """读取dashboard访问密钥，如果未配置则返回None"""
     try:
-        config = load_config()
+        config = config_manager.get_config()
     except Exception:
         return None
     security_cfg = config.get("security", {}) if isinstance(config, dict) else {}
@@ -353,7 +351,7 @@ async def get_system_stats():
 async def get_system_config(_: None = Depends(require_dashboard_key)):
     """获取系统配置（过滤敏感信息）"""
     try:
-        config = load_config()
+        config = config_manager.get_config()
 
         # 过滤敏感信息
         safe_config = ConfigResponse(
@@ -376,7 +374,7 @@ async def get_system_config(_: None = Depends(require_dashboard_key)):
 async def get_full_config(_: None = Depends(require_dashboard_key)):
     """获取完整配置（含敏感字段，需密钥访问）"""
     try:
-        config = load_config()
+        config = config_manager.get_config()
         return {"success": True, "data": config, "timestamp": time.time()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -392,24 +390,27 @@ async def update_system_config_payload(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Config payload must be an object",
         )
-    validation = config_validator.validate_config(payload.config)
-    if not validation.is_valid:
-        return ConfigUpdateResult(
-            success=False,
-            errors=validation.errors,
-            warnings=validation.warnings,
-            message="Configuration validation failed",
-        )
     try:
-        write_config(payload.config)
+        update_result: ManagerUpdateResult = config_manager.update_config(
+            payload.config
+        )
     except Exception as exc:
         raise HTTPException(
-            status_code=500, detail=f"Failed to write config: {exc}"
+            status_code=500, detail=f"Failed to update config: {exc}"
         ) from exc
+
+    if not update_result.success:
+        return ConfigUpdateResult(
+            success=False,
+            errors=update_result.errors,
+            warnings=update_result.warnings,
+            message=update_result.message,
+        )
+
     return ConfigUpdateResult(
         success=True,
-        warnings=validation.warnings,
-        message="Configuration updated successfully",
+        warnings=update_result.warnings,
+        message=update_result.message,
         errors=[],
     )
 

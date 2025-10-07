@@ -4,6 +4,8 @@ import io
 import time
 from typing import List, Optional
 
+import pytz
+
 import matplotlib
 
 matplotlib.use("Agg")  # 使用非GUI后端
@@ -246,6 +248,7 @@ def generate_multi_candlestick_png(
     width: int = 1200,
     height: int = 900,
     scale: int = 2,
+    timezone: str = "Asia/Shanghai",
 ) -> bytes:
     """Generate a composite PNG with up to 6 candlestick charts (2xN grid)."""
     # Lazy import
@@ -308,6 +311,12 @@ def generate_multi_candlestick_png(
     else:
         axes = axes.flatten()
 
+    # Resolve timezone
+    try:
+        tzinfo = pytz.timezone(timezone)
+    except Exception:
+        tzinfo = pytz.timezone("Asia/Shanghai")
+
     # Fetch and plot each symbol
     for idx, symbol in enumerate(symbols):
         ax = axes[idx] if num > 1 else axes
@@ -356,7 +365,10 @@ def generate_multi_candlestick_png(
         df = pd.DataFrame(
             ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
         )
-        df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+        df["timestamp"] = (
+            pd.to_datetime(df["timestamp"], unit="ms", utc=True)
+            .dt.tz_convert(tzinfo)
+        )
         df.set_index("timestamp", inplace=True)
 
         # Create a simple candlestick plot using matplotlib

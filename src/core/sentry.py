@@ -3,6 +3,9 @@
 import asyncio
 import logging
 import time
+from queue import Empty, Queue
+from threading import RLock
+from typing import List, Tuple
 
 from core.api import (
     set_exchange_instance,
@@ -10,18 +13,23 @@ from core.api import (
     start_api_server,
     update_api_data,
 )
+from core.config_manager import ConfigUpdateEvent, config_manager
 from core.notifier import Notifier
 from utils.cache_manager import price_cache
 from utils.chart import generate_multi_candlestick_png
 from utils.config_validator import config_validator
 from utils.error_handler import ErrorSeverity, error_handler
 from utils.get_exchange import get_exchange
-from utils.load_config import load_config
 from utils.load_symbols_from_file import load_symbols_from_file
 from utils.match_symbols import match_symbols
 from utils.monitor_top_movers import monitor_top_movers
 from utils.parse_timeframe import parse_timeframe
 from utils.performance_monitor import performance_monitor
+
+
+def load_config() -> dict:
+    """Backward compatible shim for legacy tests mocking core.sentry.load_config."""
+    return config_manager.get_config()
 
 
 class PriceSentry:
@@ -30,8 +38,11 @@ class PriceSentry:
             # Start performance monitoring
             performance_monitor.start()
 
-            # Load configuration
-            self.config = load_config()
+            self._config_lock = RLock()
+            self._config_events: "Queue[ConfigUpdateEvent]" = Queue()
+
+            # Load configuration via central manager
+            self.config = config_manager.get_config()
 
             # Validate configuration
             validation_result = config_validator.validate_config(self.config)
@@ -63,26 +74,24 @@ class PriceSentry:
             exchange_name = self.config.get("exchange", "binance")
             self.exchange = get_exchange(exchange_name)
 
-            symbols_file_path = self.config.get("symbolsFilePath", "config/symbols.txt")
-            symbols = load_symbols_from_file(symbols_file_path)
-
-            self.matched_symbols = match_symbols(symbols, exchange_name)
-
-            if not self.matched_symbols:
+            self._sync_symbols(exchange_name)
+            if not getattr(self, "matched_symbols", None):
                 logging.warning(
                     "No matched symbols found. Please check your symbols file."
                 )
                 error_handler.handle_config_error(
                     Exception("No matched symbols found"),
-                    {"symbols_file": symbols_file_path, "exchange": exchange_name},
+                    {
+                        "symbols_file": self.config.get(
+                            "symbolsFilePath", "config/symbols.txt"
+                        ),
+                        "exchange": exchange_name,
+                    },
                     ErrorSeverity.WARNING,
                 )
                 return
 
-            default_timeframe = self.config.get("defaultTimeframe", "5m")
-            self.minutes = parse_timeframe(default_timeframe)
-
-            self.threshold = self.config.get("defaultThreshold", 1)
+            self._refresh_runtime_settings()
 
             # 启动API服务器
             try:
@@ -97,6 +106,7 @@ class PriceSentry:
                 logging.error(f"Failed to start API server: {e}")
                 # API服务器启动失败不应影响主要功能
 
+            config_manager.subscribe(self._enqueue_config_update)
             logging.info("PriceSentry initialized successfully")
 
         except Exception as e:
@@ -128,16 +138,23 @@ class PriceSentry:
             )
             raise
 
-        check_interval = self.minutes * 60
         last_check_time = 0
 
         try:
             logging.info("Entering main loop, starting price movement monitoring")
+            minutes_snapshot, _, check_interval, _ = self._snapshot_runtime_state()
             logging.info(
-                f"Check interval set to {self.minutes} minutes "
-                f"({check_interval} seconds)"
+                "Check interval set to %s minutes (%s seconds)",
+                minutes_snapshot,
+                int(check_interval),
             )
             while True:
+                self._process_config_updates()
+
+                minutes_snapshot, threshold_snapshot, check_interval, symbols_snapshot = (
+                    self._snapshot_runtime_state()
+                )
+
                 current_time = time.time()
 
                 if current_time - last_check_time >= check_interval:
@@ -147,10 +164,15 @@ class PriceSentry:
                     )
 
                     try:
+                        if not symbols_snapshot:
+                            logging.warning("No symbols available for monitoring")
+                            last_check_time = current_time
+                            continue
+
                         result = await monitor_top_movers(
-                            self.minutes,
-                            self.matched_symbols,
-                            self.threshold,
+                            minutes_snapshot,
+                            symbols_snapshot,
+                            threshold_snapshot,
                             self.exchange,
                             self.config,
                         )
@@ -168,8 +190,8 @@ class PriceSentry:
                                     "message": message,
                                     "severity": "warning",
                                     "top_movers": top_movers_sorted,
-                                    "threshold": self.threshold,
-                                    "minutes": self.minutes,
+                                    "threshold": threshold_snapshot,
+                                    "minutes": minutes_snapshot,
                                 }
 
                                 # 为每个top mover创建单独的告警
@@ -188,7 +210,7 @@ class PriceSentry:
                                         "price": price,
                                         "change": change_percent,
                                         "threshold": self.threshold,
-                                        "minutes": self.minutes,
+                                        "minutes": minutes_snapshot,
                                     }
                                     update_api_data(
                                         alerts=individual_alert, sentry_instance=self
@@ -223,6 +245,9 @@ class PriceSentry:
                                     ma_windows = self.config.get(
                                         "chartIncludeMA", [7, 25]
                                     )
+                                    chart_timezone = self.config.get(
+                                        "notificationTimezone", "Asia/Shanghai"
+                                    )
 
                                     img_width = int(
                                         self.config.get("chartImageWidth", 1200)
@@ -244,6 +269,7 @@ class PriceSentry:
                                         width=img_width,
                                         height=img_height,
                                         scale=img_scale,
+                                        timezone=chart_timezone,
                                     )
                                     chart_metadata = {
                                         "symbols": symbols_for_chart,
@@ -253,6 +279,7 @@ class PriceSentry:
                                         "width": img_width,
                                         "height": img_height,
                                         "scale": img_scale,
+                                        "timezone": chart_timezone,
                                     }
                                 except Exception as e:
                                     logging.warning(
@@ -336,3 +363,146 @@ class PriceSentry:
                     {"component": "PriceSentry", "operation": "cleanup"},
                     ErrorSeverity.WARNING,
                 )
+
+    def _enqueue_config_update(self, event: ConfigUpdateEvent) -> None:
+        """Receive config updates from ConfigManager on background threads."""
+        try:
+            self._config_events.put_nowait(event)
+        except Exception:
+            # Fallback to blocking put; queue is unbounded but guard just in case.
+            self._config_events.put(event)
+
+    def _process_config_updates(self) -> None:
+        while True:
+            try:
+                event = self._config_events.get_nowait()
+            except Empty:
+                break
+            self._apply_config_update(event)
+
+    def _apply_config_update(self, event: ConfigUpdateEvent) -> None:
+        start_time = time.time()
+        changed_keys = ", ".join(sorted(event.diff.changed_keys)) or "<none>"
+        logging.info("Processing configuration update; changed keys: %s", changed_keys)
+        if event.warnings:
+            for warning in event.warnings:
+                logging.warning("Configuration warning: %s", warning)
+
+        with self._config_lock:
+            self.config = event.new_config
+
+        self._refresh_runtime_settings()
+
+        if event.diff.requires_symbol_reload:
+            self._reload_runtime_components(event)
+
+        elapsed = time.time() - start_time
+        if elapsed > 5:
+            logging.warning(
+                "Configuration update processing exceeded 5s target: %.2fs",
+                elapsed,
+            )
+        else:
+            logging.info("Configuration update applied in %.2fs", elapsed)
+
+    def _refresh_runtime_settings(self) -> None:
+        with self._config_lock:
+            timeframe = self.config.get("defaultTimeframe", "5m")
+            try:
+                minutes = parse_timeframe(timeframe)
+            except Exception as exc:
+                logging.error(
+                    "Failed to parse timeframe '%s': %s. Using previous value.",
+                    timeframe,
+                    exc,
+                )
+                minutes = getattr(self, "minutes", parse_timeframe("5m"))
+            self.minutes = minutes
+            self._check_interval = self.minutes * 60
+            self.threshold = self.config.get("defaultThreshold", 1)
+            if hasattr(self, "notifier") and self.notifier is not None:
+                self.notifier.update_config(self.config)
+
+    def _reload_runtime_components(self, event: ConfigUpdateEvent) -> None:
+        exchange_name = self.config.get("exchange", "binance")
+        logging.info(
+            "Reloading exchange and symbol set due to config update (keys: %s)",
+            ", ".join(sorted(event.diff.changed_keys)) or "<none>",
+        )
+
+        try:
+            self.exchange.close()
+        except Exception as exc:
+            logging.warning(f"Failed to close existing exchange cleanly: {exc}")
+
+        try:
+            self.exchange = get_exchange(exchange_name)
+        except Exception as exc:
+            error_handler.handle_config_error(
+                exc,
+                {
+                    "component": "PriceSentry",
+                    "operation": "exchange_reload",
+                    "exchange": exchange_name,
+                },
+                ErrorSeverity.CRITICAL,
+            )
+            logging.error("Exchange reload aborted: %s", exc)
+            return
+
+        self._sync_symbols(exchange_name)
+        if not self.matched_symbols:
+            logging.warning("Symbol reload produced empty set; skipping websocket")
+            error_handler.handle_config_error(
+                Exception("No matched symbols found"),
+                {
+                    "component": "PriceSentry",
+                    "operation": "symbol_reload",
+                    "exchange": exchange_name,
+                    "symbols_file": self.config.get("symbolsFilePath", "config/symbols.txt"),
+                },
+                ErrorSeverity.WARNING,
+            )
+            return
+
+        try:
+            self.exchange.start_websocket(self.matched_symbols)
+        except Exception as exc:
+            error_handler.handle_network_error(
+                exc,
+                {
+                    "component": "PriceSentry",
+                    "operation": "websocket_restart",
+                    "symbols_count": len(self.matched_symbols),
+                },
+                ErrorSeverity.ERROR,
+            )
+            logging.error("Failed to restart websocket after config change: %s", exc)
+            return
+
+        set_exchange_instance(self.exchange)
+        set_sentry_instance(self)
+        logging.info(
+            "Exchange and symbol sets reloaded successfully (%s symbols)",
+            len(self.matched_symbols),
+        )
+
+    def _sync_symbols(self, exchange_name: str) -> None:
+        symbols_file_path = self.config.get("symbolsFilePath", "config/symbols.txt")
+        symbols = load_symbols_from_file(symbols_file_path)
+        matched = match_symbols(symbols, exchange_name)
+        with self._config_lock:
+            self.matched_symbols = matched
+        logging.info(
+            "Loaded %s matched symbols from %s",
+            len(matched),
+            symbols_file_path,
+        )
+
+    def _snapshot_runtime_state(self) -> Tuple[int, float, float, List[str]]:
+        with self._config_lock:
+            minutes = getattr(self, "minutes", parse_timeframe("5m"))
+            threshold = getattr(self, "threshold", 1.0)
+            check_interval = getattr(self, "_check_interval", minutes * 60)
+            symbols_snapshot = list(getattr(self, "matched_symbols", []))
+        return minutes, threshold, check_interval, symbols_snapshot

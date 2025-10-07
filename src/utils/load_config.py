@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import yaml
 
@@ -28,8 +29,10 @@ def load_config(configPath="config/config.yaml"):
         - 'defaultThreshold': The default price change threshold.
         - 'notificationChannels': The channels for receiving notifications.
     """
+    path = Path(configPath)
+
     try:
-        with open(configPath, "r") as file:
+        with open(path, "r") as file:
             config = yaml.safe_load(file)
 
         # Handle empty file case
