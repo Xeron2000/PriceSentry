@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, type ReactElement } from "react"
 
 import {
   Accordion,
@@ -443,7 +443,7 @@ function renderNode(
   onValueChange: (path: string[], value: unknown) => void,
   searchTerm: string,
   disabled?: boolean,
-): JSX.Element | null {
+): ReactElement | null {
   const currentPath = [...path, key]
 
   if (!matchesSearch(value, currentPath, searchTerm)) {

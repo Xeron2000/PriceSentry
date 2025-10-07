@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node tests/parse-top-mover.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
