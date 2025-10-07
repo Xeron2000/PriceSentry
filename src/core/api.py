@@ -8,7 +8,7 @@ import json
 import logging
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import (
     Depends,
@@ -182,31 +182,40 @@ class APIDataStore:
 data_store = APIDataStore()
 
 
-def _load_dashboard_access_key() -> Optional[str]:
-    """读取dashboard访问密钥，如果未配置则返回None"""
+def _load_dashboard_access_key() -> Tuple[Optional[str], bool]:
+    """读取dashboard访问密钥以及是否强制要求"""
     try:
         config = config_manager.get_config()
     except Exception:
-        return None
+        return None, False
     security_cfg = config.get("security", {}) if isinstance(config, dict) else {}
     key = security_cfg.get("dashboardAccessKey")
+    require_key = bool(security_cfg.get("requireDashboardKey", False))
+
     if not key:
         key = config.get("dashboardAccessKey") if isinstance(config, dict) else None
-    return key
+        require_key = bool(config.get("requireDashboardKey", False))
+
+    # 如果未提供密钥则无法强制要求
+    if not key:
+        require_key = False
+
+    return key, require_key
 
 
 def require_dashboard_key(x_dashboard_key: Optional[str] = Header(None)) -> None:
     """FastAPI依赖: 验证请求头中的Dashboard密钥"""
-    expected_key = _load_dashboard_access_key()
-    if expected_key:
-        if not x_dashboard_key or x_dashboard_key != expected_key:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid dashboard key",
-            )
-    elif x_dashboard_key:
-        # 如果未配置密钥但客户端携带了值，直接忽略
+    expected_key, require_key = _load_dashboard_access_key()
+
+    if not require_key:
+        # 未强制要求密钥，直接放行（但允许客户端自愿携带）
         return None
+
+    if not expected_key or not x_dashboard_key or x_dashboard_key != expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid dashboard key",
+        )
 
 
 # WebSocket连接管理器
@@ -268,7 +277,7 @@ async def health_check():
 @app.post("/api/auth/verify", response_model=VerifyKeyResponse)
 async def verify_dashboard_key(payload: VerifyKeyPayload):
     """校验Dashboard访问密钥是否正确"""
-    expected = _load_dashboard_access_key()
+    expected, _ = _load_dashboard_access_key()
     if expected:
         return VerifyKeyResponse(valid=(payload.key or "") == expected)
     return VerifyKeyResponse(valid=True)
@@ -348,7 +357,7 @@ async def get_system_stats():
 
 
 @app.get("/api/config")
-async def get_system_config(_: None = Depends(require_dashboard_key)):
+async def get_system_config():
     """获取系统配置（过滤敏感信息）"""
     try:
         config = config_manager.get_config()

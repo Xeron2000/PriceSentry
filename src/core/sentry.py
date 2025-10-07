@@ -41,8 +41,8 @@ class PriceSentry:
             self._config_lock = RLock()
             self._config_events: "Queue[ConfigUpdateEvent]" = Queue()
 
-            # Load configuration via central manager
-            self.config = config_manager.get_config()
+            # Load configuration (patchable for unit tests while defaulting to manager data)
+            self.config = load_config()
 
             # Validate configuration
             validation_result = config_validator.validate_config(self.config)
@@ -289,12 +289,14 @@ class PriceSentry:
                                     image_bytes = None
                                     chart_metadata = None
 
-                            self.notifier.send(
-                                message,
-                                image_bytes=image_bytes,
-                                image_caption=image_caption,
-                                chart_metadata=chart_metadata,
-                            )
+                            send_kwargs = {
+                                "image_bytes": image_bytes,
+                                "image_caption": image_caption,
+                            }
+                            if chart_metadata is not None:
+                                send_kwargs["chart_metadata"] = chart_metadata
+
+                            self.notifier.send(message, **send_kwargs)
                         else:
                             logging.info(
                                 "No price movements exceeding threshold detected"

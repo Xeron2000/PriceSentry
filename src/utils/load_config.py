@@ -32,7 +32,7 @@ def load_config(configPath="config/config.yaml"):
     path = Path(configPath)
 
     try:
-        with open(path, "r") as file:
+        with open(str(path), "r") as file:
             config = yaml.safe_load(file)
 
         # Handle empty file case
