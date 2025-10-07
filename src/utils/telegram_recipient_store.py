@@ -153,6 +153,22 @@ class TelegramRecipientStore:
             conn.commit()
             return cursor.rowcount > 0
 
+    def get_by_user_id(self, user_id: int) -> Optional[TelegramRecipient]:
+        with self._locked_connection() as conn:
+            cursor = conn.execute(
+                """
+                SELECT id, username, token, user_id, status, created_at, updated_at
+                FROM telegram_recipients
+                WHERE user_id = ?
+                LIMIT 1
+                """,
+                (user_id,),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            return None
+        return self._row_to_recipient(row)
+
     # ------------------------------------------------------------------
     # Internal helpers
 

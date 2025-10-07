@@ -56,6 +56,17 @@ def test_confirm_binding_twice_reports_already_active(store: TelegramRecipientSt
     assert store.confirm_binding(token, 999) == "already_active"
 
 
+def test_get_by_user_id_returns_recipient(store: TelegramRecipientStore) -> None:
+    token = store.add_pending("eric")
+    store.confirm_binding(token, 4242, "eric")
+
+    recipient = store.get_by_user_id(4242)
+    assert recipient is not None
+    assert recipient.username == "eric"
+
+    assert store.get_by_user_id(9999) is None
+
+
 def test_store_rejects_empty_username(store: TelegramRecipientStore) -> None:
     with pytest.raises(ValueError):
         store.add_pending("   ")

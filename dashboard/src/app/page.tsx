@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 
-import { Loader2, LogOut, Save, ShieldCheck, SlidersHorizontal, Undo2 } from "lucide-react"
+import { Loader2, Save, ShieldCheck, Undo2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { ConfigEditor } from "@/components/dashboard/config-editor"
+import { NotificationHistory } from "@/components/dashboard/notification-history"
 import { TelegramRecipients } from "@/components/dashboard/telegram-recipients"
-import { KLineViewer } from "@/components/dashboard/kline-viewer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,7 +22,6 @@ import {
 const STORAGE_KEY = "pricesentry-dashboard-key"
 
 type AuthState = "checking" | "prompt" | "authorizing" | "authorized" | "denied"
-type ConfigMode = "simple" | "advanced"
 
 interface ConfigGroup {
   key: string
@@ -31,11 +30,11 @@ interface ConfigGroup {
   allowedKeys: string[]
 }
 
-const SIMPLE_GROUPS: ConfigGroup[] = [
+const CONFIG_GROUPS: ConfigGroup[] = [
   {
-    key: "exchange",
-    label: "交易所设置",
-    description: "集中管理交易所相关参数",
+    key: "core",
+    label: "核心配置",
+    description: "集中管理交易所与基础参数",
     allowedKeys: [
       "exchange",
       "exchanges",
@@ -47,8 +46,13 @@ const SIMPLE_GROUPS: ConfigGroup[] = [
   {
     key: "notification",
     label: "通知渠道",
-    description: "通知方式与推送节奏配置",
-    allowedKeys: ["notificationChannels", "notificationTimezone", "telegram", "notification"],
+    description: "配置推送方式与节奏",
+    allowedKeys: [
+      "notificationChannels",
+      "notificationTimezone",
+      "telegram",
+      "notification",
+    ],
   },
   {
     key: "telegramRecipients",
@@ -75,7 +79,24 @@ const SIMPLE_GROUPS: ConfigGroup[] = [
       "chartDownColor",
     ],
   },
+  {
+    key: "performance",
+    label: "性能与监控",
+    description: "缓存、重试与性能监控参数",
+    allowedKeys: [
+      "cache",
+      "error_handling",
+      "performance_monitoring",
+      "monitoring",
+      "data_fetch",
+      "api_limits",
+    ],
+  },
 ]
+
+const RESERVED_CONFIG_KEYS = new Set(
+  CONFIG_GROUPS.flatMap((group) => group.allowedKeys).filter(Boolean)
+)
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && Object.prototype.toString.call(value) === "[object Object]"
@@ -116,8 +137,7 @@ export default function DashboardPage() {
   const [saveLoading, setSaveLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
-  const [configMode, setConfigMode] = useState<ConfigMode>("simple")
-  const [activeConfigTab, setActiveConfigTab] = useState<string>(SIMPLE_GROUPS[0].key)
+  const [activeConfigTab, setActiveConfigTab] = useState<string>(CONFIG_GROUPS[0].key)
 
   const isDirty = useMemo(() => {
     if (!config || !draftConfig) return false
@@ -157,15 +177,6 @@ export default function DashboardPage() {
       setAuthState("prompt")
     }
   }, [runVerification])
-
-  const resetAuth = useCallback(() => {
-    window.sessionStorage.removeItem(STORAGE_KEY)
-    setAuthKey("")
-    setAuthInput("")
-    setConfig(null)
-    setDraftConfig(null)
-    setAuthState("prompt")
-  }, [])
 
   const loadConfig = useCallback(async () => {
     if (!authKey) return
@@ -245,35 +256,108 @@ export default function DashboardPage() {
     [authInput, runVerification],
   )
 
-  const advancedGroups = useMemo<ConfigGroup[]>(() => {
-    if (!draftConfig) return SIMPLE_GROUPS
+  const visibleGroups = useMemo<ConfigGroup[]>(() => {
+    if (!draftConfig) {
+      return CONFIG_GROUPS
+    }
 
-    const seen = new Set<string>()
-    const groups: ConfigGroup[] = [...SIMPLE_GROUPS]
-    SIMPLE_GROUPS.forEach((group) => group.allowedKeys.forEach((key) => seen.add(key)))
+    const groups: ConfigGroup[] = [...CONFIG_GROUPS]
+    const remainingKeys = Object.keys(draftConfig).filter(
+      (key) => !RESERVED_CONFIG_KEYS.has(key)
+    )
 
-    Object.keys(draftConfig).forEach((key) => {
-      if (seen.has(key)) {
-        return
-      }
+    if (remainingKeys.length) {
       groups.push({
-        key,
-        label: key,
-        description: undefined,
-        allowedKeys: [key],
+        key: "others",
+        label: "其他设置",
+        description: "未归类的配置项（含安全、日志、调试与量化监控）",
+        allowedKeys: [
+          "logging",
+          "security",
+          "development",
+          "volumeSentry",
+          "openInterestSentry",
+          ...remainingKeys.filter(
+            (key) =>
+              !["logging", "security", "development", "volumeSentry", "openInterestSentry"].includes(
+                key
+              )
+          ),
+        ],
       })
-    })
+    }
 
     return groups
   }, [draftConfig])
 
-  const visibleGroups = configMode === "simple" ? SIMPLE_GROUPS : advancedGroups
-
   useEffect(() => {
     if (!visibleGroups.find((group) => group.key === activeConfigTab)) {
-      setActiveConfigTab(visibleGroups[0]?.key ?? SIMPLE_GROUPS[0].key)
+      setActiveConfigTab(visibleGroups[0]?.key ?? CONFIG_GROUPS[0].key)
     }
   }, [visibleGroups, activeConfigTab])
+
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+
+  const groupSearchMatches = useMemo(() => {
+    if (!draftConfig || !normalizedSearch) {
+      return new Set<string>()
+    }
+
+    const valueMatches = (value: unknown): boolean => {
+      if (value == null) return false
+      if (typeof value === "string") {
+        return value.toLowerCase().includes(normalizedSearch)
+      }
+      if (typeof value === "number" || typeof value === "boolean") {
+        return String(value).toLowerCase().includes(normalizedSearch)
+      }
+      if (Array.isArray(value)) {
+        return value.some((entry) => valueMatches(entry))
+      }
+      if (typeof value === "object") {
+        return Object.values(value as Record<string, unknown>).some((entry) => valueMatches(entry))
+      }
+      return false
+    }
+
+    const matches = new Set<string>()
+    const configRecord = draftConfig as Record<string, unknown>
+
+    visibleGroups.forEach((group) => {
+      let matched =
+        group.label.toLowerCase().includes(normalizedSearch) ||
+        group.key.toLowerCase().includes(normalizedSearch)
+
+      if (!matched && group.allowedKeys.length > 0) {
+        matched = group.allowedKeys.some((key) => {
+          if (!key) return false
+          const value = configRecord[key]
+          if (value === undefined) {
+            return key.toLowerCase().includes(normalizedSearch)
+          }
+          return valueMatches(value)
+        })
+      }
+
+      if (matched) {
+        matches.add(group.key)
+      }
+    })
+
+    return matches
+  }, [draftConfig, normalizedSearch, visibleGroups])
+
+  const searchMatchList = useMemo(() => {
+    if (!normalizedSearch) return []
+    return visibleGroups.filter((group) => groupSearchMatches.has(group.key))
+  }, [visibleGroups, groupSearchMatches, normalizedSearch])
+
+  const handleSearchJump = useCallback(
+    (key: string) => {
+      setActiveConfigTab(key)
+    },
+    []
+  )
 
   if (authState !== "authorized") {
     return (
@@ -325,9 +409,6 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={resetAuth}>
-              <LogOut className="mr-2 h-4 w-4" /> 切换密钥
-            </Button>
             <Button variant="outline" size="sm" onClick={loadConfig} disabled={configLoading}>
               {configLoading ? (
                 <>
@@ -345,13 +426,13 @@ export default function DashboardPage() {
         <Tabs defaultValue="config" className="flex h-full flex-col overflow-hidden">
           <TabsList className="w-fit">
             <TabsTrigger value="config">配置管理</TabsTrigger>
-            <TabsTrigger value="chart">K 线图像</TabsTrigger>
+            <TabsTrigger value="chart">消息推送结果</TabsTrigger>
           </TabsList>
 
           <TabsContent value="config" className="flex h-full flex-1 flex-col overflow-hidden">
-            <Card className="space-y-4 p-4">
+            <Card className="space-y-3 p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div className="flex flex-1 flex-col gap-1">
+                <div className="flex flex-1 flex-col gap-2">
                   <label className="text-sm font-medium" htmlFor="config-search">
                     搜索配置项
                   </label>
@@ -361,48 +442,47 @@ export default function DashboardPage() {
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                   />
+                  {normalizedSearch ? (
+                    searchMatchList.length ? (
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">匹配标签：</span>
+                        {searchMatchList.map((group) => (
+                          <Button
+                            key={group.key}
+                            size="sm"
+                            variant={group.key === activeConfigTab ? "default" : "outline"}
+                            onClick={() => handleSearchJump(group.key)}
+                          >
+                            {group.label}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">未找到匹配结果</p>
+                    )
+                  ) : null}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
                   <Button
-                    type="button"
-                    variant={configMode === "simple" ? "default" : "outline"}
+                    variant="outline"
+                    disabled={!isDirty || saveLoading}
+                    onClick={handleResetDraft}
                     size="sm"
-                    onClick={() => setConfigMode("simple")}
-                    disabled={configMode === "simple"}
                   >
-                    <SlidersHorizontal className="mr-2 h-4 w-4" /> 简单模式
+                    <Undo2 className="mr-2 h-4 w-4" /> 放弃修改
                   </Button>
-                  <Button
-                    type="button"
-                    variant={configMode === "advanced" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setConfigMode("advanced")}
-                    disabled={configMode === "advanced"}
-                  >
-                    <SlidersHorizontal className="mr-2 h-4 w-4" /> 高级模式
+                  <Button disabled={!isDirty || saveLoading} onClick={handleSave} size="sm">
+                    {saveLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 保存中
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" /> 保存配置
+                      </>
+                    )}
                   </Button>
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  disabled={!isDirty || saveLoading}
-                  onClick={handleResetDraft}
-                  size="sm"
-                >
-                  <Undo2 className="mr-2 h-4 w-4" /> 放弃修改
-                </Button>
-                <Button disabled={!isDirty || saveLoading} onClick={handleSave} size="sm">
-                  {saveLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 保存中
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" /> 保存配置
-                    </>
-                  )}
-                </Button>
               </div>
               {isDirty && (
                 <p className="text-sm text-muted-foreground">
@@ -431,9 +511,9 @@ export default function DashboardPage() {
                 onValueChange={setActiveConfigTab}
                 className="mt-4 flex h-full flex-1 flex-col overflow-hidden"
               >
-                <TabsList className="flex max-w-full flex-wrap justify-start gap-2 overflow-x-auto">
+                <TabsList className="flex max-w-full flex-wrap items-center justify-center gap-2 gap-y-2 text-center">
                   {visibleGroups.map((group) => (
-                    <TabsTrigger key={group.key} value={group.key} className="min-w-[8rem]">
+                    <TabsTrigger key={group.key} value={group.key} className="min-w-[8.5rem]">
                       {group.label}
                     </TabsTrigger>
                   ))}
@@ -445,9 +525,7 @@ export default function DashboardPage() {
                       value={group.key}
                       className="h-full overflow-hidden"
                     >
-                      {group.key === "telegramRecipients" ? (
-                        <TelegramRecipients authKey={authKey} disabled={saveLoading} />
-                      ) : (
+                      {group.allowedKeys.length > 0 && (
                         <ConfigEditor
                           data={draftConfig}
                           onValueChange={handleConfigChange}
@@ -457,6 +535,9 @@ export default function DashboardPage() {
                           className="pb-6"
                         />
                       )}
+                      {group.key === "telegramRecipients" && (
+                        <TelegramRecipients authKey={authKey} disabled={saveLoading} />
+                      )}
                     </TabsContent>
                   ))}
                 </div>
@@ -465,9 +546,7 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="chart" className="h-full flex-1 overflow-hidden">
-            <div className="h-full overflow-hidden">
-              <KLineViewer authKey={authKey} />
-            </div>
+            <NotificationHistory authKey={authKey} />
           </TabsContent>
         </Tabs>
       </div>

@@ -28,6 +28,10 @@ from pydantic import BaseModel
 from core.config_manager import ManagerUpdateResult, config_manager
 from notifications.telegram import send_telegram_message
 from utils.cache_manager import alert_cache, price_cache
+from utils.notification_history_store import (
+    NotificationEvent,
+    NotificationHistoryStore,
+)
 from utils.performance_monitor import performance_monitor
 from utils.telegram_recipient_store import (
     TelegramRecipient,
@@ -164,6 +168,35 @@ class DeleteRecipientResponse(BaseModel):
     success: bool
 
 
+class NotificationDeliveryPayload(BaseModel):
+    target: str
+    targetDisplay: Optional[str] = None
+    status: str
+    detail: Optional[str] = None
+
+
+class NotificationEventPayload(BaseModel):
+    id: int
+    channel: str
+    message: Optional[str] = None
+    imageAvailable: bool
+    imageCaption: Optional[str] = None
+    createdAt: float
+    deliveries: List[NotificationDeliveryPayload]
+
+
+class NotificationHistoryResponse(BaseModel):
+    success: bool
+    events: List[NotificationEventPayload]
+
+
+class NotificationImageResponse(BaseModel):
+    success: bool
+    hasImage: bool
+    imageBase64: Optional[str] = None
+    imageCaption: Optional[str] = None
+
+
 # 全局数据存储
 class APIDataStore:
     def __init__(self):
@@ -217,6 +250,7 @@ class APIDataStore:
 # 全局数据存储实例
 data_store = APIDataStore()
 recipient_store = TelegramRecipientStore()
+history_store = NotificationHistoryStore()
 
 
 def _recipient_to_payload(recipient: TelegramRecipient) -> Dict[str, Any]:
@@ -597,6 +631,65 @@ async def telegram_webhook(request: Request, payload: Dict[str, Any]):
         _reply_via_bot(chat_id, "令牌无效，请确认后重试", telegram_config)
 
     return {"ok": True}
+
+
+def _event_to_payload(event: NotificationEvent) -> NotificationEventPayload:
+    deliveries = [
+        NotificationDeliveryPayload(
+            target=delivery.target,
+            targetDisplay=delivery.target_display,
+            status=delivery.status,
+            detail=delivery.detail,
+        )
+        for delivery in event.deliveries
+    ]
+
+    return NotificationEventPayload(
+        id=event.id,
+        channel=event.channel,
+        message=event.message,
+        imageAvailable=event.image_available,
+        imageCaption=event.image_caption,
+        createdAt=event.created_at,
+        deliveries=deliveries,
+    )
+
+
+@app.get(
+    "/api/notifications/history",
+    response_model=NotificationHistoryResponse,
+)
+async def get_notification_history(
+    limit: int = 20,
+    _key_ok: None = Depends(require_dashboard_key),
+):
+    safe_limit = max(1, min(limit, 200))
+    events = history_store.list_events(limit=safe_limit)
+    return NotificationHistoryResponse(
+        success=True,
+        events=[_event_to_payload(event) for event in events],
+    )
+
+
+@app.get(
+    "/api/notifications/history/{event_id}/image",
+    response_model=NotificationImageResponse,
+)
+async def get_notification_history_image(
+    event_id: int,
+    _key_ok: None = Depends(require_dashboard_key),
+):
+    result = history_store.get_event_image(event_id)
+    if not result:
+        return NotificationImageResponse(success=True, hasImage=False)
+
+    image_base64, caption = result
+    return NotificationImageResponse(
+        success=True,
+        hasImage=True,
+        imageBase64=image_base64,
+        imageCaption=caption,
+    )
 
 
 @app.get("/api/exchanges")

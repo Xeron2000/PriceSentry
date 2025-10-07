@@ -9,11 +9,19 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 const CONFIG_HINTS: Record<string, { title?: string; description?: string }> = {
@@ -71,6 +79,11 @@ const CONFIG_HINTS: Record<string, { title?: string; description?: string }> = {
   development: { description: "开发/调试模式开关" },
 }
 
+const EXCHANGE_OPTIONS = ["binance", "okx", "bybit"]
+const NOTIFICATION_CHANNEL_OPTIONS = [{ value: "telegram", label: "Telegram" }]
+const TIMEFRAME_PRESETS = ["1m", "5m", "15m", "1h", "1d"]
+const THRESHOLD_PRESETS = [0.01, 0.1, 0.5, 1]
+
 function getHint(path: string[]): { title?: string; description?: string } | undefined {
   if (path.length === 0) return undefined
   const joined = path.join(".")
@@ -125,6 +138,167 @@ function renderPrimitive(
   disabled?: boolean,
 ) {
   const id = path.join("-")
+  const joinedPath = path.join(".")
+
+  if (joinedPath === "exchange") {
+    const hint = getHint(path)
+    const stringValue = typeof value === "string" ? value : ""
+    return (
+      <div key={id} className="space-y-1">
+        <Label htmlFor={id}>{hint?.title ? `${key}（${hint.title}）` : key}</Label>
+        <Select
+          value={stringValue === "" ? undefined : stringValue}
+          onValueChange={(next) => onValueChange(path, next)}
+          disabled={disabled}
+        >
+          <SelectTrigger id={id} className="w-full">
+            <SelectValue placeholder="请选择交易所" />
+          </SelectTrigger>
+          <SelectContent align="start" className="min-w-[12rem]">
+            {EXCHANGE_OPTIONS.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option.toUpperCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">{joinedPath}</p>
+        {hint?.description ? (
+          <p className="text-xs text-muted-foreground">{hint.description}</p>
+        ) : null}
+      </div>
+    )
+  }
+
+  if (joinedPath === "exchanges") {
+    const hint = getHint(path)
+    const selected = new Set(
+      Array.isArray(value) ? (value as unknown[]).map((item) => String(item)) : [],
+    )
+
+    return (
+      <div key={id} className="space-y-2">
+        <Label>{hint?.title ? `${key}（${hint.title}）` : key}</Label>
+        <div className="space-y-2 rounded-md border p-3">
+          {EXCHANGE_OPTIONS.map((option) => {
+            const optionId = `${id}-${option}`
+            const checked = selected.has(option)
+            return (
+              <div
+                key={option}
+                className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-medium uppercase">{option}</p>
+                  <p className="text-xs text-muted-foreground">exchange: {option}</p>
+                </div>
+                <Switch
+                  id={optionId}
+                  checked={checked}
+                  disabled={disabled}
+                  onCheckedChange={(nextChecked) => {
+                    const updated = new Set(selected)
+                    if (nextChecked) {
+                      updated.add(option)
+                    } else {
+                      updated.delete(option)
+                    }
+                    onValueChange(path, Array.from(updated))
+                  }}
+                />
+              </div>
+            )
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">{joinedPath}</p>
+        {hint?.description ? (
+          <p className="text-xs text-muted-foreground">{hint.description}</p>
+        ) : null}
+      </div>
+    )
+  }
+
+  if (joinedPath === "notificationChannels") {
+    const hint = getHint(path)
+    const selected = new Set(
+      Array.isArray(value) ? (value as unknown[]).map((item) => String(item)) : [],
+    )
+
+    return (
+      <div key={id} className="space-y-2">
+        <Label>{hint?.title ? `${key}（${hint.title}）` : key}</Label>
+        <div className="space-y-2 rounded-md border p-3">
+          {NOTIFICATION_CHANNEL_OPTIONS.map((option) => {
+            const optionId = `${id}-${option.value}`
+            const checked = selected.has(option.value)
+            return (
+              <div
+                key={option.value}
+                className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-medium">{option.label}</p>
+                  <p className="text-xs text-muted-foreground">channel: {option.value}</p>
+                </div>
+                <Switch
+                  id={optionId}
+                  checked={checked}
+                  disabled={disabled}
+                  onCheckedChange={(nextChecked) => {
+                    const updated = new Set(selected)
+                    if (nextChecked) {
+                      updated.add(option.value)
+                    } else {
+                      updated.delete(option.value)
+                    }
+                    onValueChange(path, Array.from(updated))
+                  }}
+                />
+              </div>
+            )
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">{joinedPath}</p>
+        {hint?.description ? (
+          <p className="text-xs text-muted-foreground">{hint.description}</p>
+        ) : null}
+      </div>
+    )
+  }
+
+  if (joinedPath === "defaultTimeframe") {
+    const hint = getHint(path)
+    const stringValue = typeof value === "string" ? value : ""
+    return (
+      <div key={id} className="space-y-1">
+        <Label htmlFor={id}>{hint?.title ? `${key}（${hint.title}）` : key}</Label>
+        <Input
+          id={id}
+          disabled={disabled}
+          value={stringValue}
+          onChange={(event) => onValueChange(path, event.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">{joinedPath}</p>
+        {hint?.description ? (
+          <p className="text-xs text-muted-foreground">{hint.description}</p>
+        ) : null}
+        <div className="flex flex-wrap gap-2 pt-1">
+          {TIMEFRAME_PRESETS.map((preset) => (
+            <Button
+              key={preset}
+              type="button"
+              size="sm"
+              variant={stringValue === preset ? "default" : "outline"}
+              disabled={disabled}
+              onClick={() => onValueChange(path, preset)}
+            >
+              {preset}
+            </Button>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   if (typeof value === "boolean") {
     const hint = getHint(path)
@@ -152,7 +326,9 @@ function renderPrimitive(
 
   if (typeof value === "number") {
     const hint = getHint(path)
+    const joinedPath = path.join(".")
     const labelText = hint?.title ? `${key}（${hint.title}）` : key
+    const numericValue = Number.isFinite(value) ? Number(value) : 0
     return (
       <div key={id} className="space-y-1">
         <Label htmlFor={id}>{labelText}</Label>
@@ -176,9 +352,25 @@ function renderPrimitive(
             onValueChange(path, numeric)
           }}
         />
-        <p className="text-xs text-muted-foreground">{path.join(".")}</p>
+        <p className="text-xs text-muted-foreground">{joinedPath}</p>
         {hint?.description ? (
           <p className="text-xs text-muted-foreground">{hint.description}</p>
+        ) : null}
+        {joinedPath === "defaultThreshold" ? (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {THRESHOLD_PRESETS.map((preset) => (
+              <Button
+                key={preset}
+                type="button"
+                size="sm"
+                variant={numericValue === preset ? "default" : "outline"}
+                disabled={disabled}
+                onClick={() => onValueChange(path, preset)}
+              >
+                {preset}
+              </Button>
+            ))}
+          </div>
         ) : null}
       </div>
     )
