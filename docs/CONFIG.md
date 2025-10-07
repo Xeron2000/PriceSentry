@@ -59,8 +59,17 @@ notificationChannels:
 # Telegram配置
 telegram:
   token: "YOUR_TELEGRAM_BOT_TOKEN"
-  chatId: "YOUR_CHAT_ID"
 ```
+
+> 📌 **多用户绑定流程**
+>
+> 1. 在 Dashboard 中添加待接收通知的用户名，系统会生成绑定令牌。
+> 2. 用户与 Telegram 机器人对话并发送 `/bind <token>`。
+> 3. 机器人确认后会记录 user_id，告警会推送给全部已绑定用户。
+>
+> 建议在部署 Webhook 时通过可选字段 `telegram.webhookSecret` 校验请求来源；`chatId` 字段仅用于兼容旧版本，可留空。
+>
+> PriceSentry 在主程序启动时会自动运行 Telegram 机器人，无需单独部署。
 
 ## 高级配置
 
@@ -289,7 +298,6 @@ defaultThreshold: 0.01
 notificationChannels: ["telegram"]
 telegram:
   token: "YOUR_TOKEN"
-  chatId: "YOUR_CHAT_ID"
 ```
 
 ### 完整配置
@@ -303,7 +311,6 @@ symbolsFilePath: "config/symbols.txt"
 notificationChannels: ["telegram"]
 telegram:
   token: "YOUR_TOKEN"
-  chatId: "YOUR_CHAT_ID"
 
 # 高级配置
 cache:

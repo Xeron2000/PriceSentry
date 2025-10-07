@@ -6,6 +6,7 @@ import { Loader2, LogOut, Save, ShieldCheck, SlidersHorizontal, Undo2 } from "lu
 import { toast } from "sonner"
 
 import { ConfigEditor } from "@/components/dashboard/config-editor"
+import { TelegramRecipients } from "@/components/dashboard/telegram-recipients"
 import { KLineViewer } from "@/components/dashboard/kline-viewer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -48,6 +49,12 @@ const SIMPLE_GROUPS: ConfigGroup[] = [
     label: "通知渠道",
     description: "通知方式与推送节奏配置",
     allowedKeys: ["notificationChannels", "notificationTimezone", "telegram", "notification"],
+  },
+  {
+    key: "telegramRecipients",
+    label: "Telegram 多用户",
+    description: "维护 Telegram 多用户通知接收列表",
+    allowedKeys: [],
   },
   {
     key: "chart",
@@ -438,14 +445,18 @@ export default function DashboardPage() {
                       value={group.key}
                       className="h-full overflow-hidden"
                     >
-                      <ConfigEditor
-                        data={draftConfig}
-                        onValueChange={handleConfigChange}
-                        searchTerm={searchTerm}
-                        disabled={saveLoading}
-                        allowedTopLevelKeys={group.allowedKeys}
-                        className="pb-6"
-                      />
+                      {group.key === "telegramRecipients" ? (
+                        <TelegramRecipients authKey={authKey} disabled={saveLoading} />
+                      ) : (
+                        <ConfigEditor
+                          data={draftConfig}
+                          onValueChange={handleConfigChange}
+                          searchTerm={searchTerm}
+                          disabled={saveLoading}
+                          allowedTopLevelKeys={group.allowedKeys}
+                          className="pb-6"
+                        />
+                      )}
                     </TabsContent>
                   ))}
                 </div>

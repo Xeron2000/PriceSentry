@@ -31,7 +31,6 @@ notificationChannels:
 # Telegram 机器人配置
 telegram:
   token: "YOUR_TELEGRAM_BOT_TOKEN"  # 示例: "你的机器人令牌"
-  chatId: "YOUR_CHAT_ID"  # 示例: "你的聊天ID"
 
 # 通知时区配置
 # 默认为亚洲/上海时间

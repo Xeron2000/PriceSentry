@@ -89,10 +89,9 @@ def check_telegram_config():
         ):
             telegram = config.get("telegram", {})
             token = telegram.get("token", "")
-            chat_id = telegram.get("chatId", "")
 
-            if not token or not chat_id:
-                print("❌ Telegram配置不完整")
+            if not token:
+                print("❌ Telegram配置不完整 (缺少 Bot Token)")
                 return False
 
             # 简单的token格式检查
@@ -100,7 +99,7 @@ def check_telegram_config():
                 print("❌ Telegram token格式错误")
                 return False
 
-            print("✅ Telegram配置正确")
+            print("✅ Telegram配置检查完成 (请确保在控制台绑定接收人)")
         return True
     except Exception as e:
         print(f"❌ 检查Telegram配置时出错: {e}")

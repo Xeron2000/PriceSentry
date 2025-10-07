@@ -27,7 +27,7 @@
 ## 功能一览
 
 - 追踪 Binance、OKX、Bybit 合约价格并支持自定义交易对
-- Telegram、钉钉双通道推送价格波动与健康检查
+- Telegram 推送价格波动与健康检查，内置机器人支持多用户绑定
 - YAML 配置驱动，内置校验与智能缓存机制
 - 性能监控、熔断与指数退避重试保障稳定性
 
@@ -36,7 +36,7 @@
 ```bash
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
-uv sync
+uv sync && uv pip install -e .
 uv run python -m app.runner
 ```
 
@@ -44,7 +44,14 @@ uv run python -m app.runner
 
 1. 复制 `config/config.yaml.example` 为 `config/config.yaml`
 2. 设置目标交易所、通知渠道与阈值
-3. 填写 Telegram 机器人凭据
+3. 在配置中填写 Telegram Bot Token，运行控制面板添加接收人
+
+### Telegram 通知绑定流程
+
+1. 在 Dashboard「通知渠道」页启用 Telegram，并保存包含 `telegram.token` 的配置。
+2. 切换到新增加的「Telegram 接收人」标签，输入用户名生成绑定令牌。
+3. 让目标用户与机器人对话并发送 `/bind <token>`，机器人会自动确认并加入通知列表。
+4. 如需兼容旧流程，可在配置中保留 `telegram.chatId`，消息会优先发送至该 chat，再广播至所有绑定用户。
 
 更多选项可参考示例文件注释，或运行 `uv run python tools/update_markets.py` 更新支持的市场列表。
 

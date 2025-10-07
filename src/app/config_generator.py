@@ -84,10 +84,9 @@ def generate_config():
     if "telegram" in notification_channels:
         print("\n📱 Telegram 配置")
         telegram_token = get_input("Telegram Bot Token", required=False)
-        telegram_chat_id = get_input("Telegram Chat ID", required=False)
 
-        if telegram_token and telegram_chat_id:
-            config["telegram"] = {"token": telegram_token, "chatId": telegram_chat_id}
+        if telegram_token:
+            config["telegram"] = {"token": telegram_token}
 
     # 时区配置
     print("\n🌍 时区配置")

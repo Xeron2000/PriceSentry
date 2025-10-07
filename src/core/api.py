@@ -4,6 +4,7 @@ FastAPI数据转发层
 """
 
 import asyncio
+import hmac
 import json
 import logging
 import threading
@@ -15,6 +16,7 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Header,
+    Request,
     WebSocket,
     WebSocketDisconnect,
     status,
@@ -24,8 +26,13 @@ from pydantic import BaseModel
 
 # 导入现有模块
 from core.config_manager import ManagerUpdateResult, config_manager
+from notifications.telegram import send_telegram_message
 from utils.cache_manager import alert_cache, price_cache
 from utils.performance_monitor import performance_monitor
+from utils.telegram_recipient_store import (
+    TelegramRecipient,
+    TelegramRecipientStore,
+)
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -128,6 +135,35 @@ class HealthResponse(BaseModel):
     prices_count: int
 
 
+class TelegramRecipientPayload(BaseModel):
+    id: int
+    username: str
+    token: str
+    userId: Optional[int] = None
+    status: str
+    createdAt: float
+    updatedAt: float
+
+
+class TelegramRecipientListResponse(BaseModel):
+    success: bool
+    recipients: List[TelegramRecipientPayload]
+
+
+class CreateRecipientRequest(BaseModel):
+    username: str
+
+
+class CreateRecipientResponse(BaseModel):
+    success: bool
+    token: str
+    recipient: TelegramRecipientPayload
+
+
+class DeleteRecipientResponse(BaseModel):
+    success: bool
+
+
 # 全局数据存储
 class APIDataStore:
     def __init__(self):
@@ -180,6 +216,56 @@ class APIDataStore:
 
 # 全局数据存储实例
 data_store = APIDataStore()
+recipient_store = TelegramRecipientStore()
+
+
+def _recipient_to_payload(recipient: TelegramRecipient) -> Dict[str, Any]:
+    return {
+        "id": recipient.id,
+        "username": recipient.username,
+        "token": recipient.token,
+        "userId": recipient.user_id,
+        "status": recipient.status,
+        "createdAt": recipient.created_at,
+        "updatedAt": recipient.updated_at,
+    }
+
+
+def _load_telegram_config() -> Dict[str, Any]:
+    try:
+        config = config_manager.get_config(copy_result=False)
+    except Exception:
+        return {}
+    return config.get("telegram", {}) if isinstance(config, dict) else {}
+
+
+def _verify_webhook_secret(request: Request, telegram_config: Dict[str, Any]) -> None:
+    secret = telegram_config.get("webhookSecret")
+    if not secret:
+        return
+
+    provided = (
+        request.headers.get("X-Telegram-Token")
+        or request.headers.get("X-Telegram-Secret")
+        or request.query_params.get("secret")
+    )
+    if not provided or not hmac.compare_digest(str(provided), str(secret)):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid webhook secret",
+        )
+
+
+def _build_recipient_payload(recipient: TelegramRecipient) -> TelegramRecipientPayload:
+    return TelegramRecipientPayload(**_recipient_to_payload(recipient))
+
+
+def _reply_via_bot(chat_id: int, text: str, telegram_config: Dict[str, Any]) -> None:
+    bot_token = telegram_config.get("token")
+    if not bot_token:
+        logging.warning("Telegram bot token missing; cannot reply to webhook user.")
+        return
+    send_telegram_message(text, bot_token, str(chat_id))
 
 
 def _load_dashboard_access_key() -> Tuple[Optional[str], bool]:
@@ -422,6 +508,95 @@ async def update_system_config_payload(
         message=update_result.message,
         errors=[],
     )
+
+
+@app.get(
+    "/api/telegram/recipients",
+    response_model=TelegramRecipientListResponse,
+)
+async def list_telegram_recipients(_key_ok: None = Depends(require_dashboard_key)):
+    recipients = [_build_recipient_payload(rec) for rec in recipient_store.list_all()]
+    return TelegramRecipientListResponse(success=True, recipients=recipients)
+
+
+@app.post(
+    "/api/telegram/recipients",
+    response_model=CreateRecipientResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_telegram_recipient(
+    payload: CreateRecipientRequest, _key_ok: None = Depends(require_dashboard_key)
+):
+    token = recipient_store.add_pending(payload.username)
+    created = next(
+        (rec for rec in recipient_store.list_all() if rec.token == token),
+        None,
+    )
+    if created is None:
+        raise HTTPException(status_code=500, detail="Failed to create recipient")
+    return CreateRecipientResponse(
+        success=True,
+        token=token,
+        recipient=_build_recipient_payload(created),
+    )
+
+
+@app.delete(
+    "/api/telegram/recipients/{recipient_id}",
+    response_model=DeleteRecipientResponse,
+)
+async def delete_telegram_recipient(
+    recipient_id: int, _key_ok: None = Depends(require_dashboard_key)
+):
+    deleted = recipient_store.delete(recipient_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Recipient not found"
+        )
+    return DeleteRecipientResponse(success=True)
+
+
+@app.post("/api/telegram/webhook")
+async def telegram_webhook(request: Request, payload: Dict[str, Any]):
+    telegram_config = _load_telegram_config()
+    _verify_webhook_secret(request, telegram_config)
+
+    message = payload.get("message") or payload.get("edited_message")
+    if not isinstance(message, dict):
+        return {"ok": True}
+
+    text = (message.get("text") or "").strip()
+    if not text.lower().startswith("/bind"):
+        return {"ok": True}
+
+    parts = text.split()
+    if len(parts) < 2:
+        chat = message.get("chat") or {}
+        chat_id = chat.get("id")
+        if isinstance(chat_id, int):
+            _reply_via_bot(chat_id, "格式错误，请使用 /bind <token>", telegram_config)
+        return {"ok": True}
+
+    token = parts[1]
+    sender = message.get("from") or {}
+    user_id = sender.get("id")
+    username = sender.get("username")
+    chat = message.get("chat") or {}
+    chat_id = chat.get("id") or user_id
+
+    if not isinstance(user_id, int) or not isinstance(chat_id, int):
+        return {"ok": True}
+
+    status = recipient_store.confirm_binding(token, user_id, username)
+
+    if status == "confirmed":
+        _reply_via_bot(chat_id, "绑定成功喵！后续会收到通知~", telegram_config)
+    elif status == "already_active":
+        _reply_via_bot(chat_id, "已经绑定过了喵~", telegram_config)
+    else:
+        _reply_via_bot(chat_id, "令牌无效，请确认后重试", telegram_config)
+
+    return {"ok": True}
 
 
 @app.get("/api/exchanges")

@@ -64,7 +64,7 @@ const CONFIG_HINTS: Record<string, { title?: string; description?: string }> = {
   "security.dashboardAccessKey": { description: "仪表板访问密钥（至少 4 位）" },
   telegram: { description: "Telegram 推送参数" },
   "telegram.token": { description: "Telegram 机器人 Token" },
-  "telegram.chatId": { description: "Telegram 目标聊天 ID" },
+  "telegram.chatId": { description: "Telegram 兼容回退聊天 ID（可选）" },
   data_fetch: { description: "外部行情数据抓取参数" },
   monitoring: { description: "PriceSentry 核心监控流程参数" },
   api_limits: { description: "各交易所 API 限速配置" },

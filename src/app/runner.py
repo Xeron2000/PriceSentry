@@ -1,20 +1,34 @@
 import asyncio
 import logging
 import traceback
+from typing import Optional
 
 from core.sentry import PriceSentry
+from notifications.telegram_bot_service import TelegramBotService
 from utils.setup_logging import setup_logging
 
 
 async def main():
+    bot_service: Optional[TelegramBotService] = None
     try:
         sentry = PriceSentry()
         log_level = sentry.config.get("logLevel", "INFO")
         setup_logging(log_level)
+
+        telegram_cfg = sentry.config.get("telegram", {}) if sentry.config else {}
+        bot_service = TelegramBotService(telegram_cfg.get("token"))
+        await bot_service.start()
+
         await sentry.run()
     except Exception as e:
         logging.error(f"An error occurred in main: {e}")
         traceback.print_exc()
+    finally:
+        if bot_service is not None:
+            try:
+                await bot_service.stop()
+            except Exception as exc:  # defensive cleanup
+                logging.warning(f"Failed to stop Telegram bot service cleanly: {exc}")
 
 
 if __name__ == "__main__":

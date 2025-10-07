@@ -146,6 +146,14 @@ class ConfigValidator:
             error_message="Telegram chat ID must be a numeric string",
         )
 
+        self.rules["telegram.webhookSecret"] = ValidationRule(
+            key_path="telegram.webhookSecret",
+            required=False,
+            data_type=str,
+            min_length=6,
+            error_message="Telegram webhook secret must be at least 6 characters",
+        )
+
         # Timezone configuration
         self.rules["notificationTimezone"] = ValidationRule(
             key_path="notificationTimezone",
@@ -518,8 +526,8 @@ class ConfigValidator:
                 result.add_error("Telegram notifications enabled but token is missing")
 
             if not telegram_chat_id:
-                result.add_error(
-                    "Telegram notifications enabled but chat ID is missing"
+                result.add_info(
+                    "Telegram fallback chat ID not configured. Notifications will rely on bound recipients."
                 )
 
         # Check if chart is enabled but configuration is invalid
