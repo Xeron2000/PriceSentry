@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.git/
+.gitignore
+.venv/
+logs/
+.claude/
+data/
+node_modules/
+dashboard/node_modules/
+dashboard/.next/
+dashboard/tests/
+pricesentry.log

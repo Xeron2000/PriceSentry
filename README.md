@@ -81,6 +81,45 @@ uv run python tools/update_markets.py  # 刷新交易对数据
 | 运行 API 端点手测 | `uv run python tools/manual_tests/api_endpoints.py` |
 
 启动脚本 `./start.sh` 会自动调用上述命令组合完成环境检测与运行。
+
+## Docker 部署
+
+PriceSentry 提供基于 Docker Compose 的部署方式，后端服务默认启用，Dashboard 前端可按需加载。
+
+### 构建与启动
+
+```bash
+# 构建镜像并启动后端
+docker compose up -d backend
+
+# 若需要同时启用 Dashboard
+docker compose --profile dashboard up -d
+```
+
+默认情况下后端监听宿主机 `10080` 端口，Dashboard 监听 `13080` 端口，可通过环境变量调整映射（见下表）。
+
+### 常用环境变量
+
+| 变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `PRICESENTRY_EXCHANGE` | 指定默认交易所 | `okx` |
+| `PRICESENTRY_TELEGRAM_TOKEN` | Telegram Bot Token | *(空)* |
+| `PRICESENTRY_TELEGRAM_CHAT_ID` | Telegram 默认接收人 chatId | *(空)* |
+| `PRICESENTRY_LOG_LEVEL` | 应用日志级别 | `INFO` |
+| `PRICESENTRY_DASHBOARD_ACCESS_KEY` | Dashboard 访问密钥 | `pricesentry` |
+| `PRICESENTRY_BACKEND_PORT` | 宿主机暴露的后端端口 | `10080` |
+| `PRICESENTRY_DASHBOARD_PORT` | 宿主机暴露的 Dashboard 端口 | `13080` |
+| `PRICESENTRY_PUBLIC_API_BASE_URL` | Dashboard 在构建期注入的后端访问地址（浏览器可访问） | `http://localhost:8000` |
+
+建议基于仓库中的 `.env.example` 复制生成 `.env` 文件后再执行 `docker compose` 命令，以便在服务器环境中集中管理。
+
+### 运行流程
+
+1. `docker/backend/Dockerfile` 基于 `uv` 构建 Python 环境，并在启动时自动从示例配置生成 `config/config.yaml`；若提供上述环境变量会写入对应配置项。
+2. `docker/dashboard/Dockerfile` 构建 Next.js Dashboard 的生产版本，通过 `pnpm start` 提供服务。
+3. `docker-compose.yml` 默认只启动 `backend` 服务，执行 `docker compose --profile dashboard up` 时会同时拉起 `dashboard` 并依赖后端。
+
+部署完成后，可在服务器上访问 `http://服务器IP:10080` 使用后端 API；若启用了 Dashboard，则访问 `http://服务器IP:13080` 并使用 `PRICESENTRY_DASHBOARD_ACCESS_KEY` 登录。
 ## 项目结构
 
 ```

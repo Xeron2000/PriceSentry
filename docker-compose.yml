@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    environment:
+      PRICESENTRY_EXCHANGE: ${PRICESENTRY_EXCHANGE:-okx}
+      PRICESENTRY_TELEGRAM_TOKEN: ${PRICESENTRY_TELEGRAM_TOKEN:-}
+      PRICESENTRY_TELEGRAM_CHAT_ID: ${PRICESENTRY_TELEGRAM_CHAT_ID:-}
+      PRICESENTRY_LOG_LEVEL: ${PRICESENTRY_LOG_LEVEL:-INFO}
+      PRICESENTRY_DASHBOARD_ACCESS_KEY: ${PRICESENTRY_DASHBOARD_ACCESS_KEY:-pricesentry}
+    ports:
+      - "${PRICESENTRY_BACKEND_PORT:-10080}:8000"
+    restart: unless-stopped
+
+  dashboard:
+    profiles:
+      - dashboard
+    build:
+      context: .
+      dockerfile: docker/dashboard/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: ${PRICESENTRY_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${PRICESENTRY_DASHBOARD_PORT:-13080}:3000"
+    restart: unless-stopped
