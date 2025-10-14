@@ -38,6 +38,8 @@
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
 uv sync && uv pip install -e .
+cp config/config.yaml.example config/config.yaml
+# 更新 config/config.yaml 后再启动服务，避免缺失配置导致报错
 uv run python -m app.runner
 ```
 
@@ -46,6 +48,8 @@ uv run python -m app.runner
 1. 复制 `config/config.yaml.example` 为 `config/config.yaml`
 2. 设置目标交易所、通知渠道与阈值
 3. 在配置中填写 Telegram Bot Token，运行控制面板添加接收人
+
+> 注意：若未按上述步骤复制并完善配置文件，直接运行程序会因缺失配置而报错。
 
 ### Telegram 通知绑定流程
 

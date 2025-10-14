@@ -18,7 +18,7 @@ exchanges:
 defaultTimeframe: "5m"  # 示例: "5m"
 
 # 默认价格变化阈值，超过此值的交易对才会触发通知
-defaultThreshold: 0.01  # 示例: 1
+defaultThreshold: 1  # 示例: 1
 
 # 交易对文件路径，如果为空则自动获取
 symbolsFilePath: "config/symbols.txt"  # 示例: "config/symbols.txt"
@@ -81,8 +81,8 @@ performance_monitoring:
 attachChart: true
 
 # 图表渲染设置
-chartTimeframe: "1m"           # K线图时间周期
-chartLookbackMinutes: 60        # 包含的历史数据分钟数
+chartTimeframe: "5m"           # K线图时间周期
+chartLookbackMinutes: 500        # 包含的历史数据分钟数
 chartTheme: "dark"              # 主题: "dark" | "light"
 chartIncludeMA: [7, 25]         # 移动平均线窗口；空列表则禁用
 chartImageWidth: 1600           # 复合图表图片宽度（像素）
