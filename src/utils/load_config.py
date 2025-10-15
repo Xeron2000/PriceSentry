@@ -24,10 +24,11 @@ def load_config(configPath="config/config.yaml"):
 
     Required keys in the configuration file:
         - 'exchange': The name of the exchange to connect to.
-        - 'symbolsFilePath': The file path containing trading pair symbols.
         - 'defaultTimeframe': The default timeframe (frequency of data retrieval).
         - 'defaultThreshold': The default price change threshold.
         - 'notificationChannels': The channels for receiving notifications.
+    Optional keys:
+        - 'symbolsFilePath': Path to the symbols file. Defaults to "config/symbols.txt".
     """
     path = Path(configPath)
 
@@ -41,7 +42,6 @@ def load_config(configPath="config/config.yaml"):
 
         required_keys = [
             "exchange",
-            "symbolsFilePath",
             "defaultTimeframe",
             "defaultThreshold",
             "notificationChannels",
@@ -53,6 +53,9 @@ def load_config(configPath="config/config.yaml"):
 
         if "notificationTimezone" not in config or not config["notificationTimezone"]:
             config["notificationTimezone"] = "Asia/Shanghai"  # Default timezone
+
+        if "symbolsFilePath" not in config or not config["symbolsFilePath"]:
+            config["symbolsFilePath"] = "config/symbols.txt"
 
         return config
     except Exception as e:

@@ -1,8 +1,6 @@
 import argparse
-import json
 import logging
 
-import ccxt
 import yaml
 from pathlib import Path
 import sys
@@ -16,6 +14,9 @@ for candidate in (SRC_DIR, ROOT_DIR):
         sys.path.insert(0, candidate_str)
 
 from utils.setup_logging import setup_logging
+from utils.supported_markets import list_cached_exchanges, refresh_supported_markets
+
+DEFAULT_EXCHANGES = ["okx", "binance", "bybit"]
 
 
 def load_config():
@@ -28,38 +29,17 @@ def load_config():
         return None
 
 
-def fetch_markets_for_exchange(exchange_name):
-    """Fetches all market symbols for a given exchange."""
-    try:
-        exchange = getattr(ccxt, exchange_name)({"options": {"defaultType": "swap"}})
-        markets = exchange.fetch_markets()
-        return [market["symbol"] for market in markets]
-    except (ccxt.ExchangeError, ccxt.NetworkError) as e:
-        logging.error(f"Error fetching markets for {exchange_name}: {e}")
-        return None
-
-
 def update_supported_markets(exchange_names):
     """Fetches markets for a list of exchanges and saves them to a JSON file."""
-    exchange_markets = {}
-    for exchange_name in exchange_names:
-        logging.info(f"Fetching markets for {exchange_name}...")
-        markets = fetch_markets_for_exchange(exchange_name)
-        if markets:
-            exchange_markets[exchange_name] = markets
-            logging.info(f"Found {len(markets)} markets for {exchange_name}.")
-
-    if not exchange_markets:
-        logging.warning(
-            "No market data was fetched. The output file will not be updated."
+    refreshed = refresh_supported_markets(exchange_names)
+    if refreshed:
+        logging.info(
+            "Refresh completed with %s exchanges updated: %s",
+            len(refreshed),
+            ", ".join(sorted(refreshed)),
         )
-        return
-
-    output_file = "config/supported_markets.json"
-    with open(output_file, "w") as f:
-        json.dump(exchange_markets, f, indent=4)
-
-    logging.info(f"Supported markets saved to '{output_file}'.")
+    else:
+        logging.warning("Supported markets were not updated; no exchanges produced data.")
 
 
 def main():
@@ -78,21 +58,42 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.exchanges:
-        exchange_names = args.exchanges
-    else:
+    exchange_names = list(args.exchanges or [])
+
+    if not exchange_names:
+        seeds = list(DEFAULT_EXCHANGES)
+
         config = load_config()
-        if not config:
-            return
-        exchange_names = config.get("exchanges", [])
-        if not exchange_names:
-            logging.warning(
-                "No exchanges found in config.yaml. "
-                "Please add them under the 'exchanges' key."
-            )
-            return
+        if config:
+            config_exchanges = config.get("exchanges")
+            if isinstance(config_exchanges, (list, tuple)):
+                seeds.extend(str(name) for name in config_exchanges if name)
+            primary = config.get("exchange")
+            if primary:
+                seeds.append(str(primary))
+
+        cached = list_cached_exchanges()
+        seeds.extend(cached)
+
+        exchange_names = seeds
+        logging.info(
+            "Using default exchange set (merged with config/cached): %s",
+            ", ".join(dict.fromkeys(seeds)),
+        )
+
+    exchange_names = list(dict.fromkeys(name for name in exchange_names if name))
+    if not exchange_names:
+        logging.warning(
+            "No exchanges specified. Provide --exchanges, define them in config.yaml, "
+            "or ensure cached markets exist."
+        )
+        return
+
+    logging.info("Updating supported markets for: %s", ", ".join(exchange_names))
 
     update_supported_markets(exchange_names)
+
+    logging.info("Market update completed")
 
 
 if __name__ == "__main__":

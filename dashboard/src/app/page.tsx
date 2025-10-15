@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { ConfigEditor } from "@/components/dashboard/config-editor"
 import { NotificationHistory } from "@/components/dashboard/notification-history"
+import { SymbolSelector } from "@/components/dashboard/symbol-selector"
 import { TelegramRecipients } from "@/components/dashboard/telegram-recipients"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -37,27 +38,22 @@ const CONFIG_GROUPS: ConfigGroup[] = [
     description: "集中管理交易所与基础参数",
     allowedKeys: [
       "exchange",
-      "exchanges",
       "defaultTimeframe",
       "defaultThreshold",
-      "symbolsFilePath",
+      "notificationChannels",
+      "notificationTimezone",
     ],
   },
   {
     key: "notification",
     label: "通知渠道",
-    description: "配置推送方式与节奏",
-    allowedKeys: [
-      "notificationChannels",
-      "notificationTimezone",
-      "telegram",
-      "notification",
-    ],
+    description: "配置 Telegram 推送与相关参数",
+    allowedKeys: ["telegram"],
   },
   {
     key: "telegramRecipients",
     label: "Telegram 多用户",
-    description: "维护 Telegram 多用户通知接收列表",
+    description: "维护 Telegram 通知接收人列表",
     allowedKeys: [],
   },
   {
@@ -73,30 +69,21 @@ const CONFIG_GROUPS: ConfigGroup[] = [
       "chartImageWidth",
       "chartImageHeight",
       "chartImageScale",
-      "chartBackgroundColor",
-      "chartGridColor",
-      "chartUpColor",
-      "chartDownColor",
     ],
   },
   {
-    key: "performance",
-    label: "性能与监控",
-    description: "缓存、重试与性能监控参数",
-    allowedKeys: [
-      "cache",
-      "error_handling",
-      "performance_monitoring",
-      "monitoring",
-      "data_fetch",
-      "api_limits",
-    ],
+    key: "security",
+    label: "访问控制",
+    description: "Dashboard 密钥策略",
+    allowedKeys: ["security"],
   },
 ]
 
 const RESERVED_CONFIG_KEYS = new Set(
   CONFIG_GROUPS.flatMap((group) => group.allowedKeys).filter(Boolean)
 )
+
+RESERVED_CONFIG_KEYS.add("notificationSymbols")
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && Object.prototype.toString.call(value) === "[object Object]"
@@ -113,7 +100,11 @@ function setValueAtPath(target: Record<string, unknown>, path: string[], value: 
   if (path.length === 0) return
   const [head, ...rest] = path
   if (rest.length === 0) {
-    target[head] = value
+    if (value === undefined) {
+      delete target[head]
+    } else {
+      target[head] = value
+    }
     return
   }
 
@@ -123,6 +114,13 @@ function setValueAtPath(target: Record<string, unknown>, path: string[], value: 
   }
 
   setValueAtPath(target[head] as Record<string, unknown>, rest, value)
+
+  if (
+    isPlainObject(target[head]) &&
+    Object.keys(target[head] as Record<string, unknown>).length === 0
+  ) {
+    delete target[head]
+  }
 }
 
 export default function DashboardPage() {
@@ -143,6 +141,12 @@ export default function DashboardPage() {
     if (!config || !draftConfig) return false
     return JSON.stringify(config) !== JSON.stringify(draftConfig)
   }, [config, draftConfig])
+
+  const notificationSelection = useMemo(() => {
+    if (!draftConfig) return undefined
+    const selection = draftConfig["notificationSymbols"]
+    return Array.isArray(selection) ? (selection as string[]) : undefined
+  }, [draftConfig])
 
   const runVerification = useCallback(async (candidateKey: string) => {
     const trimmed = candidateKey.trim()
@@ -209,6 +213,13 @@ export default function DashboardPage() {
     })
   }, [])
 
+  const handleSymbolSelectionChange = useCallback(
+    (nextSelection: string[] | undefined) => {
+      handleConfigChange(["notificationSymbols"], nextSelection)
+    },
+    [handleConfigChange],
+  )
+
   const handleSave = useCallback(async () => {
     if (!authKey || !draftConfig) return
     setSaveLoading(true)
@@ -270,20 +281,8 @@ export default function DashboardPage() {
       groups.push({
         key: "others",
         label: "其他设置",
-        description: "未归类的配置项（含安全、日志、调试与量化监控）",
-        allowedKeys: [
-          "logging",
-          "security",
-          "development",
-          "volumeSentry",
-          "openInterestSentry",
-          ...remainingKeys.filter(
-            (key) =>
-              !["logging", "security", "development", "volumeSentry", "openInterestSentry"].includes(
-                key
-              )
-          ),
-        ],
+        description: "未归类的配置项",
+        allowedKeys: remainingKeys,
       })
     }
 
@@ -420,12 +419,32 @@ export default function DashboardPage() {
                 </>
               )}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!isDirty || saveLoading}
+              onClick={handleResetDraft}
+            >
+              <Undo2 className="mr-2 h-4 w-4" /> 放弃修改
+            </Button>
+            <Button size="sm" disabled={!isDirty || saveLoading} onClick={handleSave}>
+              {saveLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 保存中
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" /> 保存配置
+                </>
+              )}
+            </Button>
           </div>
         </header>
 
         <Tabs defaultValue="config" className="flex h-full flex-col overflow-hidden">
           <TabsList className="w-fit">
             <TabsTrigger value="config">配置管理</TabsTrigger>
+            <TabsTrigger value="symbols">合约选择</TabsTrigger>
             <TabsTrigger value="chart">消息推送结果</TabsTrigger>
           </TabsList>
 
@@ -461,27 +480,6 @@ export default function DashboardPage() {
                       <p className="text-xs text-muted-foreground">未找到匹配结果</p>
                     )
                   ) : null}
-                </div>
-                <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
-                  <Button
-                    variant="outline"
-                    disabled={!isDirty || saveLoading}
-                    onClick={handleResetDraft}
-                    size="sm"
-                  >
-                    <Undo2 className="mr-2 h-4 w-4" /> 放弃修改
-                  </Button>
-                  <Button disabled={!isDirty || saveLoading} onClick={handleSave} size="sm">
-                    {saveLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 保存中
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" /> 保存配置
-                      </>
-                    )}
-                  </Button>
                 </div>
               </div>
               {isDirty && (
@@ -542,6 +540,32 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </Tabs>
+            )}
+          </TabsContent>
+
+          <TabsContent value="symbols" className="h-full flex-1 overflow-hidden pb-6">
+            {configError ? (
+              <Card className="mt-4 space-y-3 border border-destructive/60 bg-destructive/10 p-4 text-destructive">
+                <p className="font-medium">配置加载失败</p>
+                <p className="text-sm">{configError}</p>
+                <Button variant="outline" size="sm" onClick={loadConfig}>
+                  重新尝试
+                </Button>
+              </Card>
+            ) : configLoading || !draftConfig ? (
+              <Card className="mt-4 flex h-full flex-1 items-center justify-center text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> 正在加载配置...
+                </div>
+              </Card>
+            ) : (
+              <SymbolSelector
+                authKey={authKey}
+                value={notificationSelection}
+                onChange={handleSymbolSelectionChange}
+                disabled={saveLoading}
+                className="mt-4"
+              />
             )}
           </TabsContent>
 

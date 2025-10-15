@@ -33,6 +33,7 @@ from utils.notification_history_store import (
     NotificationHistoryStore,
 )
 from utils.performance_monitor import performance_monitor
+from utils.supported_markets import load_usdt_contracts
 from utils.telegram_recipient_store import (
     TelegramRecipient,
     TelegramRecipientStore,
@@ -91,6 +92,7 @@ class ConfigResponse(BaseModel):
     defaultTimeframe: str
     defaultThreshold: float
     notificationChannels: List[str]
+    notificationSymbols: Optional[List[str]] = None
     symbolsFilePath: str
     chartTimeframe: str
     chartLookbackMinutes: int
@@ -137,6 +139,15 @@ class HealthResponse(BaseModel):
     python_backend: str
     websocket_connections: int
     prices_count: int
+
+
+class SymbolOptionsResponse(BaseModel):
+    success: bool
+    monitored: List[str]
+    selected: Optional[List[str]] = None
+    total: int
+    monitoredTotal: int
+    timestamp: float
 
 
 class TelegramRecipientPayload(BaseModel):
@@ -206,14 +217,41 @@ class APIDataStore:
         self.sentry_instance = None
         self.latest_chart: Optional[Dict[str, Any]] = None
         self.logger = logging.getLogger(__name__)
+        self.price_version: int = 0
+        self.stats_version: int = 0
 
         # WebSocket连接管理
         self.websocket_connections: List[WebSocket] = []
 
     def update_prices(self, prices: Dict[str, Any]):
         """更新价格数据"""
-        self.current_prices = prices
-        self.logger.debug(f"Updated prices for {len(prices)} symbols")
+        incoming = dict(prices)
+        diff: Dict[str, Any] = {}
+
+        for symbol, price in incoming.items():
+            current_price = self.current_prices.get(symbol)
+            if current_price is None or current_price != price:
+                diff[symbol] = price
+
+        removed_symbols = set(self.current_prices.keys()) - set(incoming.keys())
+        for symbol in removed_symbols:
+            diff[symbol] = None
+
+        self.current_prices = incoming
+        if diff:
+            changed_count = sum(1 for value in diff.values() if value is not None)
+            removed_count = sum(1 for value in diff.values() if value is None)
+            self.price_version += 1
+            self.logger.debug(
+                "Updated prices for %s symbols (%s changed, %s removed)",
+                len(incoming),
+                changed_count,
+                removed_count,
+            )
+        else:
+            self.logger.debug("Price update received with no changes")
+
+        return diff
 
     def add_alert(self, alert: Dict[str, Any]):
         """添加告警到历史记录"""
@@ -226,8 +264,13 @@ class APIDataStore:
 
     def update_stats(self, stats: Dict[str, Any]):
         """更新系统统计"""
-        self.system_stats = stats
-        self.logger.debug("Updated system stats")
+        changed = stats != self.system_stats
+        self.system_stats = dict(stats)
+        if changed:
+            self.stats_version += 1
+            self.logger.debug("Updated system stats (version %s)", self.stats_version)
+        else:
+            self.logger.debug("Stats update received with no changes")
 
     def set_latest_chart(self, chart_info: Dict[str, Any]):
         """记录最新的K线图像快照"""
@@ -488,6 +531,7 @@ async def get_system_config():
             defaultTimeframe=config.get("defaultTimeframe", "5m"),
             defaultThreshold=config.get("defaultThreshold", 1.0),
             notificationChannels=config.get("notificationChannels", []),
+            notificationSymbols=config.get("notificationSymbols"),
             symbolsFilePath=config.get("symbolsFilePath", "config/symbols.txt"),
             chartTimeframe=config.get("chartTimeframe", "1m"),
             chartLookbackMinutes=config.get("chartLookbackMinutes", 60),
@@ -520,6 +564,20 @@ async def update_system_config_payload(
             detail="Config payload must be an object",
         )
     try:
+        notification_symbols = payload.config.get("notificationSymbols")
+        if notification_symbols is None:
+            payload.config.pop("notificationSymbols", None)
+        elif isinstance(notification_symbols, list):
+            cleaned_symbols = [
+                str(symbol).strip()
+                for symbol in notification_symbols
+                if isinstance(symbol, str) and symbol.strip()
+            ]
+            if cleaned_symbols:
+                payload.config["notificationSymbols"] = cleaned_symbols
+            else:
+                payload.config.pop("notificationSymbols", None)
+
         update_result: ManagerUpdateResult = config_manager.update_config(
             payload.config
         )
@@ -733,6 +791,38 @@ async def get_monitored_symbols():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/symbols/options", response_model=SymbolOptionsResponse)
+async def get_symbol_options(
+    query: Optional[str] = None, _key_ok: None = Depends(require_dashboard_key)
+):
+    """获取可选与已选择的合约交易对列表"""
+    try:
+        config = config_manager.get_config()
+        exchange = config.get("exchange", "binance")
+        monitored = load_usdt_contracts(exchange)
+        selected = config.get("notificationSymbols")
+        selected_filtered: Optional[List[str]] = None
+        if isinstance(selected, list) and selected:
+            selected_filtered = [symbol for symbol in selected if symbol in monitored]
+
+        if query:
+            keyword = query.strip().upper()
+            filtered = [symbol for symbol in monitored if keyword in symbol.upper()]
+        else:
+            filtered = monitored
+
+        return SymbolOptionsResponse(
+            success=True,
+            monitored=filtered,
+            selected=selected_filtered,
+            total=len(filtered),
+            monitoredTotal=len(monitored),
+            timestamp=time.time(),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/charts/latest", response_model=ChartImageResponse)
 async def get_latest_chart_image(_: None = Depends(require_dashboard_key)):
     """获取最近推送的K线图像"""
@@ -783,25 +873,37 @@ async def websocket_endpoint(websocket: WebSocket):
                 "prices": data_store.current_prices,
                 "alerts": data_store.get_recent_alerts(10),
                 "stats": data_store.system_stats,
+                "versions": {
+                    "prices": data_store.price_version,
+                    "stats": data_store.stats_version,
+                },
             },
         }
         await websocket.send_text(json.dumps(initial_data))
 
-        # 持续推送实时数据
-        while True:
-            # 构建实时数据消息
-            message = {
-                "type": "data_update",
-                "timestamp": time.time(),
-                "data": {
-                    "prices": data_store.current_prices,
-                    "alerts": data_store.get_recent_alerts(5),
-                    "stats": data_store.system_stats,
-                },
-            }
+        last_stats_version = data_store.stats_version
 
-            await websocket.send_text(json.dumps(message))
-            await asyncio.sleep(1)  # 每秒推送一次
+        # 心跳与统计更新
+        while True:
+            await asyncio.sleep(10)
+            try:
+                if data_store.stats_version != last_stats_version:
+                    stats_message = {
+                        "type": "stats_update",
+                        "timestamp": time.time(),
+                        "data": {
+                            "stats": data_store.system_stats,
+                            "version": data_store.stats_version,
+                        },
+                    }
+                    await websocket.send_text(json.dumps(stats_message))
+                    last_stats_version = data_store.stats_version
+                else:
+                    heartbeat = {"type": "heartbeat", "timestamp": time.time()}
+                    await websocket.send_text(json.dumps(heartbeat))
+            except Exception as inner_exc:
+                logging.error(f"WebSocket send error: {inner_exc}")
+                raise
 
     except WebSocketDisconnect:
         websocket_manager.disconnect(websocket)
@@ -814,8 +916,11 @@ async def websocket_endpoint(websocket: WebSocket):
 def update_api_data(prices=None, alerts=None, stats=None, chart_image=None, sentry_instance=None):
     """更新API数据（供现有系统调用）"""
     try:
+        price_diff: Optional[Dict[str, Any]] = None
+        previous_stats_version = data_store.stats_version
+
         if prices is not None:
-            data_store.update_prices(prices)
+            price_diff = data_store.update_prices(prices)
 
         if alerts is not None:
             data_store.add_alert(alerts)
@@ -833,6 +938,14 @@ def update_api_data(prices=None, alerts=None, stats=None, chart_image=None, sent
         if alerts is not None:
             # 如果有新告警，立即广播
             asyncio.create_task(broadcast_alert_update(alerts))
+        if price_diff:
+            asyncio.create_task(
+                broadcast_price_update(price_diff, data_store.price_version)
+            )
+        if data_store.stats_version != previous_stats_version:
+            asyncio.create_task(
+                broadcast_stats_update(data_store.system_stats, data_store.stats_version)
+            )
 
     except Exception as e:
         logging.error(f"Failed to update API data: {e}")
@@ -849,6 +962,32 @@ async def broadcast_alert_update(alert):
         await websocket_manager.broadcast(json.dumps(message))
     except Exception as e:
         logging.error(f"Failed to broadcast alert update: {e}")
+
+
+async def broadcast_price_update(diff: Dict[str, Any], version: int):
+    """广播价格增量更新"""
+    try:
+        message = {
+            "type": "price_update",
+            "timestamp": time.time(),
+            "data": {"diff": diff, "version": version},
+        }
+        await websocket_manager.broadcast(json.dumps(message))
+    except Exception as e:
+        logging.error(f"Failed to broadcast price update: {e}")
+
+
+async def broadcast_stats_update(stats: Dict[str, Any], version: int):
+    """广播统计信息更新"""
+    try:
+        message = {
+            "type": "stats_update",
+            "timestamp": time.time(),
+            "data": {"stats": stats, "version": version},
+        }
+        await websocket_manager.broadcast(json.dumps(message))
+    except Exception as e:
+        logging.error(f"Failed to broadcast stats update: {e}")
 
 
 def set_exchange_instance(exchange_instance):

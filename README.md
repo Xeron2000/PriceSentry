@@ -65,8 +65,8 @@ uv run python -m app.runner
 
 ```bash
 uv run python -m app.runner           # 启动监控
-uv run pytest                          # 运行测试
-uv run python tools/update_markets.py  # 刷新交易对数据
+uv run pytest                         # 运行测试
+uv run python tools/update_markets.py # 刷新交易对数据
 ```
 
 
@@ -76,15 +76,9 @@ uv run python tools/update_markets.py  # 刷新交易对数据
 | 功能 | 命令 |
 | --- | --- |
 | 启动监控 | `uv run python -m app.runner` |
-| 简化配置检查 | `uv run python -m app.config_check` |
-| 交互配置生成 | `uv run python -m app.config_generator` |
-| 监控仪表板 | `uv run python -m app.dashboard` |
-| 生成监控报告 | `uv run python -m app.monitoring_report` |
-| 更新交易对列表 | `uv run python tools/update_markets.py` |
+| 刷新交易对列表 | `uv run python tools/update_markets.py` |
+| 运行测试 | `uv run pytest` |
 | 启动快速测试 | `uv run python tests/quick_test.py` |
-| 运行 API 端点手测 | `uv run python tools/manual_tests/api_endpoints.py` |
-
-启动脚本 `./start.sh` 会自动调用上述命令组合完成环境检测与运行。
 ## 项目结构
 
 ```

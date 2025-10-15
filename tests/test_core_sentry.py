@@ -17,19 +17,14 @@ class TestPriceSentry:
         with patch("core.sentry.load_config", return_value=sample_config), patch(
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
-            "core.sentry.load_symbols_from_file", return_value=["BTC/USDT"]
-        ), patch(
-            "core.sentry.match_symbols",
-            return_value=[{"symbol": "BTC/USDT", "exchange_symbol": "BTCUSDT"}],
+            "core.sentry.load_usdt_contracts", return_value=["BTC/USDT:USDT"]
         ), patch("core.sentry.parse_timeframe", return_value=5):
             sentry = PriceSentry()
 
             assert sentry.config == sample_config
             assert sentry.notifier == mock_notifier
             assert sentry.exchange == mock_exchange
-            assert sentry.matched_symbols == [
-                {"symbol": "BTC/USDT", "exchange_symbol": "BTCUSDT"}
-            ]
+            assert sentry.matched_symbols == ["BTC/USDT:USDT"]
             assert sentry.minutes == 5
             assert sentry.threshold == 2.0
 
@@ -40,27 +35,27 @@ class TestPriceSentry:
         with patch("core.sentry.load_config", return_value=sample_config), patch(
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
-            "core.sentry.load_symbols_from_file", return_value=["BTC/USDT"]
-        ), patch("core.sentry.match_symbols", return_value=[]), patch(
-            "core.sentry.parse_timeframe", return_value=5
+            "core.sentry.load_usdt_contracts", return_value=[]
+        ), patch("core.sentry.parse_timeframe", return_value=5
         ):
             with patch("core.sentry.logging") as mock_logging:
                 sentry = PriceSentry()
 
                 assert sentry.matched_symbols == []
                 mock_logging.warning.assert_called_with(
-                    "No matched symbols found. Please check your symbols file."
+                    "No USDT contract symbols found for exchange %s. "
+                    "Run tools/update_markets.py to refresh supported markets.",
+                    "binance",
                 )
 
     def test_init_with_custom_config(self, mock_exchange, mock_notifier):
         """Test initialization with custom configuration values."""
         custom_config = {
             "exchange": "okx",
-            "exchanges": ["okx"],
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "15m",
             "defaultThreshold": 2.5,
             "notificationChannels": ["telegram"],
+            "notificationTimezone": "Asia/Shanghai",
             "telegram": {
                 "token": "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk",
                 "chatId": "123456789",
@@ -70,10 +65,7 @@ class TestPriceSentry:
         with patch("core.sentry.load_config", return_value=custom_config), patch(
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
-            "core.sentry.load_symbols_from_file", return_value=["ETH/USDT"]
-        ), patch(
-            "core.sentry.match_symbols",
-            return_value=[{"symbol": "ETH/USDT", "exchange_symbol": "ETH-USDT"}],
+            "core.sentry.load_usdt_contracts", return_value=["ETH/USDT:USDT"]
         ), patch("core.sentry.parse_timeframe", return_value=15):
             sentry = PriceSentry()
 
@@ -88,9 +80,8 @@ class TestPriceSentry:
         with patch("core.sentry.load_config", return_value=sample_config), patch(
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
-            "core.sentry.load_symbols_from_file", return_value=["BTC/USDT"]
-        ), patch("core.sentry.match_symbols", return_value=[]), patch(
-            "core.sentry.parse_timeframe", return_value=5
+            "core.sentry.load_usdt_contracts", return_value=[]
+        ), patch("core.sentry.parse_timeframe", return_value=5
         ):
             sentry = PriceSentry()
             result = await sentry.run()
@@ -106,10 +97,7 @@ class TestPriceSentry:
         with patch("core.sentry.load_config", return_value=sample_config), patch(
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
-            "core.sentry.load_symbols_from_file", return_value=["BTC/USDT"]
-        ), patch(
-            "core.sentry.match_symbols",
-            return_value=[{"symbol": "BTC/USDT", "exchange_symbol": "BTCUSDT"}],
+            "core.sentry.load_usdt_contracts", return_value=["BTC/USDT:USDT"]
         ), patch("core.sentry.parse_timeframe", return_value=1), patch(
             "core.sentry.monitor_top_movers"
         ) as mock_monitor, patch("core.sentry.logging"):
@@ -171,11 +159,10 @@ class TestPriceSentry:
         """Test that default config values are applied correctly."""
         minimal_config = {
             "exchange": "binance",
-            "exchanges": ["binance"],
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": 1.0,
             "notificationChannels": ["telegram"],
+            "notificationTimezone": "Asia/Shanghai",
             "telegram": {
                 "token": "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk",
                 "chatId": "123456789",
@@ -185,15 +172,12 @@ class TestPriceSentry:
         with patch("core.sentry.load_config", return_value=minimal_config), patch(
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
-            "core.sentry.load_symbols_from_file", return_value=["BTC/USDT"]
-        ), patch(
-            "core.sentry.match_symbols",
-            return_value=[{"symbol": "BTC/USDT", "exchange_symbol": "BTCUSDT"}],
-        ), patch("core.sentry.parse_timeframe", return_value=5):
+            "core.sentry.load_usdt_contracts", return_value=["BTC/USDT:USDT"]
+        ) as mock_load_symbols, patch("core.sentry.parse_timeframe", return_value=5):
             sentry = PriceSentry()
 
             # Check default values
-            assert sentry.config.get("symbolsFilePath") == "config/symbols.txt"
+            mock_load_symbols.assert_called_once_with("binance")
             assert sentry.minutes == 5  # defaultTimeframe '5m' -> 5 minutes
             assert sentry.threshold == 1  # defaultThreshold
 
@@ -205,10 +189,7 @@ class TestPriceSentry:
         with patch("core.sentry.load_config", return_value=sample_config), patch(
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
-            "core.sentry.load_symbols_from_file", return_value=["BTC/USDT"]
-        ), patch(
-            "core.sentry.match_symbols",
-            return_value=[{"symbol": "BTC/USDT", "exchange_symbol": "BTCUSDT"}],
+            "core.sentry.load_usdt_contracts", return_value=["BTC/USDT:USDT"]
         ), patch("core.sentry.parse_timeframe", return_value=1), patch(
             "core.sentry.monitor_top_movers", return_value=None
         ), patch("core.sentry.logging"):

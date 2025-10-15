@@ -1,9 +1,17 @@
 from datetime import datetime
+from typing import Iterable, Optional
 
 import pytz
 
 
-async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
+async def monitor_top_movers(
+    minutes,
+    symbols,
+    threshold,
+    exchange,
+    config,
+    allowed_symbols: Optional[Iterable[str]] = None,
+):
     """
     Retrieves the top movers for the given symbols on the given exchange
     over the given time period asynchronously.
@@ -16,6 +24,9 @@ async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
         exchange (Exchange): An instance of the Exchange class which implements the
             'getPriceMinutesAgo' and 'getCurrentPrices' methods.
         config (dict): Configuration dictionary loaded from config.yaml
+        allowed_symbols (Iterable[str] | None): Optional subset of symbols that should
+            trigger notifications. When provided, only price changes for these symbols
+            will be reported.
 
     Returns:
         tuple[str, list[tuple[str, float]]] | None: (message, top_movers_sorted) where
@@ -49,6 +60,16 @@ async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
         > threshold
     }
 
+    if allowed_symbols is not None:
+        allowed_set = {symbol.strip() for symbol in allowed_symbols if isinstance(symbol, str)}
+        price_changes = {
+            symbol: change
+            for symbol, change in price_changes.items()
+            if symbol in allowed_set
+        }
+    else:
+        allowed_set = None
+
     if not price_changes:
         return None
 
@@ -61,9 +82,10 @@ async def monitor_top_movers(minutes, symbols, threshold, exchange, config):
 
     header = f"**📈 {exchange.exchange_name} Top 6 Movers ({minutes}m)**\n\n"
     time_info = f"**Time:** {current_time} ({timezone_str})\n"
+    scope_count = len(allowed_set) if allowed_set is not None else len(symbols)
     stats = (
-        f"**Threshold:** {threshold}% | **Symbols:** {len(symbols)} | "
-        f"**Alerts:** {len(price_changes)}\n\n"
+        f"**Threshold:** {threshold}% | **Monitored:** {len(symbols)} | "
+        f"**Alert Scope:** {scope_count} | **Detected:** {len(price_changes)}\n\n"
     )
     message = header + time_info + stats
 

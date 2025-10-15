@@ -35,6 +35,14 @@ class OkxExchange(BaseExchange):
             pass
         return params
 
+    @staticmethod
+    def _canonical_symbol(inst_id: str) -> str:
+        parts = inst_id.split("-")
+        if len(parts) >= 2:
+            base, quote = parts[0], parts[1]
+            return f"{base}/{quote}:USDT"
+        return inst_id
+
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
         logging.info(
@@ -96,7 +104,8 @@ class OkxExchange(BaseExchange):
                             # Process ticker data
                             if "data" in data:
                                 for item in data["data"]:
-                                    symbol = item["instId"]
+                                    inst_id = item["instId"]
+                                    symbol = self._canonical_symbol(inst_id)
                                     price = float(item["last"])
                                     self.last_prices[symbol] = price
 

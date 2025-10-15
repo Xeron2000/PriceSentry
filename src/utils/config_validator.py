@@ -82,7 +82,7 @@ class ConfigValidator:
 
         self.rules["exchanges"] = ValidationRule(
             key_path="exchanges",
-            required=True,
+            required=False,
             data_type=list,
             custom_validator=self._validate_exchanges_list,
             error_message="Exchanges must be a list of valid exchange names",
@@ -110,7 +110,7 @@ class ConfigValidator:
         # Symbols file path
         self.rules["symbolsFilePath"] = ValidationRule(
             key_path="symbolsFilePath",
-            required=True,
+            required=False,
             data_type=str,
             custom_validator=self._validate_file_path,
             error_message="Symbols file path must be a valid file path",
@@ -125,6 +125,14 @@ class ConfigValidator:
             error_message=(
                 "Notification channels must list supported channels (telegram)"
             ),
+        )
+
+        self.rules["notificationSymbols"] = ValidationRule(
+            key_path="notificationSymbols",
+            required=False,
+            data_type=list,
+            custom_validator=self._validate_notification_symbols,
+            error_message="Notification symbols must be a non-empty list of symbol strings",
         )
 
         # Telegram configuration
@@ -150,8 +158,8 @@ class ConfigValidator:
             key_path="telegram.webhookSecret",
             required=False,
             data_type=str,
-            min_length=6,
-            error_message="Telegram webhook secret must be at least 6 characters",
+            custom_validator=self._validate_optional_secret,
+            error_message="Telegram webhook secret must be at least 6 characters when provided",
         )
 
         # Timezone configuration
@@ -304,6 +312,22 @@ class ConfigValidator:
             error_message="Dashboard access key must be at least 4 characters long",
         )
 
+        self.rules["security.requireDashboardKey"] = ValidationRule(
+            key_path="security.requireDashboardKey",
+            required=False,
+            data_type=bool,
+            custom_validator=self._validate_boolean_or_string_boolean,
+            error_message="Dashboard key requirement flag must be a boolean value",
+        )
+
+        self.rules["requireDashboardKey"] = ValidationRule(
+            key_path="requireDashboardKey",
+            required=False,
+            data_type=bool,
+            custom_validator=self._validate_boolean_or_string_boolean,
+            error_message="Top-level dashboard key requirement flag must be a boolean value",
+        )
+
     def _validate_exchanges_list(self, value: List[str]) -> Tuple[bool, str]:
         """Validate exchanges list."""
         if not isinstance(value, list):
@@ -374,6 +398,59 @@ class ConfigValidator:
 
         return True, ""
 
+    def _validate_notification_symbols(self, value: List[str]) -> Tuple[bool, str]:
+        """Validate notification symbol selections."""
+        if value is None:
+            return True, ""
+
+        if not isinstance(value, list):
+            return False, "Notification symbols must be provided as a list"
+
+        cleaned = []
+        for symbol in value:
+            if not isinstance(symbol, str):
+                return False, "Each notification symbol must be a string"
+            candidate = symbol.strip()
+            if not candidate:
+                return False, "Notification symbols must not contain empty entries"
+            cleaned.append(candidate)
+
+        if not cleaned:
+            return False, "Notification symbols list must contain at least one symbol"
+
+        return True, ""
+
+    def _validate_optional_secret(self, value: str) -> Tuple[bool, str]:
+        """Allow optional secrets while enforcing minimum length when provided."""
+        if value is None:
+            return True, ""
+
+        trimmed = value.strip()
+        if not trimmed:
+            return True, ""
+
+        if len(trimmed) < 6:
+            return False, "Secret must be at least 6 characters when provided"
+
+        return True, ""
+
+    def _validate_boolean_or_string_boolean(self, value: Any) -> Tuple[bool, str]:
+        """Accept actual booleans or string booleans and normalize to bool."""
+        if value is None:
+            return True, ""
+
+        if isinstance(value, bool):
+            return True, ""
+
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"true", "1", "yes"}:
+                return True, ""
+            if lowered in {"false", "0", "no"}:
+                return True, ""
+
+        return False, "Value must be boolean or boolean-equivalent string"
+
     def get_value_by_path(self, config: Dict[str, Any], key_path: str) -> Any:
         """Get value from config by dot notation path."""
         keys = key_path.split(".")
@@ -391,6 +468,9 @@ class ConfigValidator:
         """Validate value type."""
         if isinstance(expected_type, tuple):
             return isinstance(value, expected_type)
+        if expected_type is bool and isinstance(value, str):
+            lowered = value.strip().lower()
+            return lowered in {"true", "false", "1", "0", "yes", "no"}
         return isinstance(value, expected_type)
 
     def validate_range(

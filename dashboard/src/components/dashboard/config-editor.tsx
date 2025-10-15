@@ -26,10 +26,8 @@ import { cn } from "@/lib/utils"
 
 const CONFIG_HINTS: Record<string, { title?: string; description?: string }> = {
   exchange: { description: "默认连接的交易所 ID" },
-  exchanges: { description: "用于批量加载市场数据的交易所列表" },
   defaultTimeframe: { description: "基础监控时间周期，例如 1m、5m" },
   defaultThreshold: { description: "触发通知的价格变动阈值（百分比）" },
-  symbolsFilePath: { description: "交易对列表文件路径" },
   notificationChannels: { description: "启用的通知渠道集合" },
   notificationTimezone: { description: "通知消息使用的时区" },
   attachChart: { description: "推送告警时是否附带最新 K 线图" },
@@ -40,43 +38,13 @@ const CONFIG_HINTS: Record<string, { title?: string; description?: string }> = {
   chartImageWidth: { description: "输出图片宽度（像素）" },
   chartImageHeight: { description: "输出图片高度（像素）" },
   chartImageScale: { description: "图表缩放倍率，用于提高清晰度" },
-  chartBackgroundColor: { description: "图表背景色（十六进制）" },
-  chartGridColor: { description: "网格线颜色（十六进制）" },
-  chartUpColor: { description: "上涨蜡烛颜色" },
-  chartDownColor: { description: "下跌蜡烛颜色" },
-  cache: { description: "缓存系统参数设置" },
-  "cache.enabled": { description: "是否启用缓存机制" },
-  "cache.max_size": { description: "缓存条目上限" },
-  "cache.default_ttl": { description: "默认缓存有效期（秒）" },
-  "cache.strategy": { description: "缓存淘汰算法，例如 LRU" },
-  "cache.cleanup_interval": { description: "缓存清理间隔（秒）" },
-  error_handling: { description: "错误重试与熔断策略" },
-  "error_handling.max_retries": { description: "单次任务最大重试次数" },
-  "error_handling.base_delay": { description: "首次重试延迟（秒）" },
-  "error_handling.max_delay": { description: "重试延迟上限（秒）" },
-  "error_handling.circuit_breaker_threshold": { description: "触发熔断的连续失败次数" },
-  "error_handling.circuit_breaker_timeout": { description: "熔断恢复等待时间（秒）" },
-  performance_monitoring: { description: "性能指标采集设置" },
-  "performance_monitoring.enabled": { description: "是否启用性能监控" },
-  "performance_monitoring.collect_interval": { description: "采样间隔（秒）" },
-  "performance_monitoring.alert_thresholds": { description: "性能告警阈值" },
-  notification: { description: "通知批处理参数" },
-  "notification.batch_size": { description: "单批推送的消息数量" },
-  "notification.batch_interval": { description: "批量推送间隔（秒）" },
-  "notification.retry_attempts": { description: "通知发送重试次数" },
-  "notification.include_metrics": { description: "是否附带性能指标" },
-  logging: { description: "日志输出配置" },
-  "logging.level": { description: "日志级别" },
-  "logging.file": { description: "日志文件路径" },
   security: { description: "安全相关配置" },
   "security.dashboardAccessKey": { description: "仪表板访问密钥（至少 4 位）" },
+  "security.requireDashboardKey": { description: "是否强制携带 Dashboard 密钥" },
   telegram: { description: "Telegram 推送参数" },
   "telegram.token": { description: "Telegram 机器人 Token" },
   "telegram.chatId": { description: "Telegram 兼容回退聊天 ID（可选）" },
-  data_fetch: { description: "外部行情数据抓取参数" },
-  monitoring: { description: "PriceSentry 核心监控流程参数" },
-  api_limits: { description: "各交易所 API 限速配置" },
-  development: { description: "开发/调试模式开关" },
+  "telegram.webhookSecret": { description: "Webhook 校验密钥（可选）" },
 }
 
 const EXCHANGE_OPTIONS = ["binance", "okx", "bybit"]
@@ -162,54 +130,6 @@ function renderPrimitive(
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground">{joinedPath}</p>
-        {hint?.description ? (
-          <p className="text-xs text-muted-foreground">{hint.description}</p>
-        ) : null}
-      </div>
-    )
-  }
-
-  if (joinedPath === "exchanges") {
-    const hint = getHint(path)
-    const selected = new Set(
-      Array.isArray(value) ? (value as unknown[]).map((item) => String(item)) : [],
-    )
-
-    return (
-      <div key={id} className="space-y-2">
-        <Label>{hint?.title ? `${key}（${hint.title}）` : key}</Label>
-        <div className="space-y-2 rounded-md border p-3">
-          {EXCHANGE_OPTIONS.map((option) => {
-            const optionId = `${id}-${option}`
-            const checked = selected.has(option)
-            return (
-              <div
-                key={option}
-                className="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-3 py-2"
-              >
-                <div>
-                  <p className="text-sm font-medium uppercase">{option}</p>
-                  <p className="text-xs text-muted-foreground">exchange: {option}</p>
-                </div>
-                <Switch
-                  id={optionId}
-                  checked={checked}
-                  disabled={disabled}
-                  onCheckedChange={(nextChecked) => {
-                    const updated = new Set(selected)
-                    if (nextChecked) {
-                      updated.add(option)
-                    } else {
-                      updated.delete(option)
-                    }
-                    onValueChange(path, Array.from(updated))
-                  }}
-                />
-              </div>
-            )
-          })}
-        </div>
         <p className="text-xs text-muted-foreground">{joinedPath}</p>
         {hint?.description ? (
           <p className="text-xs text-muted-foreground">{hint.description}</p>

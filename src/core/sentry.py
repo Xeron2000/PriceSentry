@@ -5,7 +5,7 @@ import logging
 import time
 from queue import Empty, Queue
 from threading import RLock
-from typing import List, Tuple
+from typing import List, Optional, Set, Tuple
 
 from core.api import (
     set_exchange_instance,
@@ -20,11 +20,10 @@ from utils.chart import generate_multi_candlestick_png
 from utils.config_validator import config_validator
 from utils.error_handler import ErrorSeverity, error_handler
 from utils.get_exchange import get_exchange
-from utils.load_symbols_from_file import load_symbols_from_file
-from utils.match_symbols import match_symbols
 from utils.monitor_top_movers import monitor_top_movers
 from utils.parse_timeframe import parse_timeframe
 from utils.performance_monitor import performance_monitor
+from utils.supported_markets import load_usdt_contracts
 
 
 def load_config() -> dict:
@@ -40,6 +39,8 @@ class PriceSentry:
 
             self._config_lock = RLock()
             self._config_events: "Queue[ConfigUpdateEvent]" = Queue()
+            self.notification_symbols: Optional[List[str]] = None
+            self._notification_symbol_set: Set[str] = set()
 
             # Load configuration (patchable for unit tests while defaulting to manager data)
             self.config = load_config()
@@ -77,15 +78,15 @@ class PriceSentry:
             self._sync_symbols(exchange_name)
             if not getattr(self, "matched_symbols", None):
                 logging.warning(
-                    "No matched symbols found. Please check your symbols file."
+                    "No USDT contract symbols found for exchange %s. "
+                    "Run tools/update_markets.py to refresh supported markets.",
+                    exchange_name,
                 )
                 error_handler.handle_config_error(
                     Exception("No matched symbols found"),
                     {
-                        "symbols_file": self.config.get(
-                            "symbolsFilePath", "config/symbols.txt"
-                        ),
                         "exchange": exchange_name,
+                        "operation": "symbol_bootstrap",
                     },
                     ErrorSeverity.WARNING,
                 )
@@ -142,7 +143,7 @@ class PriceSentry:
 
         try:
             logging.info("Entering main loop, starting price movement monitoring")
-            minutes_snapshot, _, check_interval, _ = self._snapshot_runtime_state()
+            minutes_snapshot, _, check_interval, _, _ = self._snapshot_runtime_state()
             logging.info(
                 "Check interval set to %s minutes (%s seconds)",
                 minutes_snapshot,
@@ -151,7 +152,13 @@ class PriceSentry:
             while True:
                 self._process_config_updates()
 
-                minutes_snapshot, threshold_snapshot, check_interval, symbols_snapshot = (
+                (
+                    minutes_snapshot,
+                    threshold_snapshot,
+                    check_interval,
+                    symbols_snapshot,
+                    notification_filter_snapshot,
+                ) = (
                     self._snapshot_runtime_state()
                 )
 
@@ -175,6 +182,7 @@ class PriceSentry:
                             threshold_snapshot,
                             self.exchange,
                             self.config,
+                            notification_filter_snapshot,
                         )
 
                         if result:
@@ -422,6 +430,7 @@ class PriceSentry:
             self.minutes = minutes
             self._check_interval = self.minutes * 60
             self.threshold = self.config.get("defaultThreshold", 1)
+            self._rebuild_notification_filter_locked()
             if hasattr(self, "notifier") and self.notifier is not None:
                 self.notifier.update_config(self.config)
 
@@ -461,7 +470,6 @@ class PriceSentry:
                     "component": "PriceSentry",
                     "operation": "symbol_reload",
                     "exchange": exchange_name,
-                    "symbols_file": self.config.get("symbolsFilePath", "config/symbols.txt"),
                 },
                 ErrorSeverity.WARNING,
             )
@@ -489,22 +497,75 @@ class PriceSentry:
             len(self.matched_symbols),
         )
 
+    def _rebuild_notification_filter_locked(self) -> None:
+        selection = self.config.get("notificationSymbols")
+        monitored = list(getattr(self, "matched_symbols", []))
+        monitored_set = set(monitored)
+
+        if not selection:
+            self.notification_symbols = None
+            self._notification_symbol_set = set()
+            return
+
+        allowed: List[str] = []
+        missing: List[str] = []
+
+        if isinstance(selection, list):
+            for raw_symbol in selection:
+                if not isinstance(raw_symbol, str):
+                    continue
+                candidate = raw_symbol.strip()
+                if not candidate:
+                    continue
+                if monitored_set and candidate not in monitored_set:
+                    missing.append(candidate)
+                    continue
+                allowed.append(candidate)
+        else:
+            logging.warning(
+                "Ignored notificationSymbols of type %s; expected list of symbol strings.",
+                type(selection).__name__,
+            )
+
+        if missing:
+            logging.warning(
+                "Notification symbols ignored because they are not monitored: %s",
+                ", ".join(sorted(set(missing))),
+            )
+
+        if allowed:
+            self.notification_symbols = allowed
+            self._notification_symbol_set = set(allowed)
+        else:
+            self.notification_symbols = None
+            self._notification_symbol_set = set()
+
     def _sync_symbols(self, exchange_name: str) -> None:
-        symbols_file_path = self.config.get("symbolsFilePath", "config/symbols.txt")
-        symbols = load_symbols_from_file(symbols_file_path)
-        matched = match_symbols(symbols, exchange_name)
+        matched = load_usdt_contracts(exchange_name)
         with self._config_lock:
             self.matched_symbols = matched
-        logging.info(
-            "Loaded %s matched symbols from %s",
-            len(matched),
-            symbols_file_path,
-        )
+            self._rebuild_notification_filter_locked()
 
-    def _snapshot_runtime_state(self) -> Tuple[int, float, float, List[str]]:
+        if matched:
+            logging.info(
+                "Loaded %s USDT contract symbols for exchange %s",
+                len(matched),
+                exchange_name,
+            )
+        else:
+            logging.warning(
+                "No USDT contract symbols available for exchange %s. "
+                "Ensure config/supported_markets.json is up-to-date.",
+                exchange_name,
+            )
+
+    def _snapshot_runtime_state(self) -> Tuple[int, float, float, List[str], Optional[List[str]]]:
         with self._config_lock:
             minutes = getattr(self, "minutes", parse_timeframe("5m"))
             threshold = getattr(self, "threshold", 1.0)
             check_interval = getattr(self, "_check_interval", minutes * 60)
             symbols_snapshot = list(getattr(self, "matched_symbols", []))
-        return minutes, threshold, check_interval, symbols_snapshot
+            notification_snapshot = (
+                list(self.notification_symbols) if self.notification_symbols else None
+            )
+        return minutes, threshold, check_interval, symbols_snapshot, notification_snapshot

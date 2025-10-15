@@ -1,157 +1,56 @@
-# PriceSentry 价格监控系统配置文件
+# PriceSentry 价格监控系统配置模板
 # =====================================
 
-# 基础交易所配置
-# 要连接的交易所名称
+# 主要交易所（必填）
 # 可选值: "binance", "okx", "bybit"
-exchange: "okx"  # 示例: "binance"
-
-# 用于获取市场数据的交易所列表
-# `tools/update_markets.py` 脚本会使用此列表
-exchanges:
-  - "binance"
-  - "okx"
-  - "bybit"
+exchange: "okx"
 
 # 默认时间周期（数据获取频率）
 # 可选值: "1m", "5m", "15m", "1h", "1d"
-defaultTimeframe: "5m"  # 示例: "5m"
+defaultTimeframe: "5m"
 
-# 默认价格变化阈值，超过此值的交易对才会触发通知
-defaultThreshold: 1  # 示例: 1
+# 价格变化阈值（百分比）
+defaultThreshold: 1
 
-# 交易对文件路径，如果为空则自动获取
-symbolsFilePath: "config/symbols.txt"  # 示例: "config/symbols.txt"
-
-# 通知渠道配置
-# 当前支持 Telegram
-notificationChannels: 
+# 通知渠道（目前仅支持 telegram）
+notificationChannels:
   - "telegram"
 
-# Telegram 机器人配置
+# 通知交易对（留空表示推送所有监控到的合约交易对）
+notificationSymbols:
+  - "BTC/USDT:USDT"
+  - "ETH/USDT:USDT"
+
+# Telegram 机器人配置（至少提供 token，chatId 用作回退通道）
 telegram:
-  token: "YOUR_TELEGRAM_BOT_TOKEN"  # 示例: "你的机器人令牌"
+  token: "YOUR_TELEGRAM_BOT_TOKEN"
+  chatId: "123456789"
+  # webhookSecret: "YOUR_WEBHOOK_SECRET"  # 可选，使用 Webhook 时填写
 
-# 通知时区配置
-# 默认为亚洲/上海时间
-notificationTimezone: "Asia/Shanghai"  # 示例: "America/New_York"
-
-# 应用程序日志级别
-# 可选值: "DEBUG", "INFO", "WARNING", "ERROR"
-logLevel: "INFO"  # 默认: "INFO"
+# 通知时区（用于生成告警时间戳）
+notificationTimezone: "Asia/Shanghai"
 
 # =====================================
-# 高级配置选项
+# 可选功能
 # =====================================
 
-# 缓存系统配置
-cache:
-  enabled: true                    # 启用缓存系统
-  max_size: 1000                   # 最大缓存条目数
-  default_ttl: 300                 # 默认TTL（秒）
-  strategy: "lru"                  # 缓存策略: "lru", "lfu", "fifo", "ttl"
-  cleanup_interval: 60             # 清理间隔（秒）
-
-# 错误处理配置
-error_handling:
-  max_retries: 3                   # 最大重试次数
-  base_delay: 1.0                  # 基础延迟（秒）
-  max_delay: 60.0                  # 最大延迟（秒）
-  circuit_breaker_threshold: 5     # 熔断器阈值（连续失败次数）
-  circuit_breaker_timeout: 60      # 熔断器超时（秒）
-  retry_on_errors:                # 需要重试的错误类型
-    - "ConnectionError"
-    - "TimeoutError"
-    - "RateLimitError"
-
-# 性能监控配置
-performance_monitoring:
-  enabled: true                    # 启用性能监控
-  collect_interval: 60             # 数据收集间隔（秒）
-  log_performance: true            # 记录性能日志
-  alert_thresholds:                # 告警阈值
-    cpu: 80.0                      # CPU使用率告警阈值(%)
-    memory: 80.0                   # 内存使用率告警阈值(%)
-    disk: 90.0                     # 磁盘使用率告警阈值(%)
-    response_time: 5.0             # 响应时间告警阈值(秒)
-  metrics_retention_days: 7       # 指标保留天数
-
-# 图表附件配置（可选）
-# 启用后，Telegram 提醒将包含最近的价格图表图片
+# 是否在通知中附带价格图表
 attachChart: true
 
-# 图表渲染设置
-chartTimeframe: "5m"           # K线图时间周期
-chartLookbackMinutes: 500        # 包含的历史数据分钟数
-chartTheme: "dark"              # 主题: "dark" | "light"
-chartIncludeMA: [7, 25]         # 移动平均线窗口；空列表则禁用
-chartImageWidth: 1600           # 复合图表图片宽度（像素）
-chartImageHeight: 1200          # 图片高度（像素）
-chartImageScale: 2              # 像素比例倍数（2 = Retina 级别）
-chartBackgroundColor: "#1a1a1a"  # 图表背景色
-chartGridColor: "#333333"       # 网格线颜色
-chartUpColor: "#00ff88"          # 上涨颜色
-chartDownColor: "#ff3366"        # 下跌颜色
+# 图表渲染设置（attachChart 为 true 时生效）
+chartTimeframe: "5m"
+chartLookbackMinutes: 500
+chartTheme: "dark"          # "dark" | "light"
+chartIncludeMA: [7, 25]
+chartImageWidth: 1600
+chartImageHeight: 1200
+chartImageScale: 2
 
-# 数据获取配置
-data_fetch:
-  timeout: 30                    # API请求超时时间（秒）
-  batch_size: 50                 # 批量获取数量
-  rate_limit_delay: 0.1          # 速率限制延迟（秒）
-  enable_websocket: true         # 启用WebSocket实时数据
-
-# 监控配置
-monitoring:
-  check_interval: 60             # 监控检查间隔（秒）
-  top_movers_count: 10           # 显示最大变化交易对数量
-  min_volume_threshold: 1000000  # 最小交易量阈值
-  enable_correlation: true       # 启用相关性分析
-
-# 通知配置
-notification:
-  batch_size: 5                  # 批量通知大小
-  batch_interval: 30             # 批量通知间隔（秒）
-  retry_attempts: 3              # 通知重试次数
-  format: "markdown"             # 通知格式: "markdown" | "text"
-  include_metrics: true          # 包含性能指标
-
-# 日志配置
-logging:
-  level: "INFO"                  # 日志级别: "DEBUG", "INFO", "WARNING", "ERROR"
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"  # 日志格式
-  file: "logs/app.log"           # 日志文件路径
-  max_file_size: "10MB"          # 最大文件大小
-  backup_count: 5                # 备份文件数量
-  console_output: true           # 控制台输出
-
-# 数据库配置（可选）
-database:
-  enabled: false                 # 启用数据库存储
-  type: "sqlite"                 # 数据库类型: "sqlite", "postgresql", "mysql"
-  connection_string: ""          # 数据库连接字符串
-  table_prefix: "pricesentry_"    # 表名前缀
-
-# 安全配置
+# Dashboard 访问控制
 security:
-  enable_encryption: false       # 启用数据加密
-  encryption_key: ""             # 加密密钥
-  sanitize_logs: true            # 日志脱敏
-  allowed_hosts: []              # 允许的主机列表
-  dashboardAccessKey: "pricesentry"   # Dashboard访问密钥
+  dashboardAccessKey: "pricesentry"
+  requireDashboardKey: false
 
-# API限制配置
-api_limits:
-  binance:
-    requests_per_minute: 1200    # 币安每分钟请求数限制
-    requests_per_second: 10     # 币安每秒请求数限制
-  okx:
-    requests_per_second: 20      # OKX每秒请求数限制
-  bybit:
-    requests_per_second: 100     # Bybit每秒请求数限制
-
-# 开发者配置（生产环境请禁用）
-development:
-  debug_mode: false              # 调试模式
-  enable_profiler: false         # 启用性能分析器
-  mock_api: false               # 模拟API调用
-  test_mode: false              # 测试模式
+# 额外说明
+# - 默认会监控支持的 USDT 合约交易对，notificationSymbols 为空或缺省时会推送全部交易对。
+# - 缓存系统与错误处理在代码中默认启用，无需单独配置。

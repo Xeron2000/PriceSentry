@@ -33,8 +33,8 @@ class BybitExchange(BaseExchange):
                 subscribe_msg = {"op": "subscribe", "args": []}
 
                 for symbol in symbols:
-                    # Bybit uses symbol format like BTCUSDT without any separator
-                    formatted_symbol = symbol.replace("/", "")
+                    base_symbol = symbol.split(":")[0]
+                    formatted_symbol = base_symbol.replace("/", "")
                     subscribe_msg["args"].append(f"tickers.{formatted_symbol}")
 
                 logging.debug(f"Subscription message: {subscribe_msg}")
@@ -64,27 +64,43 @@ class BybitExchange(BaseExchange):
                             if "topic" in data and "tickers" in data["topic"]:
                                 symbol = data["data"]["symbol"]
                                 price = float(data["data"]["lastPrice"])
-                                self.last_prices[symbol] = price
+                                original_symbol = next(
+                                    (
+                                        s
+                                        for s in symbols
+                                        if s.split(":")[0].replace("/", "").upper()
+                                        == symbol.upper()
+                                    ),
+                                    symbol,
+                                )
+                                canonical_symbol = (
+                                    original_symbol
+                                    if ":" in original_symbol
+                                    else f"{original_symbol}:USDT"
+                                )
+                                self.last_prices[canonical_symbol] = price
 
                                 # Log received price data every 10 minutes
                                 if time.time() % 600 < 1:
                                     logging.info(
-                                        f"Bybit price update - {symbol}: {price}"
+                                        "Bybit price update - %s: %s",
+                                        canonical_symbol,
+                                        price,
                                     )
 
                                 # Store historical data
                                 timestamp = int(time.time() * 1000)
-                                if symbol not in self.historical_prices:
-                                    self.historical_prices[symbol] = []
-                                self.historical_prices[symbol].append(
+                                if canonical_symbol not in self.historical_prices:
+                                    self.historical_prices[canonical_symbol] = []
+                                self.historical_prices[canonical_symbol].append(
                                     (timestamp, price)
                                 )
 
                                 # Clean up old historical data (keep 24 hours)
                                 cutoff = timestamp - (24 * 60 * 60 * 1000)
-                                self.historical_prices[symbol] = [
+                                self.historical_prices[canonical_symbol] = [
                                     item
-                                    for item in self.historical_prices[symbol]
+                                    for item in self.historical_prices[canonical_symbol]
                                     if item[0] >= cutoff
                                 ]
 

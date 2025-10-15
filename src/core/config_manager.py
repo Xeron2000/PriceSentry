@@ -176,6 +176,26 @@ class ConfigManager:
             coerced, changed = self._coerce_value(value, rule)
             if changed:
                 self._set_value_by_path(normalized, key_path, coerced)
+
+        # Normalize notification symbol selections: trim, deduplicate, maintain order.
+        notification_symbols = normalized.get("notificationSymbols")
+        if isinstance(notification_symbols, list):
+            seen = set()
+            cleaned: List[str] = []
+            for raw_symbol in notification_symbols:
+                if not isinstance(raw_symbol, str):
+                    continue
+                trimmed = raw_symbol.strip()
+                if not trimmed:
+                    continue
+                if trimmed not in seen:
+                    seen.add(trimmed)
+                    cleaned.append(trimmed)
+            if cleaned:
+                normalized["notificationSymbols"] = cleaned
+            else:
+                normalized.pop("notificationSymbols", None)
+
         return normalized
 
     def _coerce_value(self, value: Any, rule: ValidationRule) -> Tuple[Any, bool]:

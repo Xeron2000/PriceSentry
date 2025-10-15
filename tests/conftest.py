@@ -14,11 +14,10 @@ def sample_config():
     """Sample configuration for testing."""
     return {
         "exchange": "binance",
-        "exchanges": ["binance"],
-        "symbolsFilePath": "config/symbols.txt",
         "defaultTimeframe": "5m",
         "defaultThreshold": 2.0,
         "notificationChannels": ["telegram"],
+        "notificationTimezone": "Asia/Shanghai",
         "telegram": {
             "token": "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk",
             "chatId": "123456789",

@@ -17,7 +17,6 @@ class TestLoadConfig:
         """Test successful configuration loading."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": 1.0,
             "notificationChannels": ["telegram"],
@@ -29,14 +28,18 @@ class TestLoadConfig:
         ) as mock_logging:
             result = load_config("test_config.yaml")
 
-            assert result == config_data
+            expected = {
+                **config_data,
+                "symbolsFilePath": "config/symbols.txt",
+            }
+
+            assert result == expected
             mock_logging.error.assert_not_called()
 
     def test_load_config_missing_required_key(self):
         """Test configuration loading with missing required key."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             # Missing defaultTimeframe, defaultThreshold,
             # notificationChannels, notificationTimezone
         }
@@ -53,7 +56,6 @@ class TestLoadConfig:
         """Test configuration loading with missing timezone (should use default)."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": 1.0,
             "notificationChannels": ["telegram"],
@@ -103,7 +105,6 @@ class TestLoadConfig:
         """Test configuration loading with extra keys (should be preserved)."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": 1.0,
             "notificationChannels": ["telegram"],
@@ -117,7 +118,11 @@ class TestLoadConfig:
         ):
             result = load_config("test_config.yaml")
 
-            assert result == config_data
+            expected = {
+                **config_data,
+                "symbolsFilePath": "config/symbols.txt",
+            }
+            assert result == expected
             assert "extraKey" in result
             assert "anotherExtra" in result
 
@@ -125,7 +130,6 @@ class TestLoadConfig:
         """Test configuration loading with different data types."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "15m",
             "defaultThreshold": 2.5,
             "notificationChannels": ["telegram"],
@@ -141,7 +145,11 @@ class TestLoadConfig:
         ):
             result = load_config("test_config.yaml")
 
-            assert result == config_data
+            expected = {
+                **config_data,
+                "symbolsFilePath": "config/symbols.txt",
+            }
+            assert result == expected
             assert isinstance(result["notificationChannels"], list)
             assert isinstance(result["enableFeature"], bool)
             assert isinstance(result["maxRetries"], int)
@@ -152,7 +160,6 @@ class TestLoadConfig:
         """Test configuration loading with default path."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": 1.0,
             "notificationChannels": ["telegram"],
@@ -163,7 +170,12 @@ class TestLoadConfig:
         with patch("builtins.open", mock_file), patch("utils.load_config.logging"):
             result = load_config()  # No path specified
 
-            assert result == config_data
+            expected = {
+                **config_data,
+                "symbolsFilePath": "config/symbols.txt",
+            }
+
+            assert result == expected
             # Verify default path was used
             mock_file.assert_called_once_with("config/config.yaml", "r")
 
@@ -171,7 +183,6 @@ class TestLoadConfig:
         """Test configuration loading with timezone as None."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": 1.0,
             "notificationChannels": ["telegram"],
@@ -184,12 +195,12 @@ class TestLoadConfig:
             result = load_config("test_config.yaml")
 
             assert result["notificationTimezone"] == "Asia/Shanghai"
+            assert result["symbolsFilePath"] == "config/symbols.txt"
 
     def test_load_config_special_characters(self):
         """Test configuration loading with special characters in values."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": 1.0,
             "notificationChannels": ["telegram"],
@@ -203,7 +214,12 @@ class TestLoadConfig:
         ):
             result = load_config("test_config.yaml")
 
-            assert result == config_data
+            expected = {
+                **config_data,
+                "symbolsFilePath": "config/symbols.txt",
+            }
+
+            assert result == expected
             assert "🚀" in result["message"]
             assert "测试" in result["path"]
 
@@ -211,7 +227,6 @@ class TestLoadConfig:
         """Test configuration loading with numeric string threshold."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": "2.5",  # String instead of float
             "notificationChannels": ["telegram"],
@@ -223,13 +238,13 @@ class TestLoadConfig:
         ):
             result = load_config("test_config.yaml")
 
+            assert result["symbolsFilePath"] == "config/symbols.txt"
             assert result["defaultThreshold"] == "2.5"  # Should preserve as string
 
     def test_load_config_boolean_threshold(self):
         """Test configuration loading with boolean threshold (edge case)."""
         config_data = {
             "exchange": "binance",
-            "symbolsFilePath": "config/symbols.txt",
             "defaultTimeframe": "5m",
             "defaultThreshold": True,  # Boolean instead of number
             "notificationChannels": ["telegram"],
@@ -241,4 +256,5 @@ class TestLoadConfig:
         ):
             result = load_config("test_config.yaml")
 
+            assert result["symbolsFilePath"] == "config/symbols.txt"
             assert result["defaultThreshold"] is True  # Should preserve as boolean

@@ -1,344 +1,136 @@
-# PriceSentry 配置说明文档
+# PriceSentry 配置指南
 
-## 概述
+本文介绍如何根据最新的精简模板配置 PriceSentry。配置文件默认位于 `config/config.yaml`，请基于示例文件手动编辑或通过 Dashboard 进行配置。
 
-PriceSentry 使用 YAML 配置文件来管理所有设置。配置文件分为基础配置和高级配置两个部分。
+---
 
 ## 快速开始
 
-1. 复制配置文件模板：
 ```bash
 cp config/config.yaml.example config/config.yaml
+# 编辑 config/config.yaml 并填入所需参数
+uv run python -m app.runner                # 启动服务
 ```
 
-2. 编辑配置文件，填入你的设置：
-```bash
-nano config/config.yaml
-```
+> 如果要使用 Dashboard，请同时设置其环境变量
+>
+> ```bash
+> # dashboard/.env.local
+> NEXT_PUBLIC_API_BASE=http://localhost:8000
+> ```
+>
+> `NEXT_PUBLIC_API_BASE` 指向 FastAPI 后端根地址；未设置时默认使用 `http://localhost:8000`。
 
-3. 验证配置文件：
-```bash
-python -c "from utils.config_validator import config_validator; print(config_validator.validate_config('config/config.yaml'))"
-```
+---
 
-## 基础配置
-
-### 交易所配置
+## 必需配置
 
 ```yaml
-# 主要交易所
-exchange: "okx"  # 选择主要监控的交易所
-
-# 获取市场数据的交易所列表
-exchanges:
-  - "binance"
-  - "okx"
-  - "bybit"
-```
-
-### 监控设置
-
-```yaml
-# 时间周期
-defaultTimeframe: "5m"  # 5分钟K线
-
-# 价格变化阈值
-defaultThreshold: 0.01  # 1%变化触发通知
-
-# 交易对文件
-symbolsFilePath: "config/symbols.txt"
-```
-
-### 通知设置
-
-```yaml
-# 通知渠道
-notificationChannels: 
+exchange: "okx"
+defaultTimeframe: "5m"
+defaultThreshold: 1
+notificationChannels:
   - "telegram"
-
-# Telegram配置
 telegram:
   token: "YOUR_TELEGRAM_BOT_TOKEN"
+notificationTimezone: "Asia/Shanghai"
 ```
 
-> 📌 **多用户绑定流程**
->
-> 1. 在 Dashboard 中添加待接收通知的用户名，系统会生成绑定令牌。
-> 2. 用户与 Telegram 机器人对话并发送 `/bind <token>`。
-> 3. 机器人确认后会记录 user_id，告警会推送给全部已绑定用户。
->
-> 建议在部署 Webhook 时通过可选字段 `telegram.webhookSecret` 校验请求来源；`chatId` 字段仅用于兼容旧版本，可留空。
->
-> PriceSentry 在主程序启动时会自动运行 Telegram 机器人，无需单独部署。
+- **exchange**：主交易所，支持 `binance` / `okx` / `bybit`。
+- **defaultTimeframe**：行情监控的时间周期，常用值 `1m`、`5m`、`15m`、`1h`、`1d`。
+- **defaultThreshold**：触发告警的价格变动百分比。
+- **notificationChannels**：当前仅支持 `telegram`。
+- **notificationSymbols**：指定需要推送告警的合约交易对列表。缺省或移除字段表示推送所有监控到的交易对。
+- **telegram.token**：机器人 Bot Token。启用 Telegram 通知时必须提供。
+- **notificationTimezone**：告警消息的时区。未配置或为空时，系统会回退至 `Asia/Shanghai`。
 
-## 高级配置
+> 默认情况下，系统会监控支持的 USDT 合约交易对。若希望仅向 Telegram 推送部分交易对，在 `notificationSymbols` 中列出所需的符号即可；字段缺省或为空值时视作推送全部。
 
-### 缓存系统
+---
+
+## Telegram 额外选项
 
 ```yaml
-cache:
-  enabled: true                    # 启用缓存
-  max_size: 1000                   # 最大缓存条目
-  default_ttl: 300                 # 缓存过期时间（秒）
-  strategy: "lru"                  # 缓存策略
-  cleanup_interval: 60             # 清理间隔
+telegram:
+  token: "YOUR_TELEGRAM_BOT_TOKEN"
+  chatId: "123456789"        # 可选：回退推送目标
+  # webhookSecret: "secret"    # 可选：Webhook 校验密钥
 ```
 
-**缓存策略说明**：
-- `lru`: 最近最少使用 - 淘汰最久未使用的数据
-- `lfu`: 最少使用频率 - 淘汰使用次数最少的数据
-- `fifo`: 先进先出 - 按添加顺序淘汰数据
-- `ttl`: 生存时间 - 基于过期时间淘汰数据
+- **chatId**：为兼容旧流程的回退目标。当未绑定任何用户时使用。
+- **webhookSecret**：仅在使用 Telegram Webhook 校验来源时需要。留空或移除该字段即视为未配置；若填写，建议长度≥6。
 
-### 错误处理
+> 建议搭配 Dashboard 中的绑定流程，让用户自行绑定通知目标，而不是依赖 `chatId`。
+
+---
+
+## 图表附件（可选）
+
+设置 `attachChart: true` 时，告警消息会附带多币种 K 线图。可选参数如下：
 
 ```yaml
-error_handling:
-  max_retries: 3                   # 最大重试次数
-  base_delay: 1.0                  # 基础延迟（秒）
-  max_delay: 60.0                  # 最大延迟（秒）
-  circuit_breaker_threshold: 5     # 熔断器阈值
-  circuit_breaker_timeout: 60      # 熔断器超时（秒）
+attachChart: true
+chartTimeframe: "5m"
+chartLookbackMinutes: 500
+chartTheme: "dark"          # "dark" | "light"
+chartIncludeMA: [7, 25]     # 为空列表则不绘制均线
+chartImageWidth: 1600
+chartImageHeight: 1200
+chartImageScale: 2          # 1/2/3
 ```
 
-**重试机制**：
-- 使用指数退避算法：`delay = base_delay * (2 ** attempt)`
-- 最大延迟限制：不会超过 `max_delay`
-- 熔断器保护：连续失败 `threshold` 次后熔断
+若关闭图表功能，可简单地设置 `attachChart: false` 并移除其余字段。
 
-### 性能监控
+---
 
-```yaml
-performance_monitoring:
-  enabled: true                    # 启用性能监控
-  collect_interval: 60             # 收集间隔（秒）
-  log_performance: true            # 记录性能日志
-  alert_thresholds:                # 告警阈值
-    cpu: 80.0                      # CPU使用率(%)
-    memory: 80.0                   # 内存使用率(%)
-    response_time: 5.0             # 响应时间(秒)
-```
-
-### 图表配置
-
-```yaml
-# 图表设置
-chartTimeframe: "1m"           # K线图时间周期
-chartLookbackMinutes: 60        # 历史数据分钟数
-chartTheme: "dark"              # 主题
-chartIncludeMA: [7, 25]         # 移动平均线
-chartImageWidth: 1600           # 图片宽度
-chartImageHeight: 1200          # 图片高度
-```
-
-## 安全配置
-
-### 数据加密
+## Dashboard 访问控制
 
 ```yaml
 security:
-  enable_encryption: false       # 启用加密
-  encryption_key: ""             # 加密密钥
-  sanitize_logs: true            # 日志脱敏
+  dashboardAccessKey: "pricesentry"
+  requireDashboardKey: false
 ```
 
-### API限制
+- **dashboardAccessKey**：访问敏感接口（例如 `/api/config/full`）时的密钥。
+- **requireDashboardKey**：为 `true` 时，调用受保护接口必须携带 `X-Dashboard-Key` 请求头。
 
-```yaml
-api_limits:
-  binance:
-    requests_per_minute: 1200    # 币安限制
-    requests_per_second: 10
-  okx:
-    requests_per_second: 20      # OKX限制
-  bybit:
-    requests_per_second: 100     # Bybit限制
-```
+前端会自动在所有请求上注入密钥请求头，来源于 Dashboard 登录表单。确保 `NEXT_PUBLIC_API_BASE` 指向正确的后端，否则会出现 404 或跨域错误。
 
-## 数据库配置
+---
 
-```yaml
-database:
-  enabled: false                 # 启用数据库
-  type: "sqlite"                 # 数据库类型
-  connection_string: ""          # 连接字符串
-  table_prefix: "pricesentry_"    # 表名前缀
-```
+## 默认启用的特性
 
-## 开发者配置
+以下模块已经在代码中默认开启，无需配置项即可工作：
 
-```yaml
-development:
-  debug_mode: false              # 调试模式
-  enable_profiler: false         # 性能分析
-  mock_api: false               # 模拟API
-  test_mode: false              # 测试模式
-```
+- 缓存系统（基于 `utils/cache_manager.py` 的内置设置）
+- 错误处理重试与熔断逻辑
+- 性能监控（自动收集指标并提供 `/api/stats`）
 
-## 配置验证
+---
 
-系统启动时会自动验证配置文件，检查以下内容：
+## 常见问题
 
-1. **必需字段**: 确保所有必需字段都已填写
-2. **数据类型**: 验证字段值的数据类型
-3. **范围检查**: 检查数值是否在合理范围内
-4. **格式验证**: 验证URL、邮箱等格式
-5. **依赖检查**: 检查字段间的依赖关系
+1. **`tools/update_markets.py` 会使用哪些交易所？**  
+   当未显式指定 `--exchanges` 参数时，脚本会读取配置文件中的主交易所 `exchange` 作为更新目标。
 
-### 常见配置错误
+2. **如何仅推送部分交易对？**  
+   在 `notificationSymbols` 中列出需要推送的合约交易对即可；字段缺省或被移除时默认推送全部监控到的交易对。
 
-1. **Telegram配置错误**：
-   - Token格式错误：应该是 `bot_token`
-   - Chat ID格式错误：应该是数字或 `@channel_name`
+3. **首次启动时如何获取交易对？**  
+   后端会在缺少 `config/supported_markets.json` 或未缓存对应交易所时自动拉取 USDT 合约交易对，并写入该文件。也可以按需运行 `tools/update_markets.py` 定期刷新。
 
-2. **网络连接问题**：
-   - API密钥错误
-   - 网络连接超时
-   - 交易所API限制
+4. **没有配置 Telegram 但启用了渠道？**  
+   如果 `notificationChannels` 包含 `telegram`，`telegram.token` 必须配置，否则启动阶段会报错并拒绝运行。
 
-3. **文件路径问题**：
-   - 交易对文件不存在
-   - 日志目录无写入权限
+5. **如何关闭 Dashboard 密钥校验？**  
+   将 `requireDashboardKey` 设置为 `false`，或完全移除 `security` 字段（不推荐在生产环境这样做）。
 
-## 性能优化建议
+---
 
-### 缓存优化
+## 配置变更建议
 
-```yaml
-# 高频率交易监控
-cache:
-  enabled: true
-  max_size: 2000           # 增加缓存大小
-  default_ttl: 120         # 缩短缓存时间
-  strategy: "lru"          # 使用LRU策略
-```
+- 仅保留实际需要的键，避免冗余字段干扰维护。
+- 编辑完配置后可直接运行 `uv run python -m app.runner` 验证服务是否能正常启动。
+- 若通过 Dashboard 修改配置，系统会自动验证并在成功后热更新。
 
-### 错误处理优化
-
-```yaml
-# 不稳定网络环境
-error_handling:
-  max_retries: 5           # 增加重试次数
-  base_delay: 2.0         # 增加基础延迟
-  max_delay: 120.0        # 增加最大延迟
-```
-
-### 监控优化
-
-```yaml
-# 生产环境监控
-performance_monitoring:
-  collect_interval: 30     # 更频繁的监控
-  alert_thresholds:
-    cpu: 70.0             # 降低告警阈值
-    memory: 70.0
-    response_time: 3.0
-```
-
-## 故障排除
-
-### 配置验证失败
-
-```bash
-# 检查配置文件语法
-python -c "import yaml; yaml.safe_load(open('config/config.yaml'))"
-
-# 运行配置验证
-python -c "from utils.config_validator import config_validator; print(config_validator.validate_config('config/config.yaml'))"
-```
-
-### 性能问题
-
-```bash
-# 查看性能统计
-python -c "from utils.performance_monitor import performance_monitor; print(performance_monitor.get_stats())"
-
-# 查看缓存统计
-python -c "from utils.cache_manager import price_cache; print(price_cache.get_stats())"
-```
-
-### 缓存问题
-
-```bash
-# 清理缓存
-python -c "from utils.cache_manager import price_cache; price_cache.clear()"
-
-# 重置缓存策略
-python -c "from utils.cache_manager import price_cache; price_cache.set_strategy('lru')"
-```
-
-## 最佳实践
-
-1. **生产环境配置**：
-   - 关闭调试模式
-   - 启用缓存系统
-   - 设置合理的错误重试参数
-   - 启用性能监控
-
-2. **开发环境配置**：
-   - 启用调试模式
-   - 使用模拟API
-   - 降低性能监控频率
-   - 启用详细日志
-
-3. **安全配置**：
-   - 使用环境变量存储敏感信息
-   - 启用日志脱敏
-   - 设置合理的API限制
-   - 定期更新API密钥
-
-## 配置示例
-
-### 最小配置
-
-```yaml
-exchange: "okx"
-defaultTimeframe: "5m"
-defaultThreshold: 0.01
-notificationChannels: ["telegram"]
-telegram:
-  token: "YOUR_TOKEN"
-```
-
-### 完整配置
-
-```yaml
-exchange: "okx"
-exchanges: ["binance", "okx", "bybit"]
-defaultTimeframe: "5m"
-defaultThreshold: 0.01
-symbolsFilePath: "config/symbols.txt"
-notificationChannels: ["telegram"]
-telegram:
-  token: "YOUR_TOKEN"
-
-# 高级配置
-cache:
-  enabled: true
-  max_size: 1000
-  default_ttl: 300
-  strategy: "lru"
-
-error_handling:
-  max_retries: 3
-  base_delay: 1.0
-  max_delay: 60.0
-  circuit_breaker_threshold: 5
-
-performance_monitoring:
-  enabled: true
-  collect_interval: 60
-  alert_thresholds:
-    cpu: 80.0
-    memory: 80.0
-    response_time: 5.0
-```
-
-## 获取帮助
-
-- **配置问题**: 查看错误日志 `logs/app.log`
-- **性能问题**: 使用性能监控工具
-- **API问题**: 检查交易所API文档
-- **其他问题**: 提交GitHub Issue
-
-更多详细信息请参考 [项目文档](../README.md)。
+> 该文档与 `config/config.yaml.example` 保持同步。若在升级过程中发现字段不匹配，请优先以模板为准。

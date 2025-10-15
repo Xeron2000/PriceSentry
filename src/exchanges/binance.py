@@ -27,9 +27,11 @@ class BinanceExchange(BaseExchange):
             try:
                 # Binance uses a different URI structure
                 # wss://stream.binance.com:9443/ws/btcusdt@ticker/ethusdt@ticker
-                streams = [
-                    f"{symbol.lower().replace('/', '')}@ticker" for symbol in symbols
-                ]
+                streams = []
+                for symbol in symbols:
+                    base_symbol = symbol.split(":")[0]
+                    formatted = base_symbol.replace("/", "").lower()
+                    streams.append(f"{formatted}@ticker")
                 uri = f"wss://fstream.binance.com/ws/{'/'.join(streams)}"
                 logging.debug(f"Binance WebSocket URI: {uri}")
 
@@ -63,11 +65,15 @@ class BinanceExchange(BaseExchange):
                                     (
                                         s
                                         for s in symbols
-                                        if s.replace("/", "") == symbol
+                                        if s.split(":")[0].replace("/", "").upper()
+                                        == symbol.upper()
                                     ),
                                     symbol,
                                 )
-                                self.last_prices[original_symbol] = price
+                                canonical_symbol = original_symbol
+                                if ":" not in canonical_symbol:
+                                    canonical_symbol = f"{original_symbol}:USDT"
+                                self.last_prices[canonical_symbol] = price
 
                                 # Log received price data every 10 minutes
                                 if (
@@ -75,23 +81,23 @@ class BinanceExchange(BaseExchange):
                                 ):  # Approximately every 10 minutes
                                     logging.info(
                                         "Binance price update - %s: %s",
-                                        original_symbol,
+                                        canonical_symbol,
                                         price,
                                     )
 
                                 # Store historical data
                                 timestamp = int(time.time() * 1000)
-                                if original_symbol not in self.historical_prices:
-                                    self.historical_prices[original_symbol] = []
-                                self.historical_prices[original_symbol].append(
+                                if canonical_symbol not in self.historical_prices:
+                                    self.historical_prices[canonical_symbol] = []
+                                self.historical_prices[canonical_symbol].append(
                                     (timestamp, price)
                                 )
 
                                 # Clean up old historical data (keep 24 hours)
                                 cutoff = timestamp - (24 * 60 * 60 * 1000)
-                                self.historical_prices[original_symbol] = [
+                                self.historical_prices[canonical_symbol] = [
                                     item
-                                    for item in self.historical_prices[original_symbol]
+                                    for item in self.historical_prices[canonical_symbol]
                                     if item[0] >= cutoff
                                 ]
                         except Exception as e:
