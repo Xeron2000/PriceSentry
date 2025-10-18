@@ -7,12 +7,13 @@ import { toast } from "sonner"
 
 import { ConfigEditor } from "@/components/dashboard/config-editor"
 import { NotificationHistory } from "@/components/dashboard/notification-history"
+import { ResponsiveTabsHeader } from "@/components/dashboard/responsive-tabs-header"
 import { SymbolSelector } from "@/components/dashboard/symbol-selector"
 import { TelegramRecipients } from "@/components/dashboard/telegram-recipients"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import {
   fetchFullConfig,
   updateRemoteConfig,
@@ -79,6 +80,14 @@ const CONFIG_GROUPS: ConfigGroup[] = [
   },
 ]
 
+const MAIN_TAB_OPTIONS = [
+  { value: "config", label: "配置管理" },
+  { value: "symbols", label: "合约选择" },
+  { value: "chart", label: "消息推送结果" },
+] as const
+
+type MainTabKey = (typeof MAIN_TAB_OPTIONS)[number]["value"]
+
 const RESERVED_CONFIG_KEYS = new Set(
   CONFIG_GROUPS.flatMap((group) => group.allowedKeys).filter(Boolean)
 )
@@ -135,6 +144,7 @@ export default function DashboardPage() {
   const [saveLoading, setSaveLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
 
+  const [activeMainTab, setActiveMainTab] = useState<MainTabKey>(MAIN_TAB_OPTIONS[0].value)
   const [activeConfigTab, setActiveConfigTab] = useState<string>(CONFIG_GROUPS[0].key)
 
   const isDirty = useMemo(() => {
@@ -307,6 +317,15 @@ export default function DashboardPage() {
     }
   }, [visibleGroups, activeConfigTab])
 
+  const configTabOptions = useMemo(
+    () =>
+      visibleGroups.map((group) => ({
+        value: group.key,
+        label: group.label,
+      })),
+    [visibleGroups]
+  )
+
   const normalizedSearch = searchTerm.trim().toLowerCase()
 
   const groupSearchMatches = useMemo(() => {
@@ -410,9 +429,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-background">
-      <div className="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col overflow-hidden px-4 py-6">
-        <header className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold">PriceSentry 控制面板</h1>
             <p className="text-sm text-muted-foreground">
@@ -462,14 +481,20 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <Tabs defaultValue="config" className="flex h-full flex-col overflow-hidden">
-          <TabsList className="w-fit">
-            <TabsTrigger value="config">配置管理</TabsTrigger>
-            <TabsTrigger value="symbols">合约选择</TabsTrigger>
-            <TabsTrigger value="chart">消息推送结果</TabsTrigger>
-          </TabsList>
+        <Tabs
+          value={activeMainTab}
+          onValueChange={setActiveMainTab}
+          className="flex flex-col gap-6"
+        >
+          <ResponsiveTabsHeader
+            options={MAIN_TAB_OPTIONS}
+            value={activeMainTab}
+            onValueChange={setActiveMainTab}
+            selectTriggerClassName="max-w-full"
+            tabsListClassName="sm:w-auto sm:justify-start"
+          />
 
-          <TabsContent value="config" className="flex h-full flex-1 flex-col overflow-hidden">
+          <TabsContent value="config" className="flex flex-col gap-4">
             <Card className="space-y-3 p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div className="flex flex-1 flex-col gap-2">
@@ -511,7 +536,7 @@ export default function DashboardPage() {
             </Card>
 
             {configError ? (
-              <Card className="mt-4 space-y-3 border border-destructive/60 bg-destructive/10 p-4 text-destructive">
+              <Card className="space-y-3 border border-destructive/60 bg-destructive/10 p-4 text-destructive">
                 <p className="font-medium">配置加载失败</p>
                 <p className="text-sm">{configError}</p>
                 <Button variant="outline" size="sm" onClick={loadConfig}>
@@ -519,7 +544,7 @@ export default function DashboardPage() {
                 </Button>
               </Card>
             ) : configLoading || !draftConfig ? (
-              <Card className="mt-4 flex h-full flex-1 items-center justify-center text-sm text-muted-foreground">
+              <Card className="flex items-center justify-center text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" /> 正在加载配置...
                 </div>
@@ -528,15 +553,17 @@ export default function DashboardPage() {
               <Tabs
                 value={activeConfigTab}
                 onValueChange={setActiveConfigTab}
-                className="mt-4 flex h-full flex-1 flex-col overflow-hidden"
+                className="flex min-h-0 flex-1 flex-col gap-4"
               >
-                <TabsList className="flex max-w-full flex-wrap items-center justify-center gap-2 gap-y-2 text-center">
-                  {visibleGroups.map((group) => (
-                    <TabsTrigger key={group.key} value={group.key} className="min-w-[8.5rem]">
-                      {group.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+                <ResponsiveTabsHeader
+                  options={configTabOptions}
+                  value={activeConfigTab}
+                  onValueChange={setActiveConfigTab}
+                  selectTriggerClassName="max-w-full"
+                  tabsListClassName="sm:justify-start"
+                  tabsTriggerClassName="min-w-[8.5rem]"
+                  placeholder="选择配置标签"
+                />
                 <div className="flex-1 overflow-hidden">
                   {visibleGroups.map((group) => (
                     <TabsContent
@@ -564,9 +591,9 @@ export default function DashboardPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="symbols" className="h-full flex-1 overflow-hidden pb-6">
+          <TabsContent value="symbols" className="flex flex-col gap-4">
             {configError ? (
-              <Card className="mt-4 space-y-3 border border-destructive/60 bg-destructive/10 p-4 text-destructive">
+              <Card className="space-y-3 border border-destructive/60 bg-destructive/10 p-4 text-destructive">
                 <p className="font-medium">配置加载失败</p>
                 <p className="text-sm">{configError}</p>
                 <Button variant="outline" size="sm" onClick={loadConfig}>
@@ -574,7 +601,7 @@ export default function DashboardPage() {
                 </Button>
               </Card>
             ) : configLoading || !draftConfig ? (
-              <Card className="mt-4 flex h-full flex-1 items-center justify-center text-sm text-muted-foreground">
+              <Card className="flex items-center justify-center text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" /> 正在加载配置...
                 </div>
@@ -585,12 +612,11 @@ export default function DashboardPage() {
                 value={notificationSelection}
                 onChange={handleSymbolSelectionChange}
                 disabled={saveLoading}
-                className="mt-4"
               />
             )}
           </TabsContent>
 
-          <TabsContent value="chart" className="h-full flex-1 overflow-hidden">
+          <TabsContent value="chart" className="flex flex-col gap-4">
             <NotificationHistory authKey={authKey} />
           </TabsContent>
         </Tabs>

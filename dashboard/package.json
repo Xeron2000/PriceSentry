@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "test": "node tests/parse-top-mover.test.mjs"
+    "test": "node tests/parse-top-mover.test.mjs && node tests/responsive-tabs.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
