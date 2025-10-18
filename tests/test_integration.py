@@ -267,6 +267,7 @@ class TestDataConsistency:
             # 主要配置字段应该保持一致
             assert current_config["exchange"] == base_config["exchange"]
             assert current_config["defaultTimeframe"] == base_config["defaultTimeframe"]
+            assert current_config["checkInterval"] == base_config["checkInterval"]
 
         print("✅ 配置数据一致性测试通过")
 

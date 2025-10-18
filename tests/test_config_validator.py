@@ -17,6 +17,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -59,6 +60,7 @@ class TestConfigValidator:
             "exchange": "invalid_exchange",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -75,6 +77,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "invalid_timeframe",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -85,12 +88,30 @@ class TestConfigValidator:
         assert not result.is_valid
         assert any("timeframe" in str(error).lower() for error in result.errors)
 
+    def test_invalid_check_interval(self):
+        """Test validation fails when checkInterval format is invalid."""
+        config = {
+            "exchange": "binance",
+            "exchanges": ["binance", "okx"],
+            "defaultTimeframe": "5m",
+            "checkInterval": "invalid",
+            "defaultThreshold": 1.0,
+            "symbolsFilePath": "config/symbols.txt",
+            "notificationChannels": ["telegram"],
+            "notificationSymbols": ["BTC/USDT:USDT"],
+        }
+
+        result = config_validator.validate_config(config)
+        assert not result.is_valid
+        assert any("checkinterval" in str(error).lower() for error in result.errors)
+
     def test_invalid_threshold_range(self):
         """Test validation fails with threshold out of range."""
         config = {
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 150.0,  # Above max value
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -107,6 +128,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -123,6 +145,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -143,6 +166,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["invalid_channel"],
@@ -164,6 +188,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -181,6 +206,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -202,6 +228,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -225,6 +252,7 @@ class TestConfigValidator:
                 "exchange": "binance",
                 "exchanges": ["binance", "okx"],
                 "defaultTimeframe": "5m",
+                "checkInterval": "1m",
                 "defaultThreshold": 1.0,
                 "symbolsFilePath": temp_path,
                 "notificationChannels": ["telegram"],
@@ -243,6 +271,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "/nonexistent/path/symbols.txt",
             "notificationChannels": ["telegram"],
@@ -261,6 +290,7 @@ class TestConfigValidator:
         assert isinstance(schema, dict)
         assert "exchange" in schema
         assert "defaultTimeframe" in schema
+        assert "checkInterval" in schema
         assert "telegram" in schema
         assert "chartImageWidth" in schema
 
@@ -292,6 +322,7 @@ class TestConfigValidator:
             "exchange": "binance",
             "exchanges": ["binance", "okx"],
             "defaultTimeframe": "5m",
+            "checkInterval": "1m",
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": [],  # Empty to avoid requiring telegram config

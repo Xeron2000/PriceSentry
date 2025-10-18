@@ -157,9 +157,10 @@ class PriceSentry:
         try:
             logging.info("Entering main loop, starting price movement monitoring")
             minutes_snapshot, _, check_interval, _, _ = self._snapshot_runtime_state()
+            interval_minutes = max(check_interval / 60, 1)
             logging.info(
-                "Check interval set to %s minutes (%s seconds)",
-                minutes_snapshot,
+                "Check interval set to %.2f minutes (%s seconds)",
+                interval_minutes,
                 int(check_interval),
             )
             while True:
@@ -441,7 +442,32 @@ class PriceSentry:
                 )
                 minutes = getattr(self, "minutes", parse_timeframe("5m"))
             self.minutes = minutes
-            self._check_interval = self.minutes * 60
+            interval_source = self.config.get("checkInterval") or timeframe
+            try:
+                interval_minutes = parse_timeframe(interval_source)
+            except Exception as exc:
+                logging.error(
+                    "Failed to parse check interval '%s': %s. Using previous value.",
+                    interval_source,
+                    exc,
+                )
+                interval_seconds = getattr(
+                    self,
+                    "_check_interval",
+                    getattr(self, "minutes", parse_timeframe("5m")) * 60,
+                )
+            else:
+                if interval_minutes <= 0:
+                    logging.warning(
+                        "Parsed check interval '%s' resolved to %s minutes. "
+                        "Falling back to timeframe duration.",
+                        interval_source,
+                        interval_minutes,
+                    )
+                    interval_minutes = max(self.minutes, 1)
+                interval_seconds = max(interval_minutes, 1) * 60
+            self._check_interval = interval_seconds
+            self.check_interval_minutes = max(int(interval_seconds / 60) or 1, 1)
             self.threshold = self.config.get("defaultThreshold", 1)
             self._rebuild_notification_filter_locked()
             if hasattr(self, "notifier") and self.notifier is not None:
@@ -641,7 +667,11 @@ class PriceSentry:
         with self._config_lock:
             minutes = getattr(self, "minutes", parse_timeframe("5m"))
             threshold = getattr(self, "threshold", 1.0)
-            check_interval = getattr(self, "_check_interval", minutes * 60)
+            check_interval = getattr(
+                self,
+                "_check_interval",
+                getattr(self, "minutes", parse_timeframe("5m")) * 60,
+            )
             symbols_snapshot = list(getattr(self, "matched_symbols", []))
             notification_snapshot = (
                 list(self.notification_symbols) if self.notification_symbols else None

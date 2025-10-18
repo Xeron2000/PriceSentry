@@ -15,6 +15,7 @@ def sample_config():
     return {
         "exchange": "binance",
         "defaultTimeframe": "5m",
+        "checkInterval": "5m",
         "defaultThreshold": 2.0,
         "notificationChannels": ["telegram"],
         "notificationTimezone": "Asia/Shanghai",

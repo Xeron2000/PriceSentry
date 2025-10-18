@@ -53,6 +53,7 @@ class TestPriceSentry:
         custom_config = {
             "exchange": "okx",
             "defaultTimeframe": "15m",
+            "checkInterval": "15m",
             "defaultThreshold": 2.5,
             "notificationChannels": ["telegram"],
             "notificationTimezone": "Asia/Shanghai",
@@ -206,6 +207,26 @@ class TestPriceSentry:
                 image_caption="",
             )
 
+    def test_custom_check_interval_decouples_schedule(
+        self, sample_config, mock_exchange, mock_notifier
+    ):
+        """checkInterval 应独立控制调度频率。"""
+        config = dict(sample_config)
+        config["defaultTimeframe"] = "5m"
+        config["checkInterval"] = "1m"
+
+        with patch("core.sentry.load_config", return_value=config), patch(
+            "core.sentry.get_exchange",
+            return_value=mock_exchange,
+        ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
+            "core.sentry.load_usdt_contracts",
+            return_value=["BTC/USDT:USDT"],
+        ), patch("core.sentry.start_api_server", return_value=None):
+            sentry = PriceSentry()
+
+            assert sentry.minutes == 5
+            assert getattr(sentry, "_check_interval", None) == 60
+
     def test_default_config_values(self, mock_exchange, mock_notifier):
         """Test that default config values are applied correctly."""
         minimal_config = {
@@ -232,6 +253,7 @@ class TestPriceSentry:
             mock_load_symbols.assert_called_once_with("binance")
             assert sentry.minutes == 5  # defaultTimeframe '5m' -> 5 minutes
             assert sentry.threshold == 1  # defaultThreshold
+            assert getattr(sentry, "_check_interval", None) == 300
 
     @pytest.mark.asyncio
     async def test_websocket_reconnection(

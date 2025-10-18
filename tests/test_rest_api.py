@@ -185,6 +185,7 @@ class TestConfigEndpoints:
         required_fields = [
             "exchange",
             "defaultTimeframe",
+            "checkInterval",
             "defaultThreshold",
             "notificationChannels",
             "symbolsFilePath",

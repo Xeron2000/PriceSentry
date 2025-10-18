@@ -38,8 +38,8 @@
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
 uv sync && uv pip install -e .
-cp config/config.yaml.example config/config.yaml
-# 更新 config/config.yaml 后再启动服务，避免缺失配置导致报错
+uv run python tools/init_config.py
+# 按提示完成交互式配置（或使用 --non-interactive 直接复制模板）
 uv run python -m app.runner
 
 # （可选）启动前端 Dashboard 以图形化管理配置
@@ -53,11 +53,11 @@ pnpm start
 
 ## 配置说明
 
-1. 复制 `config/config.yaml.example` 为 `config/config.yaml`
+1. 运行 `uv run python tools/init_config.py` 交互式初始化配置（支持 `--force` 覆盖、`--non-interactive` 复制模板）
 2. 设置目标交易所、通知渠道与阈值
 3. 在配置中填写 Telegram Bot Token 和 ChatID ，并且可以在控制面板添加多个接收人
 
-> 注意：若未按上述步骤复制并完善配置文件，直接运行程序会因缺失配置而报错。
+> 注意：若未按上述步骤初始化并完善配置文件，直接运行程序会因缺失配置而报错。
 
 ### Telegram 通知绑定流程
 
@@ -72,6 +72,7 @@ pnpm start
 
 | 功能 | 命令 |
 | --- | --- |
+| 初始化配置 | `uv run python tools/init_config.py` |
 | 启动监控 | `uv run python -m app.runner` |
 | 刷新交易对列表 | `uv run python tools/update_markets.py` |
 | 运行测试 | `uv run pytest` |

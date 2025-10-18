@@ -5,9 +5,12 @@
 # 可选值: "binance", "okx", "bybit"
 exchange: "okx"
 
-# 默认时间周期（数据获取频率）
+# 默认时间周期（K 线聚合窗口）
 # 可选值: "1m", "5m", "15m", "1h", "1d"
 defaultTimeframe: "5m"
+
+# 监控任务检查频率（调度间隔，未配置时回退到 defaultTimeframe）
+checkInterval: "1m"
 
 # 价格变化阈值（百分比）
 defaultThreshold: 1

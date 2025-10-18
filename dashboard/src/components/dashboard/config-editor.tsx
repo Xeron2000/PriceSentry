@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils"
 const CONFIG_HINTS: Record<string, { title?: string; description?: string }> = {
   exchange: { description: "默认连接的交易所 ID" },
   defaultTimeframe: { description: "基础监控时间周期，例如 1m、5m" },
+  checkInterval: { description: "监控任务的执行频率，例如 1m" },
   defaultThreshold: { description: "触发通知的价格变动阈值（百分比）" },
   notificationChannels: { description: "启用的通知渠道集合" },
   notificationTimezone: { description: "通知消息使用的时区" },
@@ -196,6 +197,40 @@ function renderPrimitive(
   }
 
   if (joinedPath === "defaultTimeframe") {
+    const hint = getHint(path)
+    const stringValue = typeof value === "string" ? value : ""
+    return (
+      <div key={id} className="space-y-1">
+        <Label htmlFor={id}>{hint?.title ? `${key}（${hint.title}）` : key}</Label>
+        <Input
+          id={id}
+          disabled={disabled}
+          value={stringValue}
+          onChange={(event) => onValueChange(path, event.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">{joinedPath}</p>
+        {hint?.description ? (
+          <p className="text-xs text-muted-foreground">{hint.description}</p>
+        ) : null}
+        <div className="flex flex-wrap gap-2 pt-1">
+          {TIMEFRAME_PRESETS.map((preset) => (
+            <Button
+              key={preset}
+              type="button"
+              size="sm"
+              variant={stringValue === preset ? "default" : "outline"}
+              disabled={disabled}
+              onClick={() => onValueChange(path, preset)}
+            >
+              {preset}
+            </Button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (joinedPath === "checkInterval") {
     const hint = getHint(path)
     const stringValue = typeof value === "string" ? value : ""
     return (

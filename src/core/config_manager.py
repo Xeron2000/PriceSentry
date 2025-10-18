@@ -232,6 +232,9 @@ class ConfigManager:
                     cleaned.append(trimmed)
             normalized["notificationSymbols"] = cleaned
 
+        if not normalized.get("checkInterval"):
+            normalized["checkInterval"] = normalized.get("defaultTimeframe", "5m")
+
         return normalized
 
     def _get_supported_symbols(self, exchange_name: str) -> List[str]:

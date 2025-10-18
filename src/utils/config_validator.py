@@ -11,6 +11,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from utils.parse_timeframe import parse_timeframe
+
 
 class ValidationLevel(Enum):
     """Validation severity levels."""
@@ -95,6 +97,16 @@ class ConfigValidator:
             data_type=str,
             allowed_values=["1m", "5m", "15m", "1h", "1d"],
             error_message="Timeframe must be one of: 1m, 5m, 15m, 1h, 1d",
+        )
+
+        self.rules["checkInterval"] = ValidationRule(
+            key_path="checkInterval",
+            required=False,
+            data_type=str,
+            custom_validator=self._validate_timeframe_string,
+            error_message=(
+                "checkInterval must use timeframe format such as 1m, 5m, 15m, 1h, 1d"
+            ),
         )
 
         # Threshold configuration
@@ -324,6 +336,24 @@ class ConfigValidator:
                     False,
                     f"Invalid exchange: {exchange}. Must be one of: {valid_exchanges}",
                 )
+
+        return True, ""
+
+    def _validate_timeframe_string(self, value: str) -> Tuple[bool, str]:
+        """Validate timeframe-like strings using shared parser."""
+        if value is None:
+            return True, ""
+
+        if not isinstance(value, str):
+            return False, "Value must be provided as a string"
+
+        try:
+            minutes = parse_timeframe(value)
+        except Exception as exc:
+            return False, f"Invalid timeframe format: {exc}"
+
+        if minutes <= 0:
+            return False, "Timeframe must resolve to a positive number of minutes"
 
         return True, ""
 

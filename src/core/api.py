@@ -90,6 +90,7 @@ class StatsResponse(BaseModel):
 class ConfigResponse(BaseModel):
     exchange: str
     defaultTimeframe: str
+    checkInterval: str
     defaultThreshold: float
     notificationChannels: List[str]
     notificationSymbols: Optional[List[str]] = None
@@ -538,6 +539,9 @@ async def get_system_config():
         safe_config = ConfigResponse(
             exchange=config.get("exchange", "binance"),
             defaultTimeframe=config.get("defaultTimeframe", "5m"),
+            checkInterval=config.get(
+                "checkInterval", config.get("defaultTimeframe", "5m")
+            ),
             defaultThreshold=config.get("defaultThreshold", 1.0),
             notificationChannels=config.get("notificationChannels", []),
             notificationSymbols=config.get("notificationSymbols"),

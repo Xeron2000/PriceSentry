@@ -31,6 +31,7 @@ class TestLoadConfig:
             expected = {
                 **config_data,
                 "symbolsFilePath": "config/symbols.txt",
+                "checkInterval": config_data["defaultTimeframe"],
             }
 
             assert result == expected
@@ -68,6 +69,7 @@ class TestLoadConfig:
             result = load_config("test_config.yaml")
 
             assert result["notificationTimezone"] == "Asia/Shanghai"
+            assert result["checkInterval"] == config_data["defaultTimeframe"]
 
     def test_load_config_file_not_found(self):
         """Test configuration loading when file is not found."""
@@ -121,6 +123,7 @@ class TestLoadConfig:
             expected = {
                 **config_data,
                 "symbolsFilePath": "config/symbols.txt",
+                "checkInterval": config_data["defaultTimeframe"],
             }
             assert result == expected
             assert "extraKey" in result
@@ -148,6 +151,7 @@ class TestLoadConfig:
             expected = {
                 **config_data,
                 "symbolsFilePath": "config/symbols.txt",
+                "checkInterval": config_data["defaultTimeframe"],
             }
             assert result == expected
             assert isinstance(result["notificationChannels"], list)
@@ -173,11 +177,31 @@ class TestLoadConfig:
             expected = {
                 **config_data,
                 "symbolsFilePath": "config/symbols.txt",
+                "checkInterval": config_data["defaultTimeframe"],
             }
 
             assert result == expected
             # Verify default path was used
             mock_file.assert_called_once_with("config/config.yaml", "r")
+
+    def test_load_config_custom_check_interval(self):
+        """Test configuration loading when a custom check interval is provided."""
+        config_data = {
+            "exchange": "binance",
+            "defaultTimeframe": "5m",
+            "checkInterval": "1m",
+            "defaultThreshold": 1.0,
+            "notificationChannels": ["telegram"],
+            "notificationTimezone": "Asia/Shanghai",
+        }
+
+        with patch("builtins.open", mock_open(read_data=yaml.dump(config_data))), patch(
+            "utils.load_config.logging"
+        ):
+            result = load_config("test_config.yaml")
+
+            assert result["checkInterval"] == "1m"
+            assert result["symbolsFilePath"] == "config/symbols.txt"
 
     def test_load_config_timezone_none(self):
         """Test configuration loading with timezone as None."""
@@ -196,6 +220,7 @@ class TestLoadConfig:
 
             assert result["notificationTimezone"] == "Asia/Shanghai"
             assert result["symbolsFilePath"] == "config/symbols.txt"
+            assert result["checkInterval"] == config_data["defaultTimeframe"]
 
     def test_load_config_special_characters(self):
         """Test configuration loading with special characters in values."""
@@ -217,6 +242,7 @@ class TestLoadConfig:
             expected = {
                 **config_data,
                 "symbolsFilePath": "config/symbols.txt",
+                "checkInterval": config_data["defaultTimeframe"],
             }
 
             assert result == expected
@@ -240,6 +266,7 @@ class TestLoadConfig:
 
             assert result["symbolsFilePath"] == "config/symbols.txt"
             assert result["defaultThreshold"] == "2.5"  # Should preserve as string
+            assert result["checkInterval"] == config_data["defaultTimeframe"]
 
     def test_load_config_boolean_threshold(self):
         """Test configuration loading with boolean threshold (edge case)."""
@@ -258,3 +285,4 @@ class TestLoadConfig:
 
             assert result["symbolsFilePath"] == "config/symbols.txt"
             assert result["defaultThreshold"] is True  # Should preserve as boolean
+            assert result["checkInterval"] == config_data["defaultTimeframe"]

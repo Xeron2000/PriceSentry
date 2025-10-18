@@ -7,8 +7,8 @@
 ## 快速开始
 
 ```bash
-cp config/config.yaml.example config/config.yaml
-# 编辑 config/config.yaml 并填入所需参数
+uv run python tools/init_config.py
+# 根据提示完成交互式初始化，或使用 --non-interactive 跳过问答
 uv run python -m app.runner                # 启动服务
 ```
 
@@ -28,6 +28,7 @@ uv run python -m app.runner                # 启动服务
 ```yaml
 exchange: "okx"
 defaultTimeframe: "5m"
+checkInterval: "1m"
 defaultThreshold: 1
 notificationChannels:
   - "telegram"
@@ -37,7 +38,8 @@ notificationTimezone: "Asia/Shanghai"
 ```
 
 - **exchange**：主交易所，支持 `binance` / `okx` / `bybit`。
-- **defaultTimeframe**：行情监控的时间周期，常用值 `1m`、`5m`、`15m`、`1h`、`1d`。
+- **defaultTimeframe**：行情监控的 K 线窗口，常用值 `1m`、`5m`、`15m`、`1h`、`1d`。
+- **checkInterval**：监控任务的调度频率，例如设置为 `1m` 表示每分钟检查一次最新 K 线；若缺省则自动回退到 `defaultTimeframe`。
 - **defaultThreshold**：触发告警的价格变动百分比。
 - **notificationChannels**：当前仅支持 `telegram`。
 - **notificationSymbols**：指定需要推送告警的合约交易对列表。缺省或移除字段表示推送所有监控到的交易对。

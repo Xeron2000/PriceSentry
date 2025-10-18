@@ -40,6 +40,7 @@ const CONFIG_GROUPS: ConfigGroup[] = [
     allowedKeys: [
       "exchange",
       "defaultTimeframe",
+      "checkInterval",
       "defaultThreshold",
       "notificationChannels",
       "notificationTimezone",
@@ -145,6 +146,9 @@ export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("")
 
   const [activeMainTab, setActiveMainTab] = useState<MainTabKey>(MAIN_TAB_OPTIONS[0].value)
+  const handleMainTabChange = useCallback((value: string) => {
+    setActiveMainTab(value as MainTabKey)
+  }, [])
   const [activeConfigTab, setActiveConfigTab] = useState<string>(CONFIG_GROUPS[0].key)
 
   const isDirty = useMemo(() => {
@@ -483,13 +487,13 @@ export default function DashboardPage() {
 
         <Tabs
           value={activeMainTab}
-          onValueChange={setActiveMainTab}
+          onValueChange={handleMainTabChange}
           className="flex flex-col gap-6"
         >
           <ResponsiveTabsHeader
             options={MAIN_TAB_OPTIONS}
             value={activeMainTab}
-            onValueChange={setActiveMainTab}
+            onValueChange={handleMainTabChange}
             selectTriggerClassName="max-w-full"
             tabsListClassName="sm:w-auto sm:justify-start"
           />

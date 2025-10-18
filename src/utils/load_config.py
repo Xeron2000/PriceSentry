@@ -24,7 +24,8 @@ def load_config(configPath="config/config.yaml"):
 
     Required keys in the configuration file:
         - 'exchange': The name of the exchange to connect to.
-        - 'defaultTimeframe': The default timeframe (frequency of data retrieval).
+        - 'defaultTimeframe': The default timeframe (K-line aggregation window).
+        - 'checkInterval': Optional monitoring frequency (defaults to timeframe when omitted).
         - 'defaultThreshold': The default price change threshold.
         - 'notificationChannels': The channels for receiving notifications.
     Optional keys:
@@ -56,6 +57,10 @@ def load_config(configPath="config/config.yaml"):
 
         if "symbolsFilePath" not in config or not config["symbolsFilePath"]:
             config["symbolsFilePath"] = "config/symbols.txt"
+
+        # Monitoring falls back to timeframe when no explicit interval is provided
+        if "checkInterval" not in config or not config["checkInterval"]:
+            config["checkInterval"] = config.get("defaultTimeframe", "5m")
 
         return config
     except Exception as e:
