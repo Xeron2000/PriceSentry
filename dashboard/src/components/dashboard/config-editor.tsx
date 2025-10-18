@@ -46,6 +46,12 @@ const CONFIG_HINTS: Record<string, { title?: string; description?: string }> = {
   "telegram.webhookSecret": { description: "Webhook 校验密钥（可选）" },
 }
 
+const HIDDEN_PATHS = new Set(["security.requireDashboardKey"])
+
+function isHiddenPath(path: string[]): boolean {
+  return HIDDEN_PATHS.has(path.join("."))
+}
+
 const EXCHANGE_OPTIONS = ["binance", "okx", "bybit"]
 const NOTIFICATION_CHANNEL_OPTIONS = [{ value: "telegram", label: "Telegram" }]
 const TIMEFRAME_PRESETS = ["1m", "5m", "15m", "1h", "1d"]
@@ -106,6 +112,10 @@ function renderPrimitive(
 ) {
   const id = path.join("-")
   const joinedPath = path.join(".")
+
+  if (isHiddenPath(path)) {
+    return null
+  }
 
   if (joinedPath === "exchange") {
     const hint = getHint(path)
@@ -371,6 +381,17 @@ function renderNode(
 
   if (isPlainObject(value)) {
     const hint = getHint(currentPath)
+    const childEntries = Object.entries(value)
+      .filter(([childKey]) => !isHiddenPath([...currentPath, childKey]))
+      .map(([childKey, childValue]) =>
+        renderNode(childKey, childValue, currentPath, onValueChange, searchTerm, disabled),
+      )
+      .filter(Boolean)
+
+    if (!childEntries.length) {
+      return null
+    }
+
     return (
       <Card key={currentPath.join("-")} className="space-y-4 p-4">
         <div>
@@ -382,11 +403,7 @@ function renderNode(
             <p className="text-xs text-muted-foreground">{hint.description}</p>
           ) : null}
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {Object.entries(value).map(([childKey, childValue]) =>
-            renderNode(childKey, childValue, currentPath, onValueChange, searchTerm, disabled),
-          )}
-        </div>
+        <div className="grid gap-4 md:grid-cols-2">{childEntries}</div>
       </Card>
     )
   }

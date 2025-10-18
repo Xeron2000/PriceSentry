@@ -41,13 +41,21 @@ uv sync && uv pip install -e .
 cp config/config.yaml.example config/config.yaml
 # 更新 config/config.yaml 后再启动服务，避免缺失配置导致报错
 uv run python -m app.runner
+
+# （可选）启动前端 Dashboard 以图形化管理配置
+cd dashboard
+pnpm install
+pnpm build
+pnpm start
 ```
+
+> 如果只运行后端，通过编辑 `config/config.yaml` 即可完成全部功能；前端 Dashboard 提供可视化体验但并非必需。
 
 ## 配置说明
 
 1. 复制 `config/config.yaml.example` 为 `config/config.yaml`
 2. 设置目标交易所、通知渠道与阈值
-3. 在配置中填写 Telegram Bot Token，运行控制面板添加接收人
+3. 在配置中填写 Telegram Bot Token 和 ChatID ，并且可以在控制面板添加多个接收人
 
 > 注意：若未按上述步骤复制并完善配置文件，直接运行程序会因缺失配置而报错。
 
@@ -60,17 +68,6 @@ uv run python -m app.runner
 
 更多选项可参考示例文件注释，或运行 `uv run python tools/update_markets.py` 更新支持的市场列表。
 
-
-## 常用命令
-
-```bash
-uv run python -m app.runner           # 启动监控
-uv run pytest                         # 运行测试
-uv run python tools/update_markets.py # 刷新交易对数据
-```
-
-
-
 ## 可用脚本
 
 | 功能 | 命令 |
@@ -78,7 +75,21 @@ uv run python tools/update_markets.py # 刷新交易对数据
 | 启动监控 | `uv run python -m app.runner` |
 | 刷新交易对列表 | `uv run python tools/update_markets.py` |
 | 运行测试 | `uv run pytest` |
-| 启动快速测试 | `uv run python tests/quick_test.py` |
+
+## 运行截图
+
+<table align="center">
+  <tr>
+    <td align="center" valign="middle">
+      <img src="https://raw.githubusercontent.com/Xeron2000/PriceSentry/refs/heads/main/img/web.jpg" alt="Dashboard 运行截图" width="520">
+    </td>
+    <td align="center" valign="middle">
+      <img src="https://raw.githubusercontent.com/Xeron2000/PriceSentry/refs/heads/main/img/tg.jpg" alt="Telegram 推送示例" width="520">
+    </td>
+  </tr>
+</table>
+
+
 ## 项目结构
 
 ```
