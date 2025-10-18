@@ -18,6 +18,7 @@ def sample_config():
         "defaultThreshold": 2.0,
         "notificationChannels": ["telegram"],
         "notificationTimezone": "Asia/Shanghai",
+        "notificationSymbols": ["BTC/USDT:USDT"],
         "telegram": {
             "token": "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk",
             "chatId": "123456789",

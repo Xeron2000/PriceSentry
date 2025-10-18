@@ -49,7 +49,6 @@ chartImageScale: 2
 # Dashboard 访问控制
 security:
   dashboardAccessKey: "pricesentry"
-  requireDashboardKey: false
 
 # 额外说明
 # - 默认会监控支持的 USDT 合约交易对，notificationSymbols 为空或缺省时会推送全部交易对。

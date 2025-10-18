@@ -143,10 +143,12 @@ export default function DashboardPage() {
   }, [config, draftConfig])
 
   const notificationSelection = useMemo(() => {
-    if (!draftConfig) return undefined
+    if (!draftConfig) return []
     const selection = draftConfig["notificationSymbols"]
-    return Array.isArray(selection) ? (selection as string[]) : undefined
+    return Array.isArray(selection) ? [...(selection as string[])] : []
   }, [draftConfig])
+
+  const hasValidSymbolSelection = notificationSelection.length > 0
 
   const runVerification = useCallback(async (candidateKey: string) => {
     const trimmed = candidateKey.trim()
@@ -187,8 +189,12 @@ export default function DashboardPage() {
     setConfigLoading(true)
     try {
       const data = await fetchFullConfig(authKey)
-      setConfig(data)
-      setDraftConfig(deepClone(data))
+      const normalized = deepClone(data)
+      if (!Array.isArray(normalized["notificationSymbols"])) {
+        normalized["notificationSymbols"] = []
+      }
+      setConfig(normalized)
+      setDraftConfig(deepClone(normalized))
       setConfigError(null)
     } catch (error) {
       console.error(error)
@@ -214,7 +220,7 @@ export default function DashboardPage() {
   }, [])
 
   const handleSymbolSelectionChange = useCallback(
-    (nextSelection: string[] | undefined) => {
+    (nextSelection: string[]) => {
       handleConfigChange(["notificationSymbols"], nextSelection)
     },
     [handleConfigChange],
@@ -222,6 +228,12 @@ export default function DashboardPage() {
 
   const handleSave = useCallback(async () => {
     if (!authKey || !draftConfig) return
+    if (!hasValidSymbolSelection) {
+      toast.error("保存失败", {
+        description: "必须至少选择一个合约交易对后才能保存配置",
+      })
+      return
+    }
     setSaveLoading(true)
     try {
       const result: ConfigUpdateResult = await updateRemoteConfig(authKey, draftConfig)
@@ -251,7 +263,7 @@ export default function DashboardPage() {
     } finally {
       setSaveLoading(false)
     }
-  }, [authKey, draftConfig])
+  }, [authKey, draftConfig, hasValidSymbolSelection])
 
   const handleResetDraft = useCallback(() => {
     if (config) {
@@ -427,7 +439,11 @@ export default function DashboardPage() {
             >
               <Undo2 className="mr-2 h-4 w-4" /> 放弃修改
             </Button>
-            <Button size="sm" disabled={!isDirty || saveLoading} onClick={handleSave}>
+            <Button
+              size="sm"
+              disabled={!isDirty || saveLoading || !hasValidSymbolSelection}
+              onClick={handleSave}
+            >
               {saveLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 保存中
@@ -438,6 +454,11 @@ export default function DashboardPage() {
                 </>
               )}
             </Button>
+            {!hasValidSymbolSelection ? (
+              <p className="w-full text-xs text-destructive">
+                至少选择一个合约交易对后才能保存配置。
+              </p>
+            ) : null}
           </div>
         </header>
 

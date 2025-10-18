@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 interface SymbolSelectorProps {
   authKey: string
   value?: string[]
-  onChange: (next: string[] | undefined) => void
+  onChange: (next: string[]) => void
   disabled?: boolean
   className?: string
 }
@@ -26,12 +26,9 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
 
-  const selectionSet = useMemo(() => {
-    if (!value || value.length === 0) {
-      return null
-    }
-    return new Set(value)
-  }, [value])
+  const normalizedSelection = useMemo(() => (Array.isArray(value) ? value : []), [value])
+
+  const selectionSet = useMemo(() => new Set(normalizedSelection), [normalizedSelection])
 
   const loadSymbols = useCallback(async () => {
     if (!authKey) return
@@ -54,15 +51,15 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
   }, [loadSymbols])
 
   useEffect(() => {
-    if (!symbols.length || !selectionSet) {
+    if (!symbols.length) {
       return
     }
     const allowed = new Set(symbols)
-    const filtered = value?.filter((symbol) => allowed.has(symbol)) ?? []
-    if (filtered.length !== (value?.length ?? 0)) {
-      onChange(filtered.length ? filtered : undefined)
+    const filtered = normalizedSelection.filter((symbol) => allowed.has(symbol))
+    if (filtered.length !== normalizedSelection.length) {
+      onChange(filtered)
     }
-  }, [symbols, selectionSet, value, onChange])
+  }, [symbols, normalizedSelection, onChange])
 
   const searchResults = useMemo(() => {
     const keyword = searchTerm.trim().toUpperCase()
@@ -75,24 +72,26 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
       .slice(0, 8)
   }, [symbols, searchTerm])
 
+  const allSymbolsSorted = useMemo(() => [...symbols].sort(), [symbols])
+
   const totalAvailable = symbols.length || monitoredTotal
-  const selectedCount = selectionSet ? selectionSet.size : totalAvailable
+  const selectedCount = selectionSet.size
   const hasSearchTerm = searchTerm.trim().length > 0
-  const hasCustomSelection = selectionSet !== null && selectionSet.size > 0
+  const hasSelection = selectionSet.size > 0
   const selectedSymbols = useMemo(() => {
-    if (!hasCustomSelection || !selectionSet) {
+    if (!hasSelection) {
       return []
     }
     return Array.from(selectionSet).sort()
-  }, [hasCustomSelection, selectionSet])
+  }, [hasSelection, selectionSet])
 
   const handleAdd = useCallback(
     (symbol: string) => {
       if (!symbols.length) return
-      const base = selectionSet ? new Set(selectionSet) : new Set<string>()
+      const base = new Set(selectionSet)
       base.add(symbol)
       const ordered = Array.from(base).sort()
-      onChange(ordered.length === symbols.length ? undefined : ordered)
+      onChange(ordered)
     },
     [selectionSet, symbols, onChange],
   )
@@ -100,36 +99,30 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
   const handleRemove = useCallback(
     (symbol: string) => {
       if (!symbols.length) return
-      if (selectionSet === null) {
-        const base = new Set(symbols)
-        base.delete(symbol)
-        const ordered = Array.from(base).sort()
-        onChange(ordered.length === symbols.length ? undefined : ordered)
-        return
-      }
-
       const nextSet = new Set(selectionSet)
       nextSet.delete(symbol)
-      if (nextSet.size === 0) {
-        onChange(undefined)
-        return
-      }
       const ordered = Array.from(nextSet).sort()
-      onChange(ordered.length === symbols.length ? undefined : ordered)
+      onChange(ordered)
     },
     [selectionSet, symbols, onChange],
   )
 
   const handleReset = useCallback(() => {
-    onChange(undefined)
-  }, [onChange])
+    if (!allSymbolsSorted.length) {
+      onChange([])
+      return
+    }
+    onChange(allSymbolsSorted)
+  }, [allSymbolsSorted, onChange])
 
   const isSymbolSelected = useCallback(
-    (symbol: string) => selectionSet?.has(symbol) ?? false,
+    (symbol: string) => selectionSet.has(symbol),
     [selectionSet],
   )
 
-  const isDefaultMonitoringAll = selectionSet === null
+  const handleClear = useCallback(() => {
+    onChange([])
+  }, [onChange])
 
   return (
     <Card
@@ -142,10 +135,14 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">合约交易对选择</h2>
           <p className="text-sm text-muted-foreground">
-            默认推送全部监控到的 USDT 合约交易对。取消部分勾选即可仅推送选定的交易对。
+            仅有在这里勾选并保存的合约交易对会写入配置文件，后端重载后只监控这些交易对；必须至少保留 1 个合约喵～
           </p>
           <p className="text-xs text-muted-foreground">
-            当前选择：{selectionSet === null ? "全部" : `${selectedCount}/${totalAvailable}`} （可用 {totalAvailable} 个）
+            当前监控范围：
+            {hasSelection ? `${selectedCount} 个交易对` : "未选择（请至少选择 1 个）"}
+            {"（共 "}
+            {totalAvailable}
+            {" 个可选）"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -168,10 +165,18 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
           <Button
             variant="outline"
             size="sm"
-            disabled={disabled || selectionSet === null}
+            disabled={disabled || !symbols.length}
             onClick={handleReset}
           >
-            <XCircle className="mr-2 h-4 w-4" /> 恢复默认
+            <RefreshCw className="mr-2 h-4 w-4" /> 全选所有合约
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={handleClear}
+          >
+            <XCircle className="mr-2 h-4 w-4" /> 清空选择
           </Button>
         </div>
       </div>
@@ -229,7 +234,7 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
 
                 {searchResults.map((symbol) => {
                   const selected = isSymbolSelected(symbol)
-                  const rowActive = selected && !isDefaultMonitoringAll
+                  const rowActive = selected
                   return (
                     <div
                       key={symbol}
@@ -240,8 +245,8 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{symbol}</p>
-                        {isDefaultMonitoringAll ? (
-                          <p className="text-xs text-muted-foreground">当前默认监控中</p>
+                        {selected ? (
+                          <p className="text-xs text-muted-foreground">已加入监控</p>
                         ) : null}
                       </div>
                       <div className="flex flex-shrink-0 items-center gap-2">
@@ -258,10 +263,10 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
                           type="button"
                           size="sm"
                           variant="destructive"
-                          disabled={disabled || (!selected && !isDefaultMonitoringAll)}
+                          disabled={disabled || !selected}
                           onClick={() => handleRemove(symbol)}
                         >
-                          {isDefaultMonitoringAll ? "排除" : "移除"}
+                          移除
                         </Button>
                       </div>
                     </div>
@@ -270,7 +275,7 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
               </div>
             </ScrollArea>
           </Card>
-        ) : hasCustomSelection ? (
+        ) : hasSelection ? (
           <Card className="flex h-full min-h-0 flex-col space-y-3 border p-3">
             <p className="text-xs text-muted-foreground">当前已选择的合约交易对</p>
             <ScrollArea className="flex-1 min-h-0 rounded-md border bg-muted/40">
@@ -297,10 +302,10 @@ export function SymbolSelector({ authKey, value, onChange, disabled, className }
             </ScrollArea>
           </Card>
         ) : (
-          <Card className="space-y-2 border p-3">
-            <p className="text-sm font-medium text-muted-foreground">当前默认监控全部合约</p>
-            <p className="text-xs text-muted-foreground">
-              系统将监控 {totalAvailable} 个 USDT 合约交易对。使用上方搜索可以精确添加或排除特定交易对，搜索结果会以下拉列表形式展示。调整完成后记得点击页面右上角的保存按钮，才会写入配置并重载后端。
+          <Card className="space-y-2 border border-destructive/60 bg-destructive/10 p-3 text-destructive">
+            <p className="text-sm font-medium">未选择任何合约</p>
+            <p className="text-xs leading-5">
+              至少选择一个支持的合约交易对后才能保存配置喵～清空只用于临时浏览，不会写入后端。
             </p>
           </Card>
         )}

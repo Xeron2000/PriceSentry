@@ -88,11 +88,9 @@ chartImageScale: 2          # 1/2/3
 ```yaml
 security:
   dashboardAccessKey: "pricesentry"
-  requireDashboardKey: false
 ```
 
-- **dashboardAccessKey**：访问敏感接口（例如 `/api/config/full`）时的密钥。
-- **requireDashboardKey**：为 `true` 时，调用受保护接口必须携带 `X-Dashboard-Key` 请求头。
+- **dashboardAccessKey**：访问敏感接口（例如 `/api/config/full`）时的密钥，所有受保护请求都会强制校验 `X-Dashboard-Key` 头部。
 
 前端会自动在所有请求上注入密钥请求头，来源于 Dashboard 登录表单。确保 `NEXT_PUBLIC_API_BASE` 指向正确的后端，否则会出现 404 或跨域错误。
 
@@ -121,11 +119,6 @@ security:
 
 4. **没有配置 Telegram 但启用了渠道？**  
    如果 `notificationChannels` 包含 `telegram`，`telegram.token` 必须配置，否则启动阶段会报错并拒绝运行。
-
-5. **如何关闭 Dashboard 密钥校验？**  
-   将 `requireDashboardKey` 设置为 `false`，或完全移除 `security` 字段（不推荐在生产环境这样做）。
-
----
 
 ## 配置变更建议
 

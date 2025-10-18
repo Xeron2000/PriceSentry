@@ -14,6 +14,9 @@ BASE_URL = "http://localhost:8000"
 API_BASE_URL = f"{BASE_URL}/api"
 WS_URL = "ws://localhost:8000/ws"
 
+# 测试所用 Dashboard 密钥需与后端配置一致
+DASHBOARD_KEY = "pricesentry"
+
 # 测试配置
 TEST_CONFIG = {
     "timeout": 30,
@@ -29,7 +32,12 @@ class APITestClient:
     def __init__(self, base_url: str = API_BASE_URL):
         self.base_url = base_url
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "PriceSentry-API-Test/1.0"})
+        self.session.headers.update(
+            {
+                "User-Agent": "PriceSentry-API-Test/1.0",
+                "X-Dashboard-Key": DASHBOARD_KEY,
+            }
+        )
 
     def get(self, endpoint: str, **kwargs) -> requests.Response:
         """GET请求"""
@@ -72,7 +80,9 @@ class WebSocketTestClient:
         """连接WebSocket"""
         try:
             self.ws = websocket.create_connection(
-                self.url, timeout=TEST_CONFIG["timeout"]
+                self.url,
+                timeout=TEST_CONFIG["timeout"],
+                header=[f"X-Dashboard-Key: {DASHBOARD_KEY}"],
             )
             self.connected = True
             return True

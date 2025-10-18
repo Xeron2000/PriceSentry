@@ -56,6 +56,7 @@ class TestPriceSentry:
             "defaultThreshold": 2.5,
             "notificationChannels": ["telegram"],
             "notificationTimezone": "Asia/Shanghai",
+            "notificationSymbols": ["ETH/USDT:USDT"],
             "telegram": {
                 "token": "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk",
                 "chatId": "123456789",
@@ -71,6 +72,59 @@ class TestPriceSentry:
 
             assert sentry.minutes == 15
             assert sentry.threshold == 2.5
+
+    def test_notification_symbols_limit_monitored_set(
+        self, sample_config, mock_exchange, mock_notifier
+    ):
+        """仅监控配置文件中选定的合约交易对。"""
+        scoped_config = dict(sample_config)
+        scoped_config["notificationSymbols"] = [
+            "ETH/USDT:USDT",
+            "DOGE/USDT:USDT",
+        ]
+
+        with patch("core.sentry.load_config", return_value=scoped_config), patch(
+            "core.sentry.get_exchange", return_value=mock_exchange
+        ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
+            "core.sentry.load_usdt_contracts",
+            return_value=["BTC/USDT:USDT", "ETH/USDT:USDT"],
+        ), patch("core.sentry.parse_timeframe", return_value=5), patch(
+            "core.sentry.start_api_server", return_value=None
+        ), patch("core.sentry.logging") as mock_logging:
+            sentry = PriceSentry()
+
+            assert sentry.matched_symbols == ["ETH/USDT:USDT"]
+            assert sentry.notification_symbols == ["ETH/USDT:USDT"]
+            mock_logging.warning.assert_any_call(
+                "Notification symbols ignored because they are not monitored: %s",
+                "DOGE/USDT:USDT",
+            )
+
+    def test_notification_symbols_invalid_fallback(
+        self, sample_config, mock_exchange, mock_notifier
+    ):
+        """无有效交易对时抛出错误，阻止监控运行。"""
+        scoped_config = dict(sample_config)
+        scoped_config["notificationSymbols"] = [
+            "DOGE/USDT:USDT",
+            "LTC/USDT:USDT",
+        ]
+
+        with patch("core.sentry.load_config", return_value=scoped_config), patch(
+            "core.sentry.get_exchange", return_value=mock_exchange
+        ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
+            "core.sentry.load_usdt_contracts", return_value=["BTC/USDT:USDT"]
+        ), patch("core.sentry.parse_timeframe", return_value=5), patch(
+            "core.sentry.start_api_server", return_value=None
+        ), patch("core.sentry.logging") as mock_logging:
+            sentry = PriceSentry()
+
+        assert getattr(sentry, "matched_symbols", []) == []
+        assert getattr(sentry, "notification_symbols", None) is None
+        assert any(
+            "No valid notification symbols remain" in str(entry)
+            for entry in mock_logging.error.call_args_list
+        )
 
     @pytest.mark.asyncio
     async def test_run_with_no_symbols(
@@ -127,10 +181,7 @@ class TestPriceSentry:
         with patch("core.sentry.load_config", return_value=sample_config), patch(
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
-            "core.sentry.load_symbols_from_file", return_value=["BTC/USDT"]
-        ), patch(
-            "core.sentry.match_symbols",
-            return_value=[{"symbol": "BTC/USDT", "exchange_symbol": "BTCUSDT"}],
+            "core.sentry.load_usdt_contracts", return_value=["BTC/USDT:USDT"]
         ), patch("core.sentry.parse_timeframe", return_value=1), patch(
             "core.sentry.monitor_top_movers"
         ) as mock_monitor, patch("core.sentry.logging"):
@@ -163,6 +214,7 @@ class TestPriceSentry:
             "defaultThreshold": 1.0,
             "notificationChannels": ["telegram"],
             "notificationTimezone": "Asia/Shanghai",
+            "notificationSymbols": ["BTC/USDT:USDT"],
             "telegram": {
                 "token": "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk",
                 "chatId": "123456789",

@@ -20,6 +20,7 @@ class TestConfigValidator:
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
+            "notificationSymbols": ["BTC/USDT:USDT"],
             "telegram": {"token": "123456789:ABCdef123456", "chatId": "123456789"},
             "notificationTimezone": "Asia/Shanghai",
             "logLevel": "INFO",
@@ -50,6 +51,7 @@ class TestConfigValidator:
         assert any("exchange" in msg.lower() for msg in error_messages)
         assert any("timeframe" in msg.lower() for msg in error_messages)
         assert any("threshold" in msg.lower() for msg in error_messages)
+        assert any("notification" in msg.lower() and "symbol" in msg.lower() for msg in error_messages)
 
     def test_invalid_exchange(self):
         """Test validation fails with invalid exchange."""
@@ -60,6 +62,7 @@ class TestConfigValidator:
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
@@ -75,6 +78,7 @@ class TestConfigValidator:
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
@@ -90,11 +94,28 @@ class TestConfigValidator:
             "defaultThreshold": 150.0,  # Above max value
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
         assert not result.is_valid
         assert any("threshold" in str(error).lower() for error in result.errors)
+
+    def test_empty_notification_symbols(self):
+        """Test validation fails when notification symbols list is empty."""
+        config = {
+            "exchange": "binance",
+            "exchanges": ["binance", "okx"],
+            "defaultTimeframe": "5m",
+            "defaultThreshold": 1.0,
+            "symbolsFilePath": "config/symbols.txt",
+            "notificationChannels": ["telegram"],
+            "notificationSymbols": [],
+        }
+
+        result = config_validator.validate_config(config)
+        assert not result.is_valid
+        assert any("notification" in str(error).lower() and "symbol" in str(error).lower() for error in result.errors)
 
     def test_invalid_telegram_token(self):
         """Test validation fails with invalid Telegram token."""
@@ -106,6 +127,7 @@ class TestConfigValidator:
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
             "telegram": {"token": "invalid_token", "chatId": "123456789"},
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
@@ -124,6 +146,7 @@ class TestConfigValidator:
             "defaultThreshold": 1.0,
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["invalid_channel"],
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
@@ -145,6 +168,7 @@ class TestConfigValidator:
             "symbolsFilePath": "config/symbols.txt",
             "notificationChannels": ["telegram"],
             # Missing telegram configuration
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
@@ -164,6 +188,7 @@ class TestConfigValidator:
             "attachChart": True,
             "chartImageWidth": 5000,  # Above max value
             "chartImageHeight": 100,  # Below min value
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
@@ -182,6 +207,7 @@ class TestConfigValidator:
             "notificationChannels": ["telegram"],
             "telegram": {"token": "123456789:ABCdef123456", "chatId": "123456789"},
             "chartIncludeMA": [7, -5, 300],  # Invalid values
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
@@ -203,6 +229,7 @@ class TestConfigValidator:
                 "symbolsFilePath": temp_path,
                 "notificationChannels": ["telegram"],
                 "telegram": {"token": "123456789:ABCdef123456", "chatId": "123456789"},
+                "notificationSymbols": ["BTC/USDT:USDT"],
             }
 
             result = config_validator.validate_config(config)
@@ -220,6 +247,7 @@ class TestConfigValidator:
             "symbolsFilePath": "/nonexistent/path/symbols.txt",
             "notificationChannels": ["telegram"],
             "telegram": {"token": "123456789:ABCdef123456", "chatId": "123456789"},
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)
@@ -269,6 +297,7 @@ class TestConfigValidator:
             "notificationChannels": [],  # Empty to avoid requiring telegram config
             "attachChart": True,
             # Missing chart configuration - should generate warnings
+            "notificationSymbols": ["BTC/USDT:USDT"],
         }
 
         result = config_validator.validate_config(config)

@@ -75,7 +75,20 @@ class PriceSentry:
             exchange_name = self.config.get("exchange", "binance")
             self.exchange = get_exchange(exchange_name)
 
-            self._sync_symbols(exchange_name)
+            try:
+                self._sync_symbols(exchange_name)
+            except ValueError as exc:
+                error_handler.handle_config_error(
+                    exc,
+                    {
+                        "exchange": exchange_name,
+                        "operation": "symbol_bootstrap",
+                    },
+                    ErrorSeverity.ERROR,
+                )
+                logging.error("Failed to bootstrap symbols: %s", exc)
+                return
+
             if not getattr(self, "matched_symbols", None):
                 logging.warning(
                     "No USDT contract symbols found for exchange %s. "
@@ -461,7 +474,21 @@ class PriceSentry:
             logging.error("Exchange reload aborted: %s", exc)
             return
 
-        self._sync_symbols(exchange_name)
+        try:
+            self._sync_symbols(exchange_name)
+        except ValueError as exc:
+            error_handler.handle_config_error(
+                exc,
+                {
+                    "component": "PriceSentry",
+                    "operation": "symbol_reload",
+                    "exchange": exchange_name,
+                },
+                ErrorSeverity.ERROR,
+            )
+            logging.error("Symbol reload aborted: %s", exc)
+            return
+
         if not self.matched_symbols:
             logging.warning("Symbol reload produced empty set; skipping websocket")
             error_handler.handle_config_error(
@@ -541,15 +568,66 @@ class PriceSentry:
             self._notification_symbol_set = set()
 
     def _sync_symbols(self, exchange_name: str) -> None:
-        matched = load_usdt_contracts(exchange_name)
+        available_symbols = load_usdt_contracts(exchange_name)
+
+        if not available_symbols:
+            with self._config_lock:
+                self.matched_symbols = []
+                self._rebuild_notification_filter_locked()
+            logging.warning(
+                "No USDT contract symbols available for exchange %s. "
+                "Ensure config/supported_markets.json is up-to-date.",
+                exchange_name,
+            )
+            return
+
+        selection = self.config.get("notificationSymbols")
+        if not isinstance(selection, list) or not selection:
+            message = (
+                "Configuration must include at least one notification symbol. "
+                "Save the configuration with a non-empty list before restarting."
+            )
+            logging.error(message)
+            raise ValueError(message)
+
+        available_set = set(available_symbols)
+        monitored_symbols: List[str] = []
+        missing_symbols: List[str] = []
+
+        for raw_symbol in selection:
+            if not isinstance(raw_symbol, str):
+                continue
+            candidate = raw_symbol.strip()
+            if not candidate:
+                continue
+            if candidate in available_set:
+                monitored_symbols.append(candidate)
+            else:
+                missing_symbols.append(candidate)
+
+        if not monitored_symbols:
+            detail = ""
+            if missing_symbols:
+                detail = (
+                    " Missing symbols: "
+                    + ", ".join(sorted(set(missing_symbols)))
+                    + "."
+                )
+            message = (
+                "No valid notification symbols remain after filtering against available contracts. "
+                "Select at least one supported symbol and retry." + detail
+            )
+            logging.error(message)
+            raise ValueError(message)
+
         with self._config_lock:
-            self.matched_symbols = matched
+            self.matched_symbols = monitored_symbols
             self._rebuild_notification_filter_locked()
 
-        if matched:
+        if monitored_symbols:
             logging.info(
                 "Loaded %s USDT contract symbols for exchange %s",
-                len(matched),
+                len(monitored_symbols),
                 exchange_name,
             )
         else:

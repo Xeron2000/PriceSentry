@@ -129,10 +129,10 @@ class ConfigValidator:
 
         self.rules["notificationSymbols"] = ValidationRule(
             key_path="notificationSymbols",
-            required=False,
+            required=True,
             data_type=list,
             custom_validator=self._validate_notification_symbols,
-            error_message="Notification symbols must be a non-empty list of symbol strings",
+            error_message="At least one notification symbol must be configured",
         )
 
         # Telegram configuration
@@ -310,22 +310,6 @@ class ConfigValidator:
             data_type=str,
             min_length=4,
             error_message="Dashboard access key must be at least 4 characters long",
-        )
-
-        self.rules["security.requireDashboardKey"] = ValidationRule(
-            key_path="security.requireDashboardKey",
-            required=False,
-            data_type=bool,
-            custom_validator=self._validate_boolean_or_string_boolean,
-            error_message="Dashboard key requirement flag must be a boolean value",
-        )
-
-        self.rules["requireDashboardKey"] = ValidationRule(
-            key_path="requireDashboardKey",
-            required=False,
-            data_type=bool,
-            custom_validator=self._validate_boolean_or_string_boolean,
-            error_message="Top-level dashboard key requirement flag must be a boolean value",
         )
 
     def _validate_exchanges_list(self, value: List[str]) -> Tuple[bool, str]:

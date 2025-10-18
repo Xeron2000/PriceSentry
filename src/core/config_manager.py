@@ -13,6 +13,7 @@ import yaml
 
 from utils.config_io import write_config
 from utils.config_validator import ValidationRule, config_validator
+from utils.supported_markets import load_usdt_contracts
 
 CONFIG_PATH = Path("config/config.yaml")
 
@@ -62,6 +63,8 @@ class ConfigManager:
         self._listeners: List[Listener] = []
         self._config: Dict[str, Any] = {}
         self._last_loaded_at: float = 0.0
+        self._symbol_cache: Dict[str, List[str]] = {}
+        self._symbol_cache_lock = threading.RLock()
         self._load_initial()
 
     @classmethod
@@ -103,6 +106,39 @@ class ConfigManager:
 
             previous = copy.deepcopy(self._config)
 
+            exchange_name = normalized.get("exchange", "binance")
+            available_symbols = self._get_supported_symbols(exchange_name)
+            available_set = set(available_symbols)
+            selection = normalized.get("notificationSymbols")
+            matched_symbols: List[str] = []
+            missing_symbols: List[str] = []
+
+            if isinstance(selection, list):
+                for symbol in selection:
+                    if symbol in available_set:
+                        matched_symbols.append(symbol)
+                    else:
+                        missing_symbols.append(symbol)
+
+            if isinstance(selection, list) and not matched_symbols:
+                message = (
+                    f"No valid notification symbols found for exchange {exchange_name}. "
+                    "Select at least one supported contract."
+                )
+                errors = [message]
+                if missing_symbols:
+                    errors.append(
+                        "Unavailable symbols: " + ", ".join(sorted(set(missing_symbols)))
+                    )
+                return ManagerUpdateResult(
+                    success=False,
+                    errors=errors,
+                    warnings=validation.warnings,
+                    message=message,
+                    diff=None,
+                    config=previous,
+                )
+
             if previous == normalized:
                 diff = ConfigDiff(set(), False, False)
                 result = ManagerUpdateResult(
@@ -118,6 +154,8 @@ class ConfigManager:
                 return result
 
             diff = self._diff(previous, normalized)
+            if diff.requires_symbol_reload:
+                self._clear_symbol_cache()
             write_config(normalized, path=self._config_path)
             self._config = copy.deepcopy(normalized)
             self._last_loaded_at = time.time()
@@ -140,6 +178,7 @@ class ConfigManager:
             config = self._load_from_disk()
             self._config = copy.deepcopy(config)
             self._last_loaded_at = time.time()
+            self._clear_symbol_cache()
             return copy.deepcopy(self._config)
 
     def last_loaded_at(self) -> float:
@@ -191,12 +230,29 @@ class ConfigManager:
                 if trimmed not in seen:
                     seen.add(trimmed)
                     cleaned.append(trimmed)
-            if cleaned:
-                normalized["notificationSymbols"] = cleaned
-            else:
-                normalized.pop("notificationSymbols", None)
+            normalized["notificationSymbols"] = cleaned
 
         return normalized
+
+    def _get_supported_symbols(self, exchange_name: str) -> List[str]:
+        if not exchange_name:
+            return []
+
+        with self._symbol_cache_lock:
+            cached = self._symbol_cache.get(exchange_name)
+            if cached is not None:
+                return list(cached)
+
+        symbols = load_usdt_contracts(exchange_name)
+
+        with self._symbol_cache_lock:
+            self._symbol_cache[exchange_name] = list(symbols)
+
+        return list(symbols)
+
+    def _clear_symbol_cache(self) -> None:
+        with self._symbol_cache_lock:
+            self._symbol_cache.clear()
 
     def _coerce_value(self, value: Any, rule: ValidationRule) -> Tuple[Any, bool]:
         target_type = rule.data_type
@@ -304,7 +360,8 @@ class ConfigManager:
 
         reload_exchange = any(key in changed for key in {"exchange"})
         reload_symbols = reload_exchange or any(
-            key in changed for key in {"symbols", "symbolsFilePath"}
+            key in changed
+            for key in {"symbols", "symbolsFilePath", "notificationSymbols"}
         )
 
         return ConfigDiff(changed_keys=changed, requires_exchange_reload=reload_exchange, requires_symbol_reload=reload_symbols)

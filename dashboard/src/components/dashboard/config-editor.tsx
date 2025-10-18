@@ -40,7 +40,6 @@ const CONFIG_HINTS: Record<string, { title?: string; description?: string }> = {
   chartImageScale: { description: "图表缩放倍率，用于提高清晰度" },
   security: { description: "安全相关配置" },
   "security.dashboardAccessKey": { description: "仪表板访问密钥（至少 4 位）" },
-  "security.requireDashboardKey": { description: "是否强制携带 Dashboard 密钥" },
   telegram: { description: "Telegram 推送参数" },
   "telegram.token": { description: "Telegram 机器人 Token" },
   "telegram.chatId": { description: "Telegram 兼容回退聊天 ID（可选）" },

@@ -345,36 +345,42 @@ def _reply_via_bot(chat_id: int, text: str, telegram_config: Dict[str, Any]) -> 
     send_telegram_message(text, bot_token, str(chat_id))
 
 
-def _load_dashboard_access_key() -> Tuple[Optional[str], bool]:
-    """读取dashboard访问密钥以及是否强制要求"""
+def _load_dashboard_access_key() -> Optional[str]:
+    """读取 dashboard 访问密钥（若未配置则返回 None）。"""
     try:
         config = config_manager.get_config()
     except Exception:
-        return None, False
-    security_cfg = config.get("security", {}) if isinstance(config, dict) else {}
-    key = security_cfg.get("dashboardAccessKey")
-    require_key = bool(security_cfg.get("requireDashboardKey", False))
+        return None
+
+    if not isinstance(config, dict):
+        return None
+
+    security_cfg = config.get("security", {})
+    key = None
+    if isinstance(security_cfg, dict):
+        key = security_cfg.get("dashboardAccessKey")
 
     if not key:
-        key = config.get("dashboardAccessKey") if isinstance(config, dict) else None
-        require_key = bool(config.get("requireDashboardKey", False))
+        key = config.get("dashboardAccessKey")
 
-    # 如果未提供密钥则无法强制要求
-    if not key:
-        require_key = False
+    if key is None:
+        return None
 
-    return key, require_key
+    key_str = str(key).strip()
+    return key_str if key_str else None
 
 
 def require_dashboard_key(x_dashboard_key: Optional[str] = Header(None)) -> None:
-    """FastAPI依赖: 验证请求头中的Dashboard密钥"""
-    expected_key, require_key = _load_dashboard_access_key()
+    """FastAPI 依赖: 验证请求头中的 Dashboard 密钥。"""
+    expected_key = _load_dashboard_access_key()
 
-    if not require_key:
-        # 未强制要求密钥，直接放行（但允许客户端自愿携带）
-        return None
+    if not expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Dashboard access key is not configured",
+        )
 
-    if not expected_key or not x_dashboard_key or x_dashboard_key != expected_key:
+    if not x_dashboard_key or x_dashboard_key != expected_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid dashboard key",
@@ -440,10 +446,13 @@ async def health_check():
 @app.post("/api/auth/verify", response_model=VerifyKeyResponse)
 async def verify_dashboard_key(payload: VerifyKeyPayload):
     """校验Dashboard访问密钥是否正确"""
-    expected, _ = _load_dashboard_access_key()
-    if expected:
-        return VerifyKeyResponse(valid=(payload.key or "") == expected)
-    return VerifyKeyResponse(valid=True)
+    expected = _load_dashboard_access_key()
+    if not expected:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Dashboard access key is not configured",
+        )
+    return VerifyKeyResponse(valid=(payload.key or "") == expected)
 
 
 @app.get("/api/prices")
@@ -564,19 +573,31 @@ async def update_system_config_payload(
             detail="Config payload must be an object",
         )
     try:
+        if "notificationSymbols" not in payload.config:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="notificationSymbols field is required and must contain at least one symbol",
+            )
+
         notification_symbols = payload.config.get("notificationSymbols")
-        if notification_symbols is None:
-            payload.config.pop("notificationSymbols", None)
-        elif isinstance(notification_symbols, list):
-            cleaned_symbols = [
-                str(symbol).strip()
-                for symbol in notification_symbols
-                if isinstance(symbol, str) and symbol.strip()
-            ]
-            if cleaned_symbols:
-                payload.config["notificationSymbols"] = cleaned_symbols
-            else:
-                payload.config.pop("notificationSymbols", None)
+        if not isinstance(notification_symbols, list):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="notificationSymbols must be provided as a list",
+            )
+
+        cleaned_symbols = [
+            str(symbol).strip()
+            for symbol in notification_symbols
+            if isinstance(symbol, str) and symbol.strip()
+        ]
+        if not cleaned_symbols:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="At least one valid notification symbol is required",
+            )
+
+        payload.config["notificationSymbols"] = cleaned_symbols
 
         update_result: ManagerUpdateResult = config_manager.update_config(
             payload.config

@@ -272,7 +272,7 @@ def generate_multi_candlestick_png(
 
     # Determine grid size: 2 columns, rows = ceil(n/2)
     num = len(symbols)
-    cols = 2
+    cols = 1 if num == 1 else 2
     rows = (num + cols - 1) // cols
 
     # Set up matplotlib style
@@ -306,8 +306,10 @@ def generate_multi_candlestick_png(
     fig, axes = plt.subplots(
         rows, cols, figsize=(fig_width, fig_height), facecolor=style_colors["facecolor"]
     )
-    if rows == 1:
-        axes = [axes] if cols == 1 else axes
+    if rows == 1 and cols == 1:
+        axes = [axes]
+    elif rows == 1:
+        axes = list(axes)
     else:
         axes = axes.flatten()
 
@@ -319,7 +321,7 @@ def generate_multi_candlestick_png(
 
     # Fetch and plot each symbol
     for idx, symbol in enumerate(symbols):
-        ax = axes[idx] if num > 1 else axes
+        ax = axes[idx]
 
         try:
             tf_minutes = parse_timeframe(timeframe)
