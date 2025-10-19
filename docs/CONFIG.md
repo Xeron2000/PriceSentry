@@ -17,9 +17,12 @@ uv run python -m app.runner                # 启动服务
 > ```bash
 > # dashboard/.env.local
 > NEXT_PUBLIC_API_BASE=http://localhost:8000
+> BACKEND_INTERNAL_URL=http://localhost:8000
 > ```
 >
-> `NEXT_PUBLIC_API_BASE` 指向 FastAPI 后端根地址；未设置时默认使用 `http://localhost:8000`。
+> `NEXT_PUBLIC_API_BASE` 指向 FastAPI 后端根地址；若留空并启用 Next.js 代理，则请求将透过 Dashboard 转发。`BACKEND_INTERNAL_URL` 用于代理模式下的内部访问地址，Docker 环境下通常设置为 `http://backend:8000`。
+>
+> 若由 CI/CD 构建并推送 Dashboard 镜像，请在构建阶段传入 `BACKEND_INTERNAL_URL=http://backend:8000`。本地手动构建时也需提供相同的 build arg，以保证代理目标正确。
 
 ---
 
@@ -94,7 +97,7 @@ security:
 
 - **dashboardAccessKey**：访问敏感接口（例如 `/api/config/full`）时的密钥，所有受保护请求都会强制校验 `X-Dashboard-Key` 头部。
 
-前端会自动在所有请求上注入密钥请求头，来源于 Dashboard 登录表单。确保 `NEXT_PUBLIC_API_BASE` 指向正确的后端，否则会出现 404 或跨域错误。
+前端会自动在所有请求上注入密钥请求头，来源于 Dashboard 登录表单。如果使用 Next.js 代理，请确保 `BACKEND_INTERNAL_URL` 与后端容器地址一致；若直接访问后端，仍需让 `NEXT_PUBLIC_API_BASE` 指向正确的地址，否则会出现 404 或跨域错误。
 
 ---
 

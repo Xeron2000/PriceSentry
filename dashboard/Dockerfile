@@ -18,13 +18,16 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p public
 ARG NEXT_PUBLIC_API_BASE
+ARG BACKEND_INTERNAL_URL
 ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
+ENV BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL}
 RUN pnpm build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
+ARG BACKEND_INTERNAL_URL
 # Copy compiled assets
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
@@ -33,4 +36,5 @@ COPY package.json pnpm-lock.yaml ./
 RUN corepack enable \
     && pnpm install --prod --frozen-lockfile
 EXPOSE 3000
-CMD ["node", "node_modules/.bin/next", "start"]
+ENV BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL}
+CMD ["pnpm", "start"]

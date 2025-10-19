@@ -25,7 +25,8 @@ jobs:
             context: dashboard
             file: dashboard/Dockerfile
             build_args: |
-              NEXT_PUBLIC_API_BASE=http://backend:8000
+              NEXT_PUBLIC_API_BASE=
+              BACKEND_INTERNAL_URL=http://backend:8000
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

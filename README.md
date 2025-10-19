@@ -32,7 +32,39 @@
 - YAML 配置驱动，内置校验与智能缓存机制
 - 性能监控、熔断与指数退避重试保障稳定性
 
-## 快速开始
+## 快速开始（Docker）
+
+```bash
+git clone https://github.com/Xeron2000/PriceSentry.git
+cd PriceSentry
+cp .env.example .env  # 根据部署填写 BACKEND_INTERNAL_URL 与 PRICESENTRY_ALLOWED_ORIGINS（必要时设置 NEXT_PUBLIC_API_BASE）
+
+# 拉取镜像
+docker compose pull
+
+docker compose run --rm backend python tools/init_config.py
+
+# 启动服务
+docker compose up -d
+
+# 后续如需运行工具脚本
+docker compose exec backend python tools/update_markets.py
+```
+
+
+> 若通过 CI/CD 构建并推送 Dashboard 镜像，请确保构建阶段传入 `BACKEND_INTERNAL_URL=http://backend:8000`。本地部署时如需自行构建，可在执行 `docker compose build dashboard` 时加入相同的 build arg。
+
+容器启动后：
+
+- 后端 API 默认运行在 `http://localhost:18000`。
+- Dashboard 运行在 `http://localhost:13000`，可图形化管理配置。
+- `config/` 与 `data/` 目录会挂载到容器内部，确保 YAML 配置和 SQLite 数据库持久化。
+
+如采用 Next.js 代理，请在 `.env` 中设置 `BACKEND_INTERNAL_URL`（Docker 内建议使用 `http://backend:8000`）与 `PRICESENTRY_ALLOWED_ORIGINS`（例如服务器的公开地址和端口）；若不使用代理，则确保 `NEXT_PUBLIC_API_BASE` 指向后端的完整 URL。
+
+> 若希望直接使用宿主机完成初始化，可运行 `uv run python tools/init_config.py`，随后再启动 Docker 服务。
+
+## 手动部署
 
 ```bash
 git clone https://github.com/Xeron2000/PriceSentry.git
@@ -44,7 +76,7 @@ uv run python -m app.runner
 
 # （可选）启动前端 Dashboard 以图形化管理配置
 cp .env.example .env  # 首次使用时复制并根据环境填写变量
-# 编辑 .env 设置 NEXT_PUBLIC_API_BASE 与 PRICESENTRY_ALLOWED_ORIGINS
+# 编辑 .env 设置 BACKEND_INTERNAL_URL 与 PRICESENTRY_ALLOWED_ORIGINS（必要时 NEXT_PUBLIC_API_BASE）
 cd dashboard
 pnpm install
 pnpm build
@@ -75,7 +107,8 @@ pnpm start
 根目录 `.env` 由前端与后端共享，复制 `.env.example` 后根据环境调整：
 
 ```
-NEXT_PUBLIC_API_BASE=后端的完整 URL（供前端构建时使用）
+NEXT_PUBLIC_API_BASE=可选；留空时 Dashboard 使用相对路径并通过 Next.js 代理访问后端
+BACKEND_INTERNAL_URL=Dashboard 内部访问后端的地址（默认 http://localhost:8000）
 PRICESENTRY_ALLOWED_ORIGINS=允许跨域访问后端的前端地址，逗号分隔
 ```
 

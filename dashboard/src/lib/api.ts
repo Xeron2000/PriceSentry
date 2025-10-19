@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE = "http://localhost:8000"
+const DEFAULT_API_BASE = ""
 const RAW_API_BASE = process.env.NEXT_PUBLIC_API_BASE
 
 function normaliseBaseUrl(candidate: string | undefined | null): string {
@@ -7,16 +7,21 @@ function normaliseBaseUrl(candidate: string | undefined | null): string {
   }
   const trimmed = candidate.trim()
   if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed.replace(/\/?$/, "")
+    return trimmed.replace(/\/+$/, "")
   }
-  // Support relative host (e.g. :8000)
   if (trimmed.startsWith("//")) {
-    return `http:${trimmed}`.replace(/\/?$/, "")
+    return trimmed.replace(/\/+$/, "")
+  }
+  if (trimmed.startsWith(":")) {
+    return `//${trimmed.replace(/^:+/, "")}`.replace(/\/+$/, "")
+  }
+  if (/^[a-z0-9.-]+(?::\d+)?$/i.test(trimmed)) {
+    return `//${trimmed}`.replace(/\/+$/, "")
   }
   if (trimmed.startsWith("/")) {
-    return trimmed.replace(/\/?$/, "")
+    return trimmed.replace(/\/+$/, "")
   }
-  return trimmed.replace(/\/?$/, "")
+  return trimmed.replace(/\/+$/, "")
 }
 
 const API_BASE = normaliseBaseUrl(RAW_API_BASE)
@@ -26,8 +31,17 @@ function resolveUrl(path: string): string {
     return path
   }
   const normalisedPath = path.startsWith("/") ? path : `/${path}`
+  if (API_BASE.length === 0) {
+    return normalisedPath
+  }
   if (API_BASE.startsWith("http")) {
     return `${API_BASE}${normalisedPath}`
+  }
+  if (API_BASE.startsWith("//")) {
+    if (typeof window !== "undefined" && window.location?.protocol) {
+      return `${window.location.protocol}${API_BASE}${normalisedPath}`
+    }
+    return `http:${API_BASE}${normalisedPath}`
   }
   // Relative base (e.g. /backend) - rely on browser origin
   return `${API_BASE}${normalisedPath}`
