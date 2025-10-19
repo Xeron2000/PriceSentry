@@ -45,6 +45,8 @@ uv run python -m app.runner
 # （可选）启动前端 Dashboard 以图形化管理配置
 cd dashboard
 pnpm install
+# 创建 `.env.local` 并设置 NEXT_PUBLIC_API_BASE（指向后端服务地址）
+echo "NEXT_PUBLIC_API_BASE=http://localhost:8000" > .env.local
 pnpm build
 pnpm start
 ```
