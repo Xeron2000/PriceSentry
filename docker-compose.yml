@@ -1,0 +1,27 @@
+services:
+  backend:
+    image: ${PRICESENTRY_BACKEND_IMAGE:-ghcr.io/xeron2000/pricesentry-backend:latest}
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+    environment:
+      # Allow overriding at runtime without editing image
+      PRICESENTRY_ALLOWED_ORIGINS: ${PRICESENTRY_ALLOWED_ORIGINS:-http://localhost:3000}
+
+  dashboard:
+    image: ${PRICESENTRY_DASHBOARD_IMAGE:-ghcr.io/xeron2000/pricesentry-dashboard:latest}
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    environment:
+      # Ensure Next.js server proxies to backend service address if needed
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://backend:8000}
