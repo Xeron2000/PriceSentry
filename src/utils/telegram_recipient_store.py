@@ -54,7 +54,7 @@ class TelegramRecipientStore:
     def add_pending(self, username: str) -> str:
         """Insert a pending recipient and return its bind token."""
 
-        username = username.strip()
+        username = username.strip().lower()
         if not username:
             raise ValueError("username must not be empty")
 
@@ -101,7 +101,8 @@ class TelegramRecipientStore:
             if status == "active":
                 return "already_active"
 
-            next_username = username or stored_username
+            # Telegram usernames are case-insensitive; store them in lowercase
+            next_username = (username or stored_username).strip().lower()
             conn.execute(
                 """
                 UPDATE telegram_recipients
