@@ -20,6 +20,17 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment Variables
+
+The dashboard reads shared configuration from the repository root `.env`. Copy `.env.example` to `.env` and set:
+
+```
+NEXT_PUBLIC_API_BASE=http://localhost:8000
+PRICESENTRY_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+```
+
+You can still create `dashboard/.env.local` for local overrides. Mirror these variables in your deployment platform so the dashboard can reach the backend API at build and runtime.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -7,8 +7,10 @@ import asyncio
 import hmac
 import json
 import logging
+import os
 import threading
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import (
@@ -23,6 +25,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from dotenv import load_dotenv
 
 # 导入现有模块
 from core.config_manager import ManagerUpdateResult, config_manager
@@ -39,6 +42,39 @@ from utils.telegram_recipient_store import (
     TelegramRecipientStore,
 )
 
+
+LOGGER = logging.getLogger(__name__)
+ROOT_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT_DIR / ".env", override=False)
+
+_DEFAULT_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+
+
+def _load_allowed_origins() -> List[str]:
+    raw = os.getenv("PRICESENTRY_ALLOWED_ORIGINS")
+    if not raw:
+        return _DEFAULT_ALLOWED_ORIGINS
+
+    # 支持逗号或换行分隔
+    tokens = [chunk.strip() for chunk in raw.replace("\n", ",").split(",")]
+    origins = [token for token in tokens if token]
+
+    if not origins:
+        return _DEFAULT_ALLOWED_ORIGINS
+
+    if "*" in origins:
+        LOGGER.info("CORS允许所有来源（PRICESENTRY_ALLOWED_ORIGINS=*）")
+        return ["*"]
+
+    return origins
+
+
+_ALLOWED_ORIGINS = _load_allowed_origins()
+_ALLOW_CREDENTIALS = _ALLOWED_ORIGINS != ["*"]
+
 # 创建FastAPI应用
 app = FastAPI(
     title="PriceSentry API",
@@ -51,8 +87,8 @@ app = FastAPI(
 # CORS配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
-    allow_credentials=True,
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

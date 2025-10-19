@@ -43,10 +43,10 @@ uv run python tools/init_config.py
 uv run python -m app.runner
 
 # （可选）启动前端 Dashboard 以图形化管理配置
+cp .env.example .env  # 首次使用时复制并根据环境填写变量
+# 编辑 .env 设置 NEXT_PUBLIC_API_BASE 与 PRICESENTRY_ALLOWED_ORIGINS
 cd dashboard
 pnpm install
-# 创建 `.env.local` 并设置 NEXT_PUBLIC_API_BASE（指向后端服务地址）
-echo "NEXT_PUBLIC_API_BASE=http://localhost:8000" > .env.local
 pnpm build
 pnpm start
 ```
@@ -69,6 +69,17 @@ pnpm start
 4. 如需兼容旧流程，可在配置中保留 `telegram.chatId`，消息会优先发送至该 chat，再广播至所有绑定用户。
 
 更多选项可参考示例文件注释，或运行 `uv run python tools/update_markets.py` 更新支持的市场列表。
+
+### 环境变量
+
+根目录 `.env` 由前端与后端共享，复制 `.env.example` 后根据环境调整：
+
+```
+NEXT_PUBLIC_API_BASE=后端的完整 URL（供前端构建时使用）
+PRICESENTRY_ALLOWED_ORIGINS=允许跨域访问后端的前端地址，逗号分隔
+```
+
+部署平台（如 Vercel、Docker、CI/CD）也应同步配置以上变量，以确保构建和运行时一致。
 
 ## 可用脚本
 

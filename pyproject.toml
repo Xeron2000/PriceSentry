@@ -23,6 +23,7 @@ dependencies = [
     "fastapi>=0.104.1",
     "uvicorn[standard]>=0.24.0",
     "python-multipart>=0.0.6",
+    "python-dotenv>=1.0.0",
     "ruff>=0.12.8",
     "websocket-client>=1.8.0",
     "python-telegram-bot[rate-limiter]>=21.4",
