@@ -8,8 +8,11 @@
 
 <br>
 <div align="center">
-  <a href="https://www.python.org/">
-    <img src="https://img.shields.io/badge/Python-3.6%2B-blue?logo=python&logoColor=white" alt="Python 3.6+">
+  <a href="https://nextjs.org/">
+    <img src="https://img.shields.io/badge/Next.js-13+-000000?logo=next.js&logoColor=white" alt="Next.js 13+">
+  </a>
+  <a href="https://fastapi.tiangolo.com/">
+    <img src="https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white" alt="FastAPI 0.100+">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT">
@@ -24,6 +27,10 @@
 
 ---
 
+## 项目起因
+
+我是一名专注短线机会的合约交易员。多数时间市场缺乏波动、等待信号既浪费脑力又拉长盯盘时长；真正有行情时却又想第一时间捕捉节奏。市面上可选的工具要么付费门槛高，要么功能单薄、不贴合实战需求，于是便决定自研一套自动化监控方案。PriceSentry 因此诞生——面向有同样困境的短线合约交易者，完全开源、免费，把精力留给决策本身，把重复监控交给程序。
+
 ## 功能一览
 
 - 追踪 Binance、OKX、Bybit 合约价格并支持自定义交易对
@@ -31,6 +38,8 @@
 - Dashboard 实时查看消息推送历史，可按收件人检查发送结果并预览图片
 - YAML 配置驱动，内置校验与智能缓存机制
 - 性能监控、熔断与指数退避重试保障稳定性
+
+> 想先体验成品？欢迎直接订阅 Telegram 频道 [PriceSentry合约监控](https://t.me/pricesentry) 获取即时推送。
 
 ## 快速开始（Docker）
 
@@ -51,8 +60,6 @@ docker compose up -d
 docker compose exec backend python tools/update_markets.py
 ```
 
-
-> 若通过 CI/CD 构建并推送 Dashboard 镜像，请确保构建阶段传入 `BACKEND_INTERNAL_URL=http://backend:8000`。本地部署时如需自行构建，可在执行 `docker compose build dashboard` 时加入相同的 build arg。
 
 容器启动后：
 
@@ -112,7 +119,30 @@ BACKEND_INTERNAL_URL=Dashboard 内部访问后端的地址（默认 http://local
 PRICESENTRY_ALLOWED_ORIGINS=允许跨域访问后端的前端地址，逗号分隔
 ```
 
-部署平台（如 Vercel、Docker、CI/CD）也应同步配置以上变量，以确保构建和运行时一致。
+### Docker 部署环境示例
+
+```env
+NEXT_PUBLIC_API_BASE=
+BACKEND_INTERNAL_URL=http://backend:8000
+PRICESENTRY_ALLOWED_ORIGINS=http://frontend:3000
+```
+
+- 在单一反向代理场景可保留 `NEXT_PUBLIC_API_BASE` 为空，Next.js 会转发至 `BACKEND_INTERNAL_URL`。
+- `BACKEND_INTERNAL_URL` 建议使用 Docker 网络内的服务名与端口，避免依赖宿主机 IP。
+- `PRICESENTRY_ALLOWED_ORIGINS` 需覆盖对外暴露的前端地址。
+- 默认 `docker compose` 会将后台容器端口 `8000` 映射为宿主机 `18000`，前端容器端口 `3000` 映射为宿主机 `13000`，可按需修改 compose 配置。
+
+### 手动部署环境示例
+
+```env
+NEXT_PUBLIC_API_BASE=https://api.example.com
+BACKEND_INTERNAL_URL=http://127.0.0.1:8000
+PRICESENTRY_ALLOWED_ORIGINS=https://app.example.com
+```
+
+- 公开服务通常通过反向代理暴露，`NEXT_PUBLIC_API_BASE` 应指向后端的完整公网地址。
+- `BACKEND_INTERNAL_URL` 保持为本机可访问的接口（或代理后的内网地址），方便 Dashboard 直连。
+- 为避免跨域问题，将最终对用户开放的前端域名加入 `PRICESENTRY_ALLOWED_ORIGINS`。
 
 ## 可用脚本
 
