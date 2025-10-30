@@ -29,128 +29,99 @@
 
 ## 项目起因
 
-我是一名专注短线机会的合约交易员。多数时间市场缺乏波动、等待信号既浪费脑力又拉长盯盘时长；真正有行情时却又想第一时间捕捉节奏。市面上可选的工具要么付费门槛高，要么功能单薄、不贴合实战需求，于是便决定自研一套自动化监控方案。PriceSentry 因此诞生——面向有同样困境的短线合约交易者，完全开源、免费，把精力留给决策本身，把重复监控交给程序。
+我是一名专注短线机会的合约交易员。多数时间市场缺乏波动、一直盯盘耗费精力；真正有行情时却又想第一时间捕捉节奏。市面上可选的工具要么付费门槛高，要么功能单薄、不贴合实战需求，于是便决定自研一套自动化监控方案。PriceSentry 因此诞生——面向有同样困境的短线合约交易者，完全开源、免费，把精力留给决策本身，把重复监控交给程序。
 
-## 功能一览
+## 功能特性
 
-- 追踪 Binance、OKX、Bybit 合约价格并支持自定义交易对
-- Telegram 推送价格波动与健康检查，内置机器人支持多用户绑定
-- Dashboard 实时查看消息推送历史，可按收件人检查发送结果并预览图片
-- YAML 配置驱动，内置校验与智能缓存机制
+- 支持 Binance、OKX、Bybit 合约价格监控，可自定义交易对
+- Telegram 推送价格波动与健康检查，支持多用户绑定
+- Web Dashboard 实时查看推送历史与图表
+- YAML 配置驱动，内置校验与缓存机制
 - 性能监控、熔断与指数退避重试保障稳定性
 
-> 想先体验成品？欢迎直接订阅 Telegram 频道 [PriceSentry合约监控](https://t.me/pricesentry) 获取即时推送。
+> 想先体验？订阅 [PriceSentry合约监控](https://t.me/pricesentry) 频道获取即时推送。
 
-## 快速开始（Docker）
+## 快速开始
+
+### Docker 部署（推荐）
 
 ```bash
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
-cp .env.example .env  # 根据部署填写 BACKEND_INTERNAL_URL 与 PRICESENTRY_ALLOWED_ORIGINS（必要时设置 NEXT_PUBLIC_API_BASE）
+cp .env.example .env  # 编辑环境变量（见下方说明）
 
-# 拉取镜像
 docker compose pull
-
 docker compose run --rm backend python tools/init_config.py
-
-# 启动服务
 docker compose up -d
-
-# 后续如需运行工具脚本
-docker compose exec backend python tools/update_markets.py
 ```
 
+启动后访问：
+- 后端 API：`http://localhost:18000`
+- Dashboard：`http://localhost:13000`
 
-容器启动后：
-
-- 后端 API 默认运行在 `http://localhost:18000`。
-- Dashboard 运行在 `http://localhost:13000`，可图形化管理配置。
-- `config/` 与 `data/` 目录会挂载到容器内部，确保 YAML 配置和 SQLite 数据库持久化。
-
-如采用 Next.js 代理，请在 `.env` 中设置 `BACKEND_INTERNAL_URL`（Docker 内建议使用 `http://backend:8000`）与 `PRICESENTRY_ALLOWED_ORIGINS`（例如服务器的公开地址和端口）；若不使用代理，则确保 `NEXT_PUBLIC_API_BASE` 指向后端的完整 URL。
-
-> 若希望直接使用宿主机完成初始化，可运行 `uv run python tools/init_config.py`，随后再启动 Docker 服务。
-
-## 手动部署
+### 手动部署
 
 ```bash
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
 uv sync && uv pip install -e .
 uv run python tools/init_config.py
-# 按提示完成交互式配置（或使用 --non-interactive 直接复制模板）
 uv run python -m app.runner
 
-# （可选）启动前端 Dashboard 以图形化管理配置
-cp .env.example .env  # 首次使用时复制并根据环境填写变量
-# 编辑 .env 设置 BACKEND_INTERNAL_URL 与 PRICESENTRY_ALLOWED_ORIGINS（必要时 NEXT_PUBLIC_API_BASE）
+# （可选）启动 Dashboard
 cd dashboard
-pnpm install
-pnpm build
-pnpm start
+pnpm install && pnpm build && pnpm start
 ```
-
-> 如果只运行后端，通过编辑 `config/config.yaml` 即可完成全部功能；前端 Dashboard 提供可视化体验但并非必需。
 
 ## 配置说明
 
-1. 运行 `uv run python tools/init_config.py` 交互式初始化配置（支持 `--force` 覆盖、`--non-interactive` 复制模板）
-2. 设置目标交易所、通知渠道与阈值
-3. 在配置中填写 Telegram Bot Token 和 ChatID ，并且可以在控制面板添加多个接收人
+### 初始化配置
 
-> 注意：若未按上述步骤初始化并完善配置文件，直接运行程序会因缺失配置而报错。
-
-### Telegram 通知绑定流程
-
-1. 在 Dashboard「通知渠道」页启用 Telegram，并保存包含 `telegram.token` 的配置。
-2. 切换到新增加的「Telegram 接收人」标签，输入用户名生成绑定令牌。
-3. 让目标用户与机器人对话并发送 `/bind <token>`，机器人会自动确认并加入通知列表。
-4. 如需兼容旧流程，可在配置中保留 `telegram.chatId`，消息会优先发送至该 chat，再广播至所有绑定用户。
-
-更多选项可参考示例文件注释，或运行 `uv run python tools/update_markets.py` 更新支持的市场列表。
-
-### 环境变量
-
-根目录 `.env` 由前端与后端共享，复制 `.env.example` 后根据环境调整：
-
-```
-NEXT_PUBLIC_API_BASE=可选；留空时 Dashboard 使用相对路径并通过 Next.js 代理访问后端
-BACKEND_INTERNAL_URL=Dashboard 内部访问后端的地址（默认 http://localhost:8000）
-PRICESENTRY_ALLOWED_ORIGINS=允许跨域访问后端的前端地址，逗号分隔
+```bash
+uv run python tools/init_config.py
+# 或 docker compose exec backend python tools/init_config.py
 ```
 
-### Docker 部署环境示例
+按提示设置交易所、通知渠道与阈值。支持参数：
+- `--force`：覆盖现有配置
+- `--non-interactive`：直接复制模板
 
+### Telegram 绑定流程
+
+1. 在 Dashboard「通知渠道」启用 Telegram，保存 `telegram.token`
+2. 在「Telegram 接收人」标签输入用户名生成绑定令牌
+3. 用户与机器人对话发送 `/bind <token>` 完成绑定
+
+### 环境变量配置
+
+复制 `.env.example` 为 `.env` 后调整：
+
+**Docker 部署示例：**
 ```env
 NEXT_PUBLIC_API_BASE=
 BACKEND_INTERNAL_URL=http://backend:8000
 PRICESENTRY_ALLOWED_ORIGINS=http://frontend:3000
 ```
 
-- 在单一反向代理场景可保留 `NEXT_PUBLIC_API_BASE` 为空，Next.js 会转发至 `BACKEND_INTERNAL_URL`。
-- `BACKEND_INTERNAL_URL` 建议使用 Docker 网络内的服务名与端口，避免依赖宿主机 IP。
-- `PRICESENTRY_ALLOWED_ORIGINS` 需覆盖对外暴露的前端地址。
-- 默认 `docker compose` 会将后台容器端口 `8000` 映射为宿主机 `18000`，前端容器端口 `3000` 映射为宿主机 `13000`，可按需修改 compose 配置。
-
-### 手动部署环境示例
-
+**手动部署示例：**
 ```env
 NEXT_PUBLIC_API_BASE=https://api.example.com
 BACKEND_INTERNAL_URL=http://127.0.0.1:8000
 PRICESENTRY_ALLOWED_ORIGINS=https://app.example.com
 ```
 
-- 公开服务通常通过反向代理暴露，`NEXT_PUBLIC_API_BASE` 应指向后端的完整公网地址。
-- `BACKEND_INTERNAL_URL` 保持为本机可访问的接口（或代理后的内网地址），方便 Dashboard 直连。
-- 为避免跨域问题，将最终对用户开放的前端域名加入 `PRICESENTRY_ALLOWED_ORIGINS`。
+**变量说明：**
+- `NEXT_PUBLIC_API_BASE`：前端访问后端的公网地址（留空时使用 Next.js 代理）
+- `BACKEND_INTERNAL_URL`：Dashboard 内部访问后端的地址
+- `PRICESENTRY_ALLOWED_ORIGINS`：允许跨域的前端地址（逗号分隔）
 
-## 可用脚本
+## 常用命令
 
 | 功能 | 命令 |
 | --- | --- |
 | 初始化配置 | `uv run python tools/init_config.py` |
 | 启动监控 | `uv run python -m app.runner` |
-| 刷新交易对列表 | `uv run python tools/update_markets.py` |
+| 更新交易对 | `uv run python tools/update_markets.py` |
 | 运行测试 | `uv run pytest` |
 
 ## 运行截图
@@ -166,18 +137,20 @@ PRICESENTRY_ALLOWED_ORIGINS=https://app.example.com
   </tr>
 </table>
 
-
 ## 项目结构
 
 ```
 PriceSentry/
-├── core/           核心流程与调度
-├── exchanges/      交易所接入实现
-├── notifications/  推送渠道适配
-├── utils/          缓存、告警、校验等工具
-└── tests/          单元与集成测试
+├── src/
+│   ├── core/          核心流程与调度
+│   ├── exchanges/     交易所接入实现
+│   ├── notifications/ 推送渠道适配
+│   └── utils/         缓存、告警、校验等工具
+├── dashboard/         Next.js 前端
+├── tests/             单元与集成测试
+└── config/            配置文件目录
 ```
 
-## 许可
+## 许可协议
 
-项目以 MIT 许可证开源，详见 `LICENSE`。
+MIT License - 详见 [LICENSE](LICENSE)
