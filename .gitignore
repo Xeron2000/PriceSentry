@@ -83,3 +83,4 @@ monitoring_report.json
 
 .serena/
 data/
+.cursor/
