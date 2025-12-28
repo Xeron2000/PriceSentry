@@ -41,11 +41,22 @@ As a futures trader focusing on short-term opportunities, I spend most of my tim
 
 ## Quick Start
 
-### Using uvx (Recommended)
+### One-Command Setup (Recommended)
 
 ```bash
 uvx --from git+https://github.com/Xeron2000/PriceSentry.git pricesentry
 ```
+
+This command will automatically:
+1. Create `config/config.yaml` from template
+2. Update supported markets for your exchange
+3. Start the monitoring service
+
+Edit `config/config.yaml` to configure:
+- `telegram.token`: Your Telegram bot token
+- `telegram.chatId`: Your Telegram chat ID
+- `exchange`: Exchange name (binance/okx/bybit)
+- `notificationSymbols`: Trading pairs to monitor
 
 ### Manual Installation
 
@@ -53,39 +64,43 @@ uvx --from git+https://github.com/Xeron2000/PriceSentry.git pricesentry
 git clone https://github.com/Xeron2000/PriceSentry.git
 cd PriceSentry
 uv sync
-uv run python tools/init_config.py
-uv run python -m app.runner
+uv run python -m app.cli
 ```
 
 ## Configuration
 
-### Initialize Configuration
+### Quick Configuration
 
-```bash
-uv run python tools/init_config.py
-```
-
-Follow the prompts to set up exchanges, notification channels, and thresholds. Supported parameters:
-- `--force`: Overwrite existing configuration
-- `--non-interactive`: Copy template directly
-
-### Telegram Configuration
-
-Add your Telegram bot token to `config/config.yaml`:
+After the first run, edit `config/config.yaml`:
 
 ```yaml
+exchange: "okx"
+notificationSymbols:
+  - "BTC/USDT:USDT"
+  - "ETH/USDT:USDT"
 telegram:
   token: "YOUR_TELEGRAM_BOT_TOKEN"
   chatId: "YOUR_CHAT_ID"
 ```
 
+### Advanced Configuration
+
+For advanced configuration options:
+```bash
+uv run python tools/init_config.py
+```
+
+Supported parameters:
+- `--force`: Overwrite existing configuration
+- `--non-interactive`: Copy template directly
+
 ## Common Commands
 
 | Function | Command |
 | --- | --- |
+| Start monitoring | `uv run python -m app.cli` or `pricesentry` |
 | Initialize config | `uv run python tools/init_config.py` |
-| Start monitoring | `uv run python -m app.runner` |
-| Update trading pairs | `uv run python tools/update_markets.py` |
+| Update markets | `uv run python tools/update_markets.py` |
 | Run tests | `uv run pytest` |
 
 ## Screenshots
@@ -106,11 +121,6 @@ PriceSentry/
 ├── tests/             Unit and integration tests
 └── config/            Configuration file directory
 ```
-
-## Documentation
-
-- [Configuration Guide](docs/CONFIG.md)
-- [配置指南（中文）](docs/CONFIG_CN.md)
 
 ## License
 
