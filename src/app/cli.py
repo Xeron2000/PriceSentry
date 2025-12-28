@@ -131,9 +131,27 @@ def update_markets(config):
                 f"Successfully updated markets for: {', '.join(sorted(refreshed))}"
             )
         else:
-            logging.warning("No market data received")
+            # No market data received, but check if default markets are available
+            logging.warning(
+                f"No market data received for {exchange}. "
+                "Using default market data if available."
+            )
+            # Check if supported_markets.json was created with default data
+            from pathlib import Path
+
+            if Path("config/supported_markets.json").exists():
+                logging.info("Default markets file created successfully.")
+            else:
+                logging.warning(
+                    f"Note: If {exchange} is binance, it may be region-restricted. "
+                    "Try using 'okx' or 'bybit' instead."
+                )
     except Exception as e:
         logging.warning(f"Failed to update markets: {e}")
+        logging.warning(
+            "Continuing with default market data if available. "
+            "You can update markets later by running tools/update_markets.py manually."
+        )
 
 
 async def run_monitoring():
