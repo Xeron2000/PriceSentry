@@ -30,6 +30,9 @@ dependencies = [
 Homepage = "https://github.com/Xeron2000/PriceSentry"
 Issues = "https://github.com/Xeron2000/PriceSentry/issues"
 
+[project.scripts]
+pricesentry = "app.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "ruff",
@@ -53,7 +56,6 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["core", "exchanges", "notifications", "utils", "app"]
 
 [dependency-groups]
 dev = [
