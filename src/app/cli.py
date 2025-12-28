@@ -41,7 +41,7 @@ def interactive_config():
 
     config = {}
 
-    config["exchange"] = get_user_input("选择交易所", default="binance")
+    config["exchange"] = get_user_input("选择交易所", default="okx")
     config["defaultTimeframe"] = get_user_input("默认时间周期", default="5m")
     config["checkInterval"] = get_user_input("监控检查间隔", default="1m")
     config["defaultThreshold"] = float(get_user_input("价格变化阈值 (%)", default="1"))
@@ -130,28 +130,60 @@ def update_markets(config):
             logging.info(
                 f"Successfully updated markets for: {', '.join(sorted(refreshed))}"
             )
+            return True
         else:
-            # No market data received, but check if default markets are available
-            logging.warning(
-                f"No market data received for {exchange}. "
-                "Using default market data if available."
-            )
-            # Check if supported_markets.json was created with default data
-            from pathlib import Path
-
-            if Path("config/supported_markets.json").exists():
-                logging.info("Default markets file created successfully.")
-            else:
-                logging.warning(
-                    f"Note: If {exchange} is binance, it may be region-restricted. "
-                    "Try using 'okx' or 'bybit' instead."
-                )
+            logging.warning("No market data received")
+            return False
     except Exception as e:
         logging.warning(f"Failed to update markets: {e}")
         logging.warning(
-            "Continuing with default market data if available. "
-            "You can update markets later by running tools/update_markets.py manually."
+            "You can try updating markets manually with: "
+            f"uv run python tools/update_markets.py --exchanges {exchange}"
         )
+        return False
+
+
+def ensure_market_data(config):
+    """Ensure market data is available before starting."""
+    exchange = config.get("exchange", "binance")
+
+    from pathlib import Path
+
+    supported_markets_file = Path("config/supported_markets.json")
+
+    if not supported_markets_file.exists():
+        logging.info("Market data file not found, updating now...")
+        success = update_markets(config)
+        if not success:
+            logging.warning(
+                f"Failed to update markets for {exchange}. "
+                "Please run update_markets.py manually:"
+            )
+            logging.info(
+                f"  uv run python tools/update_markets.py --exchanges {exchange}"
+            )
+            return False
+    else:
+        import json
+
+        with supported_markets_file.open("r") as f:
+            markets_data = json.load(f)
+
+        if exchange not in markets_data or not markets_data[exchange]:
+            logging.info(f"No market data for {exchange}, updating now...")
+            success = update_markets(config)
+            if not success:
+                logging.warning(
+                    f"Failed to update markets for {exchange}. "
+                    "Please run update_markets.py manually:"
+                )
+                logging.info(
+                    f"  uv run python tools/update_markets.py --exchanges {exchange}"
+                )
+                return False
+
+    logging.info(f"Market data verified for {exchange}")
+    return True
 
 
 async def run_monitoring():
@@ -214,7 +246,17 @@ def main():
 
         config = load_config(config_path)
 
-        update_markets(config)
+        # Ensure market data is available before starting
+        print("📊 正在验证市场数据...")
+        if not ensure_market_data(config):
+            logging.error("❌ 无法获取市场数据，请检查网络或使用代理")
+            logging.info("💡 提示:")
+            logging.info(
+                "   1. 手动运行: uv run python tools/update_markets.py --exchanges <exchange>"
+            )
+            logging.info("   2. 检查网络连接")
+            logging.info("   3. Binance 可能需要代理")
+            sys.exit(1)
 
         asyncio.run(run_monitoring())
 
