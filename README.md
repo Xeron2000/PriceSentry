@@ -47,16 +47,20 @@ As a futures trader focusing on short-term opportunities, I spend most of my tim
 uvx --from git+https://github.com/Xeron2000/PriceSentry.git pricesentry
 ```
 
-This command will automatically:
-1. Create `config/config.yaml` from template
-2. Update supported markets for your exchange
-3. Start the monitoring service
+**首次运行会进入交互式配置向导：**
+1. 选择交易所
+2. 设置监控交易对
+3. 配置 Telegram Bot Token 和 Chat ID
+4. 自动更新市场数据
+5. 启动监控服务
 
-Edit `config/config.yaml` to configure:
-- `telegram.token`: Your Telegram bot token
-- `telegram.chatId`: Your Telegram chat ID
-- `exchange`: Exchange name (binance/okx/bybit)
-- `notificationSymbols`: Trading pairs to monitor
+**文件保存位置：**
+```
+当前目录/
+├── config/
+│   ├── config.yaml              # 配置文件
+│   └── supported_markets.json   # 市场数据
+```
 
 ### Manual Installation
 
@@ -69,15 +73,31 @@ uv run python -m app.cli
 
 ## Configuration
 
-### Quick Configuration
+### Interactive Setup (Recommended)
 
-After the first run, edit `config/config.yaml`:
+首次运行 `pricesentry` 命令时，会自动进入配置向导：
+
+```
+选择交易所 [binance]: binance
+默认时间周期 [5m]: 5m
+监控检查间隔 [1m]: 1m
+价格变化阈值 (%) [1]: 1
+通知时区 [Asia/Shanghai]: Asia/Shanghai
+监控交易对 (逗号分隔，留空监控全部) [BTC/USDT,ETH/USDT]: BTC/USDT
+
+Telegram Bot Token: <你的token>
+Telegram Chat ID: <你的chat_id>
+```
+
+### Manual Configuration
+
+编辑 `config/config.yaml`：
 
 ```yaml
 exchange: "okx"
 notificationSymbols:
-  - "BTC/USDT:USDT"
-  - "ETH/USDT:USDT"
+  - "BTC/USDT"
+  - "ETH/USDT"
 telegram:
   token: "YOUR_TELEGRAM_BOT_TOKEN"
   chatId: "YOUR_CHAT_ID"
@@ -99,7 +119,7 @@ Supported parameters:
 | Function | Command |
 | --- | --- |
 | Start monitoring | `uv run python -m app.cli` or `pricesentry` |
-| Initialize config | `uv run python tools/init_config.py` |
+| Re-configure | `rm config/config.yaml && pricesentry` |
 | Update markets | `uv run python tools/update_markets.py` |
 | Run tests | `uv run pytest` |
 
