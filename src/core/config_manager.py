@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -207,22 +208,21 @@ class ConfigManager:
     def _get_default_config(self) -> Dict[str, Any]:
         """Return minimal default configuration for first run."""
         return {
-            "exchange": "binance",
+            "exchange": "okx",  # Use OKX by default (no region restrictions)
             "defaultTimeframe": "5m",
             "checkInterval": "1m",
             "defaultThreshold": 1,
             "notificationChannels": ["telegram"],
-            "notificationSymbols": ["BTC/USDT", "ETH/USDT"],
+            "notificationSymbols": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
             "notificationTimezone": "Asia/Shanghai",
             "telegram": {
-                "token": "",
-                "chatId": "",
+                "token": None,
+                "chatId": None,
             },
             "attachChart": True,
             "chartTimeframe": "5m",
             "chartLookbackMinutes": 500,
             "chartTheme": "dark",
-            "chartIncludeMA": [7, 25],
             "chartImageWidth": 1600,
             "chartImageHeight": 1200,
             "chartImageScale": 2,

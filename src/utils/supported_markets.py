@@ -19,6 +19,47 @@ SUPPORTED_MARKETS_PATH = Path("config/supported_markets.json")
 _QUOTE_PATTERN = re.compile(r"[:/]")
 
 
+# Default market data as fallback for first run
+DEFAULT_MARKETS: Dict[str, List[str]] = {
+    "okx": [
+        "BTC/USDT:USDT",
+        "ETH/USDT:USDT",
+        "BNB/USDT:USDT",
+        "SOL/USDT:USDT",
+        "DOGE/USDT:USDT",
+        "XRP/USDT:USDT",
+        "ADA/USDT:USDT",
+        "AVAX/USDT:USDT",
+        "DOT/USDT:USDT",
+        "LINK/USDT:USDT",
+    ],
+    "bybit": [
+        "BTC/USDT",
+        "ETH/USDT",
+        "SOL/USDT",
+        "DOGE/USDT",
+        "XRP/USDT",
+        "ADA/USDT",
+        "AVAX/USDT",
+        "DOT/USDT",
+        "LINK/USDT",
+        "MATIC/USDT",
+    ],
+    "binance": [
+        "BTC/USDT",
+        "ETH/USDT",
+        "SOL/USDT",
+        "DOGE/USDT",
+        "XRP/USDT",
+        "ADA/USDT",
+        "AVAX/USDT",
+        "DOT/USDT",
+        "LINK/USDT",
+        "MATIC/USDT",
+    ],
+}
+
+
 def _ensure_parent_dir(path: Path) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -45,7 +86,9 @@ def _read_supported_markets() -> Dict[str, List[str]]:
         return {}
 
     if not isinstance(data, dict):
-        logging.warning("Supported markets file must contain a mapping. Got %s", type(data))
+        logging.warning(
+            "Supported markets file must contain a mapping. Got %s", type(data)
+        )
         return {}
 
     normalized: Dict[str, List[str]] = {}
@@ -156,7 +199,9 @@ def _fetch_exchange_symbols(exchange_name: str) -> List[str]:
         logging.error("Failed to fetch markets for %s: %s", exchange_name, exc)
         return []
     except Exception as exc:
-        logging.error("Unexpected error fetching markets for %s: %s", exchange_name, exc)
+        logging.error(
+            "Unexpected error fetching markets for %s: %s", exchange_name, exc
+        )
         return []
 
 
@@ -175,12 +220,16 @@ def refresh_supported_markets(exchange_names: Iterable[str]) -> Dict[str, List[s
             updated[exchange] = symbols
             refreshed[exchange] = symbols
         else:
-            logging.warning("No USDT symbols available for %s after refresh attempt.", exchange)
+            logging.warning(
+                "No USDT symbols available for %s after refresh attempt.", exchange
+            )
 
     if refreshed:
         _write_supported_markets(updated)
     else:
-        logging.warning("No exchanges produced market data; supported markets file left unchanged.")
+        logging.warning(
+            "No exchanges produced market data; supported markets file left unchanged."
+        )
 
     return refreshed
 
@@ -200,6 +249,23 @@ def load_usdt_contracts(exchange: str) -> List[str]:
         return []
 
     markets = _read_supported_markets()
+
+    # Use default markets as fallback if no cached data
+    if not markets or exchange not in markets:
+        if exchange in DEFAULT_MARKETS:
+            logging.warning(
+                "No cached USDT contracts for %s. Using default markets.",
+                exchange,
+            )
+            return DEFAULT_MARKETS[exchange]
+        else:
+            logging.warning(
+                "No cached USDT contracts for %s and no default available. "
+                "Try a different exchange or run tools/update_markets.py manually.",
+                exchange,
+            )
+            return []
+
     symbols = markets.get(exchange, [])
     filtered = filter_usdt_symbols(symbols)
     if filtered:

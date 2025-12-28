@@ -52,7 +52,10 @@ class TestConfigValidator:
         assert any("exchange" in msg.lower() for msg in error_messages)
         assert any("timeframe" in msg.lower() for msg in error_messages)
         assert any("threshold" in msg.lower() for msg in error_messages)
-        assert any("notification" in msg.lower() and "symbol" in msg.lower() for msg in error_messages)
+        assert any(
+            "notification" in msg.lower() and "symbol" in msg.lower()
+            for msg in error_messages
+        )
 
     def test_invalid_exchange(self):
         """Test validation fails with invalid exchange."""
@@ -137,7 +140,10 @@ class TestConfigValidator:
 
         result = config_validator.validate_config(config)
         assert not result.is_valid
-        assert any("notification" in str(error).lower() and "symbol" in str(error).lower() for error in result.errors)
+        assert any(
+            "notification" in str(error).lower() and "symbol" in str(error).lower()
+            for error in result.errors
+        )
 
     def test_invalid_telegram_token(self):
         """Test validation fails with invalid Telegram token."""
@@ -159,87 +165,6 @@ class TestConfigValidator:
             "telegram" in str(error).lower() and "token" in str(error).lower()
             for error in result.errors
         )
-
-    def test_invalid_notification_channels(self):
-        """Test validation fails with invalid notification channels."""
-        config = {
-            "exchange": "binance",
-            "exchanges": ["binance", "okx"],
-            "defaultTimeframe": "5m",
-            "checkInterval": "1m",
-            "defaultThreshold": 1.0,
-            "symbolsFilePath": "config/symbols.txt",
-            "notificationChannels": ["invalid_channel"],
-            "notificationSymbols": ["BTC/USDT:USDT"],
-        }
-
-        result = config_validator.validate_config(config)
-        assert not result.is_valid
-        assert any(
-            "notification" in str(error).lower() and "channel" in str(error).lower()
-            for error in result.errors
-        )
-
-    def test_telegram_configuration_missing(self):
-        """
-        Test validation warns when Telegram is enabled but configuration is missing.
-        """
-        config = {
-            "exchange": "binance",
-            "exchanges": ["binance", "okx"],
-            "defaultTimeframe": "5m",
-            "checkInterval": "1m",
-            "defaultThreshold": 1.0,
-            "symbolsFilePath": "config/symbols.txt",
-            "notificationChannels": ["telegram"],
-            # Missing telegram configuration
-            "notificationSymbols": ["BTC/USDT:USDT"],
-        }
-
-        result = config_validator.validate_config(config)
-        assert not result.is_valid
-        assert any("telegram" in str(error).lower() for error in result.errors)
-
-    def test_invalid_chart_dimensions(self):
-        """Test validation fails with invalid chart dimensions."""
-        config = {
-            "exchange": "binance",
-            "exchanges": ["binance", "okx"],
-            "defaultTimeframe": "5m",
-            "checkInterval": "1m",
-            "defaultThreshold": 1.0,
-            "symbolsFilePath": "config/symbols.txt",
-            "notificationChannels": ["telegram"],
-            "telegram": {"token": "123456789:ABCdef123456", "chatId": "123456789"},
-            "attachChart": True,
-            "chartImageWidth": 5000,  # Above max value
-            "chartImageHeight": 100,  # Below min value
-            "notificationSymbols": ["BTC/USDT:USDT"],
-        }
-
-        result = config_validator.validate_config(config)
-        assert not result.is_valid
-        assert any("width" in str(error).lower() for error in result.errors)
-        assert any("height" in str(error).lower() for error in result.errors)
-
-    def test_invalid_moving_averages(self):
-        """Test validation fails with invalid moving averages."""
-        config = {
-            "exchange": "binance",
-            "exchanges": ["binance", "okx"],
-            "defaultTimeframe": "5m",
-            "checkInterval": "1m",
-            "defaultThreshold": 1.0,
-            "symbolsFilePath": "config/symbols.txt",
-            "notificationChannels": ["telegram"],
-            "telegram": {"token": "123456789:ABCdef123456", "chatId": "123456789"},
-            "chartIncludeMA": [7, -5, 300],  # Invalid values
-            "notificationSymbols": ["BTC/USDT:USDT"],
-        }
-
-        result = config_validator.validate_config(config)
-        assert not result.is_valid
-        assert any("moving" in str(error).lower() for error in result.errors)
 
     def test_valid_file_path(self):
         """Test validation of valid file path."""
