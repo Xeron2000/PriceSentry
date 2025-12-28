@@ -4,7 +4,6 @@ import base64
 import time
 from typing import Any, Dict, Optional
 
-from core.api import update_api_data
 from utils.send_notifications import send_notifications
 
 
@@ -39,14 +38,3 @@ class Notifier:
         except Exception as exc:
             # Log the error but don't raise it
             print(f"Error sending notification: {exc}")
-
-        if image_bytes is None:
-            return
-
-        try:
-            encoded_image = base64.b64encode(image_bytes).decode("ascii")
-            metadata: Dict[str, Any] = dict(chart_metadata or {})
-            metadata.setdefault("generatedAt", time.time())
-            update_api_data(chart_image={"imageBase64": encoded_image, "metadata": metadata})
-        except Exception as exc:
-            print(f"Failed to persist chart preview for dashboard: {exc}")

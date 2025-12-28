@@ -36,8 +36,7 @@ class TestPriceSentry:
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
             "core.sentry.load_usdt_contracts", return_value=[]
-        ), patch("core.sentry.parse_timeframe", return_value=5
-        ):
+        ), patch("core.sentry.parse_timeframe", return_value=5):
             with patch("core.sentry.logging") as mock_logging:
                 sentry = PriceSentry()
 
@@ -90,8 +89,8 @@ class TestPriceSentry:
             "core.sentry.load_usdt_contracts",
             return_value=["BTC/USDT:USDT", "ETH/USDT:USDT"],
         ), patch("core.sentry.parse_timeframe", return_value=5), patch(
-            "core.sentry.start_api_server", return_value=None
-        ), patch("core.sentry.logging") as mock_logging:
+            "core.sentry.logging"
+        ) as mock_logging:
             sentry = PriceSentry()
 
             assert sentry.matched_symbols == ["ETH/USDT:USDT"]
@@ -116,8 +115,8 @@ class TestPriceSentry:
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
             "core.sentry.load_usdt_contracts", return_value=["BTC/USDT:USDT"]
         ), patch("core.sentry.parse_timeframe", return_value=5), patch(
-            "core.sentry.start_api_server", return_value=None
-        ), patch("core.sentry.logging") as mock_logging:
+            "core.sentry.logging"
+        ) as mock_logging:
             sentry = PriceSentry()
 
         assert getattr(sentry, "matched_symbols", []) == []
@@ -136,8 +135,7 @@ class TestPriceSentry:
             "core.sentry.get_exchange", return_value=mock_exchange
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
             "core.sentry.load_usdt_contracts", return_value=[]
-        ), patch("core.sentry.parse_timeframe", return_value=5
-        ):
+        ), patch("core.sentry.parse_timeframe", return_value=5):
             sentry = PriceSentry()
             result = await sentry.run()
 
@@ -221,7 +219,7 @@ class TestPriceSentry:
         ), patch("core.sentry.Notifier", return_value=mock_notifier), patch(
             "core.sentry.load_usdt_contracts",
             return_value=["BTC/USDT:USDT"],
-        ), patch("core.sentry.start_api_server", return_value=None):
+        ):
             sentry = PriceSentry()
 
             assert sentry.minutes == 5

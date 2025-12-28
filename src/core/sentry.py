@@ -7,12 +7,6 @@ from queue import Empty, Queue
 from threading import RLock
 from typing import List, Optional, Set, Tuple
 
-from core.api import (
-    set_exchange_instance,
-    set_sentry_instance,
-    start_api_server,
-    update_api_data,
-)
 from core.config_manager import ConfigUpdateEvent, config_manager
 from core.notifier import Notifier
 from utils.cache_manager import price_cache
@@ -107,19 +101,6 @@ class PriceSentry:
 
             self._refresh_runtime_settings()
 
-            # 启动API服务器
-            try:
-                self.api_thread = start_api_server()
-                logging.info("API server started successfully")
-
-                # 设置API数据存储的实例引用
-                set_sentry_instance(self)
-                set_exchange_instance(self.exchange)
-
-            except Exception as e:
-                logging.error(f"Failed to start API server: {e}")
-                # API服务器启动失败不应影响主要功能
-
             config_manager.subscribe(self._enqueue_config_update)
             logging.info("PriceSentry initialized successfully")
 
@@ -172,9 +153,7 @@ class PriceSentry:
                     check_interval,
                     symbols_snapshot,
                     notification_filter_snapshot,
-                ) = (
-                    self._snapshot_runtime_state()
-                )
+                ) = self._snapshot_runtime_state()
 
                 current_time = time.time()
 
@@ -206,46 +185,6 @@ class PriceSentry:
                                 f"message content: {message}"
                             )
 
-                            # 更新API数据 - 发送告警信息
-                            try:
-                                alert_data = {
-                                    "message": message,
-                                    "severity": "warning",
-                                    "top_movers": top_movers_sorted,
-                                    "threshold": threshold_snapshot,
-                                    "minutes": minutes_snapshot,
-                                }
-
-                                # 为每个top mover创建单独的告警
-                                for symbol, change_percent in top_movers_sorted[
-                                    :5
-                                ]:  # 前5个
-                                    price = self.exchange.last_prices.get(symbol, 0)
-                                    individual_alert = {
-                                        "symbol": symbol,
-                                        "message": (
-                                            f"{symbol} 价格变动 {change_percent:.2f}%"
-                                        ),
-                                        "severity": "warning"
-                                        if abs(change_percent) > 5
-                                        else "info",
-                                        "price": price,
-                                        "change": change_percent,
-                                        "threshold": self.threshold,
-                                        "minutes": minutes_snapshot,
-                                    }
-                                    update_api_data(
-                                        alerts=individual_alert, sentry_instance=self
-                                    )
-
-                                # 同时更新整体告警
-                                update_api_data(alerts=alert_data, sentry_instance=self)
-
-                                logging.debug("API data updated with alert information")
-                            except Exception as e:
-                                logging.error(
-                                    f"Failed to update API data with alerts: {e}"
-                                )
                             # Build a composite chart image for top 6 movers and
                             # send only the image via Telegram
                             attach_chart = self.config.get("attachChart", False)
@@ -359,20 +298,6 @@ class PriceSentry:
                             "Number of symbols with cached prices: "
                             f"{len(self.exchange.last_prices)}"
                         )
-
-                        # 定期更新API价格数据
-                        try:
-                            update_api_data(
-                                prices=self.exchange.last_prices.copy(),
-                                stats={
-                                    "cache": price_cache.get_stats(),
-                                    "performance": performance_monitor.get_stats(),
-                                },
-                                sentry_instance=self,
-                            )
-                            logging.debug("API price data updated")
-                        except Exception as e:
-                            logging.error(f"Failed to update API price data: {e}")
 
                 await asyncio.sleep(1)
 
@@ -543,8 +468,6 @@ class PriceSentry:
             logging.error("Failed to restart websocket after config change: %s", exc)
             return
 
-        set_exchange_instance(self.exchange)
-        set_sentry_instance(self)
         logging.info(
             "Exchange and symbol sets reloaded successfully (%s symbols)",
             len(self.matched_symbols),
@@ -635,9 +558,7 @@ class PriceSentry:
             detail = ""
             if missing_symbols:
                 detail = (
-                    " Missing symbols: "
-                    + ", ".join(sorted(set(missing_symbols)))
-                    + "."
+                    " Missing symbols: " + ", ".join(sorted(set(missing_symbols))) + "."
                 )
             message = (
                 "No valid notification symbols remain after filtering against available contracts. "
@@ -663,7 +584,9 @@ class PriceSentry:
                 exchange_name,
             )
 
-    def _snapshot_runtime_state(self) -> Tuple[int, float, float, List[str], Optional[List[str]]]:
+    def _snapshot_runtime_state(
+        self,
+    ) -> Tuple[int, float, float, List[str], Optional[List[str]]]:
         with self._config_lock:
             minutes = getattr(self, "minutes", parse_timeframe("5m"))
             threshold = getattr(self, "threshold", 1.0)
@@ -676,4 +599,10 @@ class PriceSentry:
             notification_snapshot = (
                 list(self.notification_symbols) if self.notification_symbols else None
             )
-        return minutes, threshold, check_interval, symbols_snapshot, notification_snapshot
+        return (
+            minutes,
+            threshold,
+            check_interval,
+            symbols_snapshot,
+            notification_snapshot,
+        )
