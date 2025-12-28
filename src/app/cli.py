@@ -5,7 +5,7 @@ import logging
 import sys
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 SRC_DIR = ROOT_DIR / "src"
 
 for candidate in (SRC_DIR, ROOT_DIR):
@@ -14,48 +14,115 @@ for candidate in (SRC_DIR, ROOT_DIR):
         sys.path.insert(0, candidate_str)
 
 
-from utils.setup_logging import setup_logging
-from utils.supported_markets import refresh_supported_markets
-from core.sentry import PriceSentry
-from notifications.telegram_bot_service import TelegramBotService
+def get_user_input(prompt, default=None, secret=False):
+    """Get user input with optional default value."""
+    if default:
+        suffix = f" [{default}]"
+    else:
+        suffix = ""
 
-CONFIG_FILE = ROOT_DIR / "config" / "config.yaml"
-CONFIG_EXAMPLE = ROOT_DIR / "config" / "config.yaml.example"
+    if secret:
+        import getpass
+
+        value = getpass.getpass(f"{prompt}{suffix}: ")
+    else:
+        value = input(f"{prompt}{suffix}: ")
+
+    if not value and default:
+        return default
+    return value
 
 
-def init_config():
-    """Initialize configuration file if not exists."""
+def interactive_config():
+    """Interactive configuration setup."""
+    print("\n" + "=" * 60)
+    print("📝 PriceSentry 配置向导")
+    print("=" * 60 + "\n")
+
+    config = {}
+
+    config["exchange"] = get_user_input("选择交易所", default="binance")
+    config["defaultTimeframe"] = get_user_input("默认时间周期", default="5m")
+    config["checkInterval"] = get_user_input("监控检查间隔", default="1m")
+    config["defaultThreshold"] = float(get_user_input("价格变化阈值 (%)", default="1"))
+
+    config["notificationChannels"] = ["telegram"]
+    config["notificationTimezone"] = get_user_input("通知时区", default="Asia/Shanghai")
+
+    symbols_input = get_user_input(
+        "监控交易对 (逗号分隔，留空监控全部)",
+        default="BTC/USDT,ETH/USDT",
+    )
+    config["notificationSymbols"] = [
+        s.strip() for s in symbols_input.split(",") if s.strip()
+    ]
+
+    print("\n📱 Telegram 配置\n")
+    telegram = {}
+
+    telegram["token"] = get_user_input("Telegram Bot Token", secret=True)
+    telegram["chatId"] = get_user_input("Telegram Chat ID", default="")
+    config["telegram"] = telegram
+
+    print("\n📊 图表设置\n")
+    config["attachChart"] = True
+    config["chartTimeframe"] = "5m"
+    config["chartLookbackMinutes"] = 500
+    config["chartTheme"] = "dark"
+    config["chartIncludeMA"] = [7, 25]
+    config["chartImageWidth"] = 1600
+    config["chartImageHeight"] = 1200
+    config["chartImageScale"] = 2
+
+    print("\n" + "=" * 60)
+    print("✅ 配置完成!")
+    print("=" * 60 + "\n")
+
+    return config
+
+
+def ensure_config_exists():
+    """Ensure configuration file exists, create from template if not."""
+    CONFIG_FILE = Path("config/config.yaml")
+
     if CONFIG_FILE.exists():
-        logging.info(f"Configuration file already exists: {CONFIG_FILE}")
-        return
+        logging.info(f"Configuration file exists: {CONFIG_FILE}")
+        return CONFIG_FILE.absolute()
 
-    logging.info(f"Creating configuration file from template...")
+    print("\n⚠️  未找到配置文件，开始交互式配置...\n")
+    config = interactive_config()
+
     CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-    import shutil
     import yaml
 
-    shutil.copyfile(CONFIG_EXAMPLE, CONFIG_FILE)
-    logging.info(f"Configuration file created: {CONFIG_FILE}")
+    with CONFIG_FILE.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(
+            config, f, default_flow_style=False, allow_unicode=True, sort_keys=False
+        )
 
-    config_content = f"""
-⚠️  配置文件已创建: {CONFIG_FILE}
-📝 请编辑配置文件，设置:
-   - telegram.token: Telegram bot token
-   - telegram.chatId: 你的 Telegram chat ID
-   - exchange: 交易所 (binance/okx/bybit)
-   - notificationSymbols: 要监控的交易对
+    print(f"✅ 配置文件已保存: {CONFIG_FILE.absolute()}")
+    print(f"📝 如需修改，请编辑: {CONFIG_FILE.absolute()}\n")
 
-编辑完成后，程序会自动开始运行...
-"""
-    print(config_content)
+    return CONFIG_FILE.absolute()
+
+
+def show_data_info():
+    """Show data directory information."""
+    data_dir = Path("config").absolute()
+    print(f"📁 数据目录: {data_dir}")
+    print(f"   - 配置文件: {data_dir / 'config.yaml'}")
+    print(f"   - 市场数据: {data_dir / 'supported_markets.json'}")
+    print()
 
 
 def update_markets(config):
-    """Update supported markets for the configured exchange."""
+    """Update supported markets for configured exchange."""
     exchange = config.get("exchange", "binance")
 
     logging.info(f"Updating supported markets for {exchange}...")
+
+    from utils.supported_markets import refresh_supported_markets
 
     try:
         refreshed = refresh_supported_markets([exchange])
@@ -69,8 +136,12 @@ def update_markets(config):
         logging.warning(f"Failed to update markets: {e}")
 
 
-async def run_monitoring(config):
-    """Run the price monitoring service."""
+async def run_monitoring():
+    """Run price monitoring service."""
+    from utils.setup_logging import setup_logging
+    from core.sentry import PriceSentry
+    from notifications.telegram_bot_service import TelegramBotService
+
     bot_service = None
     try:
         sentry = PriceSentry()
@@ -81,7 +152,7 @@ async def run_monitoring(config):
         else:
             setup_logging()
 
-        telegram_cfg = config.get("telegram", {})
+        telegram_cfg = sentry.config.get("telegram", {})
         bot_service = TelegramBotService(telegram_cfg.get("token"))
 
         await bot_service.start()
@@ -97,34 +168,37 @@ async def run_monitoring(config):
                 pass
 
 
-def load_config():
+def load_config(config_path):
     """Load configuration file."""
     import yaml
 
-    if not CONFIG_FILE.exists():
+    if not config_path.exists():
         raise FileNotFoundError(
-            f"Configuration file not found: {CONFIG_FILE}\n"
-            f"Please run init_config first or create config file manually."
+            f"Configuration file not found: {config_path}\n"
+            f"Please create config file manually."
         )
 
-    with CONFIG_FILE.open("r", encoding="utf-8") as f:
+    with config_path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
 def main():
     """Main entry point."""
+    from utils.setup_logging import setup_logging
+
     setup_logging()
 
     print("\n🚀 PriceSentry 启动中...\n")
 
     try:
-        init_config()
+        config_path = ensure_config_exists()
+        show_data_info()
 
-        config = load_config()
+        config = load_config(config_path)
 
         update_markets(config)
 
-        asyncio.run(run_monitoring(config))
+        asyncio.run(run_monitoring())
 
     except KeyboardInterrupt:
         logging.info("\n\n👋 PriceSentry 已停止")
