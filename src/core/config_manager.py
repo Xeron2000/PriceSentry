@@ -128,7 +128,8 @@ class ConfigManager:
                 errors = [message]
                 if missing_symbols:
                     errors.append(
-                        "Unavailable symbols: " + ", ".join(sorted(set(missing_symbols)))
+                        "Unavailable symbols: "
+                        + ", ".join(sorted(set(missing_symbols)))
                     )
                 return ManagerUpdateResult(
                     success=False,
@@ -187,7 +188,13 @@ class ConfigManager:
     # Internal helpers -------------------------------------------------
 
     def _load_initial(self) -> None:
-        config = self._load_from_disk()
+        try:
+            config = self._load_from_disk()
+        except FileNotFoundError:
+            logging.warning(
+                f"Configuration file not found: {self._config_path}, using default config"
+            )
+            config = self._get_default_config()
         validation = config_validator.validate_config(config)
         if not validation.is_valid:
             raise ValueError(
@@ -197,9 +204,35 @@ class ConfigManager:
         self._config = copy.deepcopy(config)
         self._last_loaded_at = time.time()
 
+    def _get_default_config(self) -> Dict[str, Any]:
+        """Return minimal default configuration for first run."""
+        return {
+            "exchange": "binance",
+            "defaultTimeframe": "5m",
+            "checkInterval": "1m",
+            "defaultThreshold": 1,
+            "notificationChannels": ["telegram"],
+            "notificationSymbols": ["BTC/USDT", "ETH/USDT"],
+            "notificationTimezone": "Asia/Shanghai",
+            "telegram": {
+                "token": "",
+                "chatId": "",
+            },
+            "attachChart": True,
+            "chartTimeframe": "5m",
+            "chartLookbackMinutes": 500,
+            "chartTheme": "dark",
+            "chartIncludeMA": [7, 25],
+            "chartImageWidth": 1600,
+            "chartImageHeight": 1200,
+            "chartImageScale": 2,
+        }
+
     def _load_from_disk(self) -> Dict[str, Any]:
         if not self._config_path.exists():
-            raise FileNotFoundError(f"Configuration file not found: {self._config_path}")
+            raise FileNotFoundError(
+                f"Configuration file not found: {self._config_path}"
+            )
         with self._config_path.open("r", encoding="utf-8") as fh:
             raw = yaml.safe_load(fh) or {}
         if not isinstance(raw, dict):
@@ -292,7 +325,9 @@ class ConfigManager:
             if not value:
                 return value, False
             try:
-                if any(t is float for t in types) and ("." in value or "e" in value.lower()):
+                if any(t is float for t in types) and (
+                    "." in value or "e" in value.lower()
+                ):
                     return float(value), True
                 if int in types and (value.lstrip("+-").isdigit()):
                     return int(value), True
@@ -345,7 +380,9 @@ class ConfigManager:
             return parts, True
         return value, False
 
-    def _set_value_by_path(self, config: Dict[str, Any], key_path: str, new_value: Any) -> None:
+    def _set_value_by_path(
+        self, config: Dict[str, Any], key_path: str, new_value: Any
+    ) -> None:
         keys = key_path.split(".")
         target = config
         for key in keys[:-1]:
@@ -367,7 +404,11 @@ class ConfigManager:
             for key in {"symbols", "symbolsFilePath", "notificationSymbols"}
         )
 
-        return ConfigDiff(changed_keys=changed, requires_exchange_reload=reload_exchange, requires_symbol_reload=reload_symbols)
+        return ConfigDiff(
+            changed_keys=changed,
+            requires_exchange_reload=reload_exchange,
+            requires_symbol_reload=reload_symbols,
+        )
 
     def _flatten(self, config: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
         items: Dict[str, Any] = {}

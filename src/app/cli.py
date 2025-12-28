@@ -2,10 +2,11 @@
 
 import asyncio
 import logging
+import shutil
 import sys
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 SRC_DIR = ROOT_DIR / "src"
 
 for candidate in (SRC_DIR, ROOT_DIR):
@@ -14,31 +15,22 @@ for candidate in (SRC_DIR, ROOT_DIR):
         sys.path.insert(0, candidate_str)
 
 
-from utils.setup_logging import setup_logging
-from utils.supported_markets import refresh_supported_markets
-from core.sentry import PriceSentry
-from notifications.telegram_bot_service import TelegramBotService
-
 CONFIG_FILE = ROOT_DIR / "config" / "config.yaml"
 CONFIG_EXAMPLE = ROOT_DIR / "config" / "config.yaml.example"
 
 
-def init_config():
-    """Initialize configuration file if not exists."""
+def ensure_config_exists():
+    """Ensure configuration file exists, create from template if not."""
     if CONFIG_FILE.exists():
-        logging.info(f"Configuration file already exists: {CONFIG_FILE}")
         return
 
     logging.info(f"Creating configuration file from template...")
     CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    import shutil
-    import yaml
-
     shutil.copyfile(CONFIG_EXAMPLE, CONFIG_FILE)
     logging.info(f"Configuration file created: {CONFIG_FILE}")
 
-    config_content = f"""
+    print(
+        f"""
 ⚠️  配置文件已创建: {CONFIG_FILE}
 📝 请编辑配置文件，设置:
    - telegram.token: Telegram bot token
@@ -48,14 +40,16 @@ def init_config():
 
 编辑完成后，程序会自动开始运行...
 """
-    print(config_content)
+    )
 
 
 def update_markets(config):
-    """Update supported markets for the configured exchange."""
+    """Update supported markets for configured exchange."""
     exchange = config.get("exchange", "binance")
 
     logging.info(f"Updating supported markets for {exchange}...")
+
+    from utils.supported_markets import refresh_supported_markets
 
     try:
         refreshed = refresh_supported_markets([exchange])
@@ -69,8 +63,12 @@ def update_markets(config):
         logging.warning(f"Failed to update markets: {e}")
 
 
-async def run_monitoring(config):
-    """Run the price monitoring service."""
+async def run_monitoring():
+    """Run price monitoring service."""
+    from utils.setup_logging import setup_logging
+    from core.sentry import PriceSentry
+    from notifications.telegram_bot_service import TelegramBotService
+
     bot_service = None
     try:
         sentry = PriceSentry()
@@ -81,7 +79,7 @@ async def run_monitoring(config):
         else:
             setup_logging()
 
-        telegram_cfg = config.get("telegram", {})
+        telegram_cfg = sentry.config.get("telegram", {})
         bot_service = TelegramBotService(telegram_cfg.get("token"))
 
         await bot_service.start()
@@ -104,7 +102,7 @@ def load_config():
     if not CONFIG_FILE.exists():
         raise FileNotFoundError(
             f"Configuration file not found: {CONFIG_FILE}\n"
-            f"Please run init_config first or create config file manually."
+            f"Please create config file manually."
         )
 
     with CONFIG_FILE.open("r", encoding="utf-8") as f:
@@ -113,18 +111,20 @@ def load_config():
 
 def main():
     """Main entry point."""
+    from utils.setup_logging import setup_logging
+
     setup_logging()
 
     print("\n🚀 PriceSentry 启动中...\n")
 
     try:
-        init_config()
+        ensure_config_exists()
 
         config = load_config()
 
         update_markets(config)
 
-        asyncio.run(run_monitoring(config))
+        asyncio.run(run_monitoring())
 
     except KeyboardInterrupt:
         logging.info("\n\n👋 PriceSentry 已停止")
