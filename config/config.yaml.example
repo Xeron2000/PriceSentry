@@ -49,10 +49,6 @@ chartImageWidth: 1600
 chartImageHeight: 1200
 chartImageScale: 2
 
-# Dashboard 访问控制
-security:
-  dashboardAccessKey: "pricesentry"
-
 # 额外说明
 # - 默认会监控支持的 USDT 合约交易对，notificationSymbols 为空或缺省时会推送全部交易对。
 # - 缓存系统与错误处理在代码中默认启用，无需单独配置。
