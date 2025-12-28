@@ -203,9 +203,6 @@ class PriceSentry:
                                         self.config.get("chartLookbackMinutes", 60)
                                     )
                                     chart_theme = self.config.get("chartTheme", "dark")
-                                    ma_windows = self.config.get(
-                                        "chartIncludeMA", [7, 25]
-                                    )
                                     chart_timezone = self.config.get(
                                         "notificationTimezone", "Asia/Shanghai"
                                     )
@@ -226,7 +223,6 @@ class PriceSentry:
                                         chart_timeframe,
                                         chart_lookback,
                                         chart_theme,
-                                        ma_windows,
                                         width=img_width,
                                         height=img_height,
                                         scale=img_scale,
