@@ -52,14 +52,14 @@ uvx --from git+https://github.com/Xeron2000/PriceSentry.git pricesentry
 2. 设置 Telegram Bot Token（从 [@BotFather](https://t.me/botfather) 获取）
 3. 设置 Telegram Chat ID（通过 [@userinfobot](https://t.me/userinfobot) 获取）
 4. 推荐使用 **OKX** 或 **Bybit** 交易所（Binance 有地区限制）
-5. 运行命令后自动更新市场数据并启动监控
+5. 程序会自动更新市场数据并启动监控
 
 **文件保存位置：**
 ```
 当前目录/
 ├── config/
 │   ├── config.yaml              # 配置文件
-│   └── supported_markets.json   # 市场数据
+│   └── supported_markets.json   # 市场数据（自动获取）
 ```
 
 ### Manual Installation
@@ -72,7 +72,9 @@ uv sync
 uv run python tools/init_config.py
 # 2. 编辑配置
 vi config/config.yaml
-# 3. 运行
+# 3. 运行市场数据更新（使用脚本获取真实数据）
+uv run python tools/update_markets.py
+# 4. 启动监控
 uv run python -m app.cli
 ```
 
@@ -97,16 +99,37 @@ telegram:
   chatId: "123456789"
 ```
 
+### Get Market Data with Script
+
+使用 `tools/update_markets.py` 脚本获取真实的交易对数据：
+
+```bash
+# 更新单个交易所的市场数据
+uv run python tools/update_markets.py --exchanges okx
+
+# 更新多个交易所的市场数据
+uv run python tools/update_markets.py --exchanges okx bybit
+
+# 更新所有支持交易所的市场数据
+uv run python tools/update_markets.py
+```
+
+**注意：**
+- 脚本会从交易所 API 获取最新的交易对列表
+- 数据会保存到 `config/supported_markets.json`
+- OKX/Bybit 没有地区限制，可以正常获取
+- Binance 在某些地区可能需要代理
+
 ### Interactive Setup
 
-首次运行 `pricesentry` 命令时，如果配置文件不存在，会自动进入配置向导。
+首次运行 `pricesentry` 命令时，如果配置文件不存在，会自动进入配置向导，然后自动获取市场数据。
 
-**注意：** 由于交互式配置在非交互式环境可能有问题，**推荐手动编辑配置文件**。
+**注意：** 由于交互式配置在非交互式环境（如 shell 脚本）可能有问题，**推荐手动编辑配置文件**。
 
 ### Important Notes
 
 1. **Binance 地区限制：**
-   - Binance API 在某些地区可能被限制
+   - Binance API 在某些地区（如中国）可能被限制
    - **推荐使用 OKX 或 Bybit**
 
 2. **Telegram Token 格式：**
@@ -138,6 +161,7 @@ Supported parameters:
 | Edit config | `vi config/config.yaml` |
 | Re-configure | `rm config/config.yaml && pricesentry` |
 | Update markets | `uv run python tools/update_markets.py` |
+| Update specific exchange | `uv run python tools/update_markets.py --exchanges okx` |
 | Run tests | `uv run pytest` |
 
 ## Screenshots
