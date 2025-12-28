@@ -108,7 +108,7 @@ def generate_candlestick_png(
         ) from e
 
     if moving_averages is None:
-        moving_averages = [7, 25]
+        moving_averages = []
 
     try:
         tf_minutes = parse_timeframe(timeframe)
@@ -263,7 +263,7 @@ def generate_multi_candlestick_png(
         ) from e
 
     if moving_averages is None:
-        moving_averages = [7, 25]
+        moving_averages = []
 
     # Limit to 6 symbols
     symbols = list(symbols)[:6]
@@ -367,10 +367,9 @@ def generate_multi_candlestick_png(
         df = pd.DataFrame(
             ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
         )
-        df["timestamp"] = (
-            pd.to_datetime(df["timestamp"], unit="ms", utc=True)
-            .dt.tz_convert(tzinfo)
-        )
+        df["timestamp"] = pd.to_datetime(
+            df["timestamp"], unit="ms", utc=True
+        ).dt.tz_convert(tzinfo)
         df.set_index("timestamp", inplace=True)
 
         # Create a simple candlestick plot using matplotlib

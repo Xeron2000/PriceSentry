@@ -274,6 +274,14 @@ class ConfigValidator:
         )
 
         self.rules["chartTheme"] = ValidationRule(
+            key_path="chartTheme",
+            required=False,
+            data_type=str,
+            allowed_values=["dark", "light"],
+            error_message="Chart theme must be either 'dark' or 'light'",
+        )
+
+        self.rules["chartImageWidth"] = ValidationRule(
             key_path="chartImageWidth",
             required=False,
             data_type=int,
