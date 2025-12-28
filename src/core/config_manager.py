@@ -223,7 +223,6 @@ class ConfigManager:
             "chartTimeframe": "5m",
             "chartLookbackMinutes": 500,
             "chartTheme": "dark",
-            "chartIncludeMA": [7, 25],
             "chartImageWidth": 1600,
             "chartImageHeight": 1200,
             "chartImageScale": 2,

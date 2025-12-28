@@ -274,22 +274,6 @@ class ConfigValidator:
         )
 
         self.rules["chartTheme"] = ValidationRule(
-            key_path="chartTheme",
-            required=False,
-            data_type=str,
-            allowed_values=["dark", "light"],
-            error_message="Chart theme must be either 'dark' or 'light'",
-        )
-
-        self.rules["chartIncludeMA"] = ValidationRule(
-            key_path="chartIncludeMA",
-            required=False,
-            data_type=list,
-            custom_validator=self._validate_moving_averages,
-            error_message="Chart moving averages must be a list of positive integers",
-        )
-
-        self.rules["chartImageWidth"] = ValidationRule(
             key_path="chartImageWidth",
             required=False,
             data_type=int,

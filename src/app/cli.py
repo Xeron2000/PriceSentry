@@ -69,7 +69,6 @@ def interactive_config():
     config["chartTimeframe"] = "5m"
     config["chartLookbackMinutes"] = 500
     config["chartTheme"] = "dark"
-    config["chartIncludeMA"] = [7, 25]
     config["chartImageWidth"] = 1600
     config["chartImageHeight"] = 1200
     config["chartImageScale"] = 2
