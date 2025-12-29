@@ -34,48 +34,31 @@ async def monitor_top_movers(
             no movers meet the threshold.
     """
     if exchange is None or not all(
-        hasattr(exchange, method)
-        for method in ["get_price_minutes_ago", "get_current_prices"]
+        hasattr(exchange, method) for method in ["get_price_minutes_ago", "get_current_prices"]
     ):
-        raise ValueError(
-            "Exchange must implement 'get_price_minutes_ago' and 'get_current_prices' "
-            "methods"
-        )
+        raise ValueError("Exchange must implement 'get_price_minutes_ago' and 'get_current_prices' methods")
 
     initial_prices = exchange.get_price_minutes_ago(symbols, minutes)
 
     updated_prices = await exchange.get_current_prices(symbols)
 
     price_changes = {
-        symbol: (
-            (updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]
-        )
-        * 100
+        symbol: ((updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]) * 100
         for symbol in initial_prices
         if symbol in updated_prices
-        if abs(
-            (updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]
-        )
-        * 100
-        > threshold
+        if abs((updated_prices[symbol] - initial_prices[symbol]) / initial_prices[symbol]) * 100 > threshold
     }
 
     if allowed_symbols is not None:
         allowed_set = {symbol.strip() for symbol in allowed_symbols if isinstance(symbol, str)}
-        price_changes = {
-            symbol: change
-            for symbol, change in price_changes.items()
-            if symbol in allowed_set
-        }
+        price_changes = {symbol: change for symbol, change in price_changes.items() if symbol in allowed_set}
     else:
         allowed_set = None
 
     if not price_changes:
         return None
 
-    top_movers_sorted = sorted(
-        price_changes.items(), key=lambda x: abs(x[1]), reverse=True
-    )
+    top_movers_sorted = sorted(price_changes.items(), key=lambda x: abs(x[1]), reverse=True)
     timezone_str = config.get("notificationTimezone", "Asia/Shanghai")
     timezone = pytz.timezone(timezone_str)
     current_time = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
@@ -93,9 +76,7 @@ async def monitor_top_movers(
         price_diff = updated_prices[symbol] - initial_prices[symbol]
         arrow = "🔼" if change > 0 else "🔽"
         color = "🟢" if change > 0 else "🔴"
-        price_range = (
-            f"(*{initial_prices[symbol]:.4f}* → *{updated_prices[symbol]:.4f}*)"
-        )
+        price_range = f"(*{initial_prices[symbol]:.4f}* → *{updated_prices[symbol]:.4f}*)"
         message += (
             f"{color} **{i}. `{symbol}`**\n"
             f"   - **Change:** {arrow} {abs(change):.2f}%\n"

@@ -9,7 +9,6 @@ from typing import List, Optional, Set, Tuple
 
 from core.config_manager import ConfigUpdateEvent, config_manager
 from core.notifier import Notifier
-from utils.cache_manager import price_cache
 from utils.chart import generate_multi_candlestick_png
 from utils.config_validator import config_validator
 from utils.error_handler import ErrorSeverity, error_handler
@@ -53,9 +52,7 @@ class PriceSentry:
                     },
                     ErrorSeverity.CRITICAL,
                 )
-                raise ValueError(
-                    f"Configuration validation failed: {validation_result.errors}"
-                )
+                raise ValueError(f"Configuration validation failed: {validation_result.errors}")
 
             # Log validation warnings and info
             if validation_result.warnings:
@@ -120,9 +117,7 @@ class PriceSentry:
 
         try:
             self.exchange.start_websocket(self.matched_symbols)
-            logging.info(
-                f"Started WebSocket connection for {len(self.matched_symbols)} symbols"
-            )
+            logging.info(f"Started WebSocket connection for {len(self.matched_symbols)} symbols")
         except Exception as e:
             error_handler.handle_network_error(
                 e,
@@ -182,10 +177,7 @@ class PriceSentry:
 
                         if result:
                             message, top_movers_sorted = result
-                            logging.info(
-                                "Detected price movements exceeding threshold, "
-                                f"message content: {message}"
-                            )
+                            logging.info(f"Detected price movements exceeding threshold, message content: {message}")
 
                             # Build a composite chart image for top 6 movers and
                             # send only the image via Telegram
@@ -195,29 +187,15 @@ class PriceSentry:
                             chart_metadata = None
                             if attach_chart and top_movers_sorted:
                                 try:
-                                    symbols_for_chart = [
-                                        s for s, _ in top_movers_sorted[:6]
-                                    ]
-                                    chart_timeframe = self.config.get(
-                                        "chartTimeframe", "1m"
-                                    )
-                                    chart_lookback = int(
-                                        self.config.get("chartLookbackMinutes", 60)
-                                    )
+                                    symbols_for_chart = [s for s, _ in top_movers_sorted[:6]]
+                                    chart_timeframe = self.config.get("chartTimeframe", "1m")
+                                    chart_lookback = int(self.config.get("chartLookbackMinutes", 60))
                                     chart_theme = self.config.get("chartTheme", "dark")
-                                    chart_timezone = self.config.get(
-                                        "notificationTimezone", "Asia/Shanghai"
-                                    )
+                                    chart_timezone = self.config.get("notificationTimezone", "Asia/Shanghai")
 
-                                    img_width = int(
-                                        self.config.get("chartImageWidth", 1200)
-                                    )
-                                    img_height = int(
-                                        self.config.get("chartImageHeight", 900)
-                                    )
-                                    img_scale = int(
-                                        self.config.get("chartImageScale", 2)
-                                    )
+                                    img_width = int(self.config.get("chartImageWidth", 1200))
+                                    img_height = int(self.config.get("chartImageHeight", 900))
+                                    img_scale = int(self.config.get("chartImageScale", 2))
 
                                     image_bytes = generate_multi_candlestick_png(
                                         self.exchange.exchange,
@@ -242,8 +220,7 @@ class PriceSentry:
                                     }
                                 except Exception as e:
                                     logging.warning(
-                                        "Failed to generate composite chart image: "
-                                        f"{e}. Skipping Telegram image."
+                                        f"Failed to generate composite chart image: {e}. Skipping Telegram image."
                                     )
                                     image_bytes = None
                                     chart_metadata = None
@@ -257,9 +234,7 @@ class PriceSentry:
 
                             self.notifier.send(message, **send_kwargs)
                         else:
-                            logging.info(
-                                "No price movements exceeding threshold detected"
-                            )
+                            logging.info("No price movements exceeding threshold detected")
                     except Exception as e:
                         error_handler.handle_api_error(
                             e,
@@ -277,9 +252,7 @@ class PriceSentry:
                 if int(current_time) % 60 == 0:
                     logging.debug("Checking WebSocket connection status")
                     if not self.exchange.ws_connected:
-                        logging.warning(
-                            "WebSocket connection disconnected, attempting to reconnect"
-                        )
+                        logging.warning("WebSocket connection disconnected, attempting to reconnect")
                         try:
                             self.exchange.check_ws_connection()
                         except Exception as e:
@@ -292,10 +265,7 @@ class PriceSentry:
                                 ErrorSeverity.WARNING,
                             )
                     if hasattr(self.exchange, "last_prices"):
-                        logging.debug(
-                            "Number of symbols with cached prices: "
-                            f"{len(self.exchange.last_prices)}"
-                        )
+                        logging.debug(f"Number of symbols with cached prices: {len(self.exchange.last_prices)}")
 
                 await asyncio.sleep(1)
 
@@ -382,8 +352,7 @@ class PriceSentry:
             else:
                 if interval_minutes <= 0:
                     logging.warning(
-                        "Parsed check interval '%s' resolved to %s minutes. "
-                        "Falling back to timeframe duration.",
+                        "Parsed check interval '%s' resolved to %s minutes. Falling back to timeframe duration.",
                         interval_source,
                         interval_minutes,
                     )
@@ -556,9 +525,7 @@ class PriceSentry:
             detail = ""
             if missing_symbols:
                 # Show full symbol format in error message
-                detail = (
-                    " Missing symbols: " + ", ".join(sorted(set(missing_symbols))) + "."
-                )
+                detail = " Missing symbols: " + ", ".join(sorted(set(missing_symbols))) + "."
             message = (
                 "No valid notification symbols remain after filtering against available contracts. "
                 "Select at least one supported symbol and retry." + detail
@@ -602,9 +569,7 @@ class PriceSentry:
                 getattr(self, "minutes", parse_timeframe("5m")) * 60,
             )
             symbols_snapshot = list(getattr(self, "matched_symbols", []))
-            notification_snapshot = (
-                list(self.notification_symbols) if self.notification_symbols else None
-            )
+            notification_snapshot = list(self.notification_symbols) if self.notification_symbols else None
         return (
             minutes,
             threshold,

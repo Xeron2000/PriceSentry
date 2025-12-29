@@ -81,9 +81,7 @@ class CacheManager:
         self.total_access_time = 0.0
         self.access_count = 0
 
-        self.logger.info(
-            f"CacheManager initialized with strategy={strategy}, max_size={max_size}"
-        )
+        self.logger.info(f"CacheManager initialized with strategy={strategy}, max_size={max_size}")
 
     def _generate_key(self, key: Union[str, tuple, dict]) -> str:
         """Generate consistent cache key from various input types."""
@@ -109,9 +107,7 @@ class CacheManager:
                         del self.cache[lru_key]
             elif self.strategy == CacheStrategy.LFU:
                 # Remove least frequently used
-                lfu_key = min(
-                    self.cache.keys(), key=lambda k: self.cache[k].access_count
-                )
+                lfu_key = min(self.cache.keys(), key=lambda k: self.cache[k].access_count)
                 del self.cache[lfu_key]
                 if lfu_key in self.access_order:
                     self.access_order.remove(lfu_key)
@@ -123,9 +119,7 @@ class CacheManager:
                         del self.cache[fifo_key]
             elif self.strategy == CacheStrategy.TTL:
                 # Remove expired entries first, then LRU
-                expired_keys = [
-                    k for k, entry in self.cache.items() if entry.is_expired()
-                ]
+                expired_keys = [k for k, entry in self.cache.items() if entry.is_expired()]
                 if expired_keys:
                     expired_key = expired_keys[0]
                     del self.cache[expired_key]
@@ -205,9 +199,7 @@ class CacheManager:
             self.total_access_time += time.time() - start_time
             return default
 
-    def set(
-        self, key: Union[str, tuple, dict], value: Any, ttl: Optional[float] = None
-    ):
+    def set(self, key: Union[str, tuple, dict], value: Any, ttl: Optional[float] = None):
         """
         Set value in cache.
 
@@ -268,17 +260,10 @@ class CacheManager:
         with self.lock:
             total_requests = self.hits + self.misses
             hit_rate = (self.hits / total_requests * 100) if total_requests > 0 else 0
-            avg_access_time = (
-                (self.total_access_time / self.access_count)
-                if self.access_count > 0
-                else 0
-            )
+            avg_access_time = (self.total_access_time / self.access_count) if self.access_count > 0 else 0
 
             # Calculate memory usage (approximate)
-            estimated_memory = sum(
-                len(str(entry.value)) + len(str(key))
-                for key, entry in self.cache.items()
-            )
+            estimated_memory = sum(len(str(entry.value)) + len(str(key)) for key, entry in self.cache.items())
 
             return {
                 "size": len(self.cache),
@@ -403,9 +388,7 @@ class PriceCacheManager(CacheManager):
         super().__init__(max_size, default_ttl, CacheStrategy.LRU)
         self.price_precision = 8  # Decimal places for price precision
 
-    def get_price(
-        self, symbol: str, default: Optional[float] = None
-    ) -> Optional[float]:
+    def get_price(self, symbol: str, default: Optional[float] = None) -> Optional[float]:
         """
         Get price from cache.
 
@@ -433,9 +416,7 @@ class PriceCacheManager(CacheManager):
         rounded_price = round(float(price), self.price_precision)
         self.set(symbol, rounded_price, ttl)
 
-    def get_prices(
-        self, symbols: List[str], default: Optional[float] = None
-    ) -> Dict[str, Optional[float]]:
+    def get_prices(self, symbols: List[str], default: Optional[float] = None) -> Dict[str, Optional[float]]:
         """
         Get multiple prices from cache.
 
@@ -566,10 +547,7 @@ class AlertHistoryManager:
             if len(self.alerts) > self.max_alerts:
                 self.alerts = self.alerts[-self.max_alerts :]
 
-            self.logger.debug(
-                f"Added alert: {alert_data.get('message', 'Unknown')} "
-                f"with ID: {alert_id}"
-            )
+            self.logger.debug(f"Added alert: {alert_data.get('message', 'Unknown')} with ID: {alert_id}")
             return alert_id
 
     def get_recent_alerts(self, limit: int = 10) -> List[Dict[str, Any]]:
@@ -631,12 +609,8 @@ class AlertHistoryManager:
             last_hour = now - 3600
             last_24h = now - 86400
 
-            alerts_last_hour = len(
-                [a for a in self.alerts if a.get("timestamp", 0) > last_hour]
-            )
-            alerts_last_24h = len(
-                [a for a in self.alerts if a.get("timestamp", 0) > last_24h]
-            )
+            alerts_last_hour = len([a for a in self.alerts if a.get("timestamp", 0) > last_hour])
+            alerts_last_24h = len([a for a in self.alerts if a.get("timestamp", 0) > last_24h])
 
             severity_counts = {}
             for alert in self.alerts:

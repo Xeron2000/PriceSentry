@@ -3,9 +3,7 @@ from pathlib import Path
 
 import yaml
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def load_config(configPath="config/config.yaml"):

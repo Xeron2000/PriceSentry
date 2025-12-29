@@ -29,9 +29,7 @@ def match_symbols(symbols, exchange):
         print(f"Exchange {exchange} not supported.")
         return []
 
-    usdt_pattern = re.compile(
-        r"(\d*[A-Za-z]+)\d*/USDT:USDT$|(\d*[A-Za-z]+)\s*/\s*USDT:USDT$"
-    )
+    usdt_pattern = re.compile(r"(\d*[A-Za-z]+)\d*/USDT:USDT$|(\d*[A-Za-z]+)\s*/\s*USDT:USDT$")
 
     matched_symbols = []
 

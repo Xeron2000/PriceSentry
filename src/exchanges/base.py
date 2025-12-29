@@ -60,16 +60,11 @@ class BaseExchange(ABC):
         """Establish WebSocket connection and subscribe to market data"""
         raise NotImplementedError
 
-    @error_handler.circuit_breaker_protect(
-        "websocket_start", failure_threshold=5, recovery_timeout=60
-    )
+    @error_handler.circuit_breaker_protect("websocket_start", failure_threshold=5, recovery_timeout=60)
     def start_websocket(self, symbols):
         """Start WebSocket connection thread"""
         try:
-            logging.info(
-                f"Starting WebSocket connection for {self.exchange_name}, "
-                f"number of symbols: {len(symbols)}"
-            )
+            logging.info(f"Starting WebSocket connection for {self.exchange_name}, number of symbols: {len(symbols)}")
 
             # Print symbol list for debugging
             for i, symbol in enumerate(symbols):
@@ -78,10 +73,7 @@ class BaseExchange(ABC):
             self.running = True
 
             def run_websocket_loop():
-                logging.info(
-                    f"WebSocket thread started, creating new event loop for "
-                    f"{self.exchange_name}"
-                )
+                logging.info(f"WebSocket thread started, creating new event loop for {self.exchange_name}")
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 try:
@@ -109,10 +101,7 @@ class BaseExchange(ABC):
             # Wait for connection to establish
             timeout = 10
             start_time = time.time()
-            logging.info(
-                f"Waiting for WebSocket connection to establish, timeout: {timeout} "
-                "seconds"
-            )
+            logging.info(f"Waiting for WebSocket connection to establish, timeout: {timeout} seconds")
             while not self.ws_connected and time.time() - start_time < timeout:
                 time.sleep(0.1)
 
@@ -129,10 +118,7 @@ class BaseExchange(ABC):
                 )
                 raise ConnectionError(error_msg)
 
-            logging.info(
-                "WebSocket connection successfully established, "
-                f"exchange: {self.exchange_name}"
-            )
+            logging.info(f"WebSocket connection successfully established, exchange: {self.exchange_name}")
 
         except Exception as e:
             error_handler.handle_network_error(
@@ -179,12 +165,7 @@ class BaseExchange(ABC):
                     for symbol in missing_symbols:
                         # Call API to get price
                         ticker = self.exchange.fetch_ticker(symbol)
-                        if (
-                            ticker
-                            and hasattr(ticker, "__getitem__")
-                            and "last" in ticker
-                            and ticker["last"]
-                        ):
+                        if ticker and hasattr(ticker, "__getitem__") and "last" in ticker and ticker["last"]:
                             price = float(ticker["last"])
                             result[symbol] = price
                             # Update cache
@@ -217,18 +198,11 @@ class BaseExchange(ABC):
             still_missing = [s for s in symbols if result.get(s) is None]
             if still_missing:
                 try:
-                    timer_id = performance_monitor.start_timer(
-                        "api_price_fetch_missing"
-                    )
+                    timer_id = performance_monitor.start_timer("api_price_fetch_missing")
                     for symbol in still_missing:
                         # Call API to get price
                         ticker = self.exchange.fetch_ticker(symbol)
-                        if (
-                            ticker
-                            and hasattr(ticker, "__getitem__")
-                            and "last" in ticker
-                            and ticker["last"]
-                        ):
+                        if ticker and hasattr(ticker, "__getitem__") and "last" in ticker and ticker["last"]:
                             price = float(ticker["last"])
                             result[symbol] = price
                             # Update cache
@@ -246,9 +220,7 @@ class BaseExchange(ABC):
                         ErrorSeverity.WARNING,
                     )
                     performance_monitor.record_counter("api_errors", 1)
-                    logging.error(
-                        f"Error getting current prices for missing symbols: {e}"
-                    )
+                    logging.error(f"Error getting current prices for missing symbols: {e}")
 
             # Record cache performance metrics
             total_symbols = len(symbols)
@@ -279,11 +251,13 @@ class BaseExchange(ABC):
             try:
                 for symbol in symbols:
                     # Get historical data
-                    since = int(
-                        (time.time() - minutes * 60) * 1000
-                    )  # Convert to milliseconds
+                    since = int((time.time() - minutes * 60) * 1000)  # Convert to milliseconds
                     ohlcv = self.exchange.fetch_ohlcv(
-                        symbol, "1m", since=since, limit=1, params=self._get_ohlcv_params(symbol)
+                        symbol,
+                        "1m",
+                        since=since,
+                        limit=1,
+                        params=self._get_ohlcv_params(symbol),
                     )
 
                     if ohlcv and len(ohlcv) > 0:
@@ -311,11 +285,13 @@ class BaseExchange(ABC):
                 if abs(closest_price[0] - target_time) > (10 * 60 * 1000):
                     try:
                         # Get historical data
-                        since = int(
-                            (time.time() - minutes * 60) * 1000
-                        )  # Convert to milliseconds
+                        since = int((time.time() - minutes * 60) * 1000)  # Convert to milliseconds
                         ohlcv = self.exchange.fetch_ohlcv(
-                            symbol, "1m", since=since, limit=1, params=self._get_ohlcv_params(symbol)
+                            symbol,
+                            "1m",
+                            since=since,
+                            limit=1,
+                            params=self._get_ohlcv_params(symbol),
                         )
 
                         if ohlcv and len(ohlcv) > 0:
@@ -329,11 +305,13 @@ class BaseExchange(ABC):
             else:
                 try:
                     # Get historical data
-                    since = int(
-                        (time.time() - minutes * 60) * 1000
-                    )  # Convert to milliseconds
+                    since = int((time.time() - minutes * 60) * 1000)  # Convert to milliseconds
                     ohlcv = self.exchange.fetch_ohlcv(
-                        symbol, "1m", since=since, limit=1, params=self._get_ohlcv_params(symbol)
+                        symbol,
+                        "1m",
+                        since=since,
+                        limit=1,
+                        params=self._get_ohlcv_params(symbol),
                     )
 
                     if ohlcv and len(ohlcv) > 0:
@@ -351,17 +329,12 @@ class BaseExchange(ABC):
         if hasattr(self.exchange, "close"):
             self.exchange.close()
 
-    @error_handler.circuit_breaker_protect(
-        "websocket_reconnect", failure_threshold=3, recovery_timeout=30
-    )
+    @error_handler.circuit_breaker_protect("websocket_reconnect", failure_threshold=3, recovery_timeout=30)
     def check_ws_connection(self):
         """Check WebSocket connection status and attempt to reconnect"""
         try:
             if not self.ws_connected and self.running:
-                logging.warning(
-                    f"{self.exchange_name} WebSocket connection disconnected, "
-                    "attempting to reconnect"
-                )
+                logging.warning(f"{self.exchange_name} WebSocket connection disconnected, attempting to reconnect")
                 # Get currently subscribed symbols
                 symbols = list(self.last_prices.keys())
                 if not symbols:

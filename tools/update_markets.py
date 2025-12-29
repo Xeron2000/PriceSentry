@@ -45,16 +45,11 @@ def update_supported_markets(exchange_names):
 def main():
     """Main function to run the script."""
     setup_logging()
-    parser = argparse.ArgumentParser(
-        description="Update supported markets for exchanges."
-    )
+    parser = argparse.ArgumentParser(description="Update supported markets for exchanges.")
     parser.add_argument(
         "--exchanges",
         nargs="+",
-        help=(
-            "A list of exchange names to update. If not provided, all exchanges from "
-            "config.yaml will be used."
-        ),
+        help=("A list of exchange names to update. If not provided, all exchanges from config.yaml will be used."),
     )
     args = parser.parse_args()
 
@@ -84,8 +79,7 @@ def main():
     exchange_names = list(dict.fromkeys(name for name in exchange_names if name))
     if not exchange_names:
         logging.warning(
-            "No exchanges specified. Provide --exchanges, define them in config.yaml, "
-            "or ensure cached markets exist."
+            "No exchanges specified. Provide --exchanges, define them in config.yaml, or ensure cached markets exist."
         )
         return
 

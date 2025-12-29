@@ -82,12 +82,7 @@ class CircuitBreaker:
 
         time_diff = (datetime.now() - self.last_failure_time).total_seconds()
         should_reset = time_diff >= self.recovery_timeout
-        self.logger.debug(
-            (
-                f"Time diff: {time_diff}, timeout: {self.recovery_timeout}, "
-                f"should reset: {should_reset}"
-            )
-        )
+        self.logger.debug((f"Time diff: {time_diff}, timeout: {self.recovery_timeout}, should reset: {should_reset}"))
         return should_reset
 
     def _on_success(self):
@@ -105,14 +100,10 @@ class CircuitBreaker:
         if self.failure_count >= self.failure_threshold:
             if self.state == "CLOSED":
                 self.state = "OPEN"
-                self.logger.warning(
-                    f"Circuit breaker opened after {self.failure_count} failures"
-                )
+                self.logger.warning(f"Circuit breaker opened after {self.failure_count} failures")
             elif self.state == "HALF_OPEN":
                 self.state = "OPEN"
-                self.logger.warning(
-                    "Circuit breaker re-opened after failure in half-open state"
-                )
+                self.logger.warning("Circuit breaker re-opened after failure in half-open state")
 
 
 class ErrorHandler:
@@ -194,9 +185,7 @@ class ErrorHandler:
                 func_name = getattr(func, "__name__", "unknown_function")
                 self._log_error(
                     error_code="RETRY_ATTEMPT",
-                    error_message=(
-                        f"Retry attempt {attempt + 1}/{max_retries} for {func_name}"
-                    ),
+                    error_message=(f"Retry attempt {attempt + 1}/{max_retries} for {func_name}"),
                     error_category=ErrorCategory.NETWORK,
                     severity=ErrorSeverity.WARNING,
                     context={
@@ -248,10 +237,7 @@ class ErrorHandler:
                 func_name = getattr(func, "__name__", "unknown_function")
                 self._log_error(
                     error_code="RETRY_ATTEMPT_ASYNC",
-                    error_message=(
-                        f"Async retry attempt {attempt + 1}/{max_retries} for "
-                        f"{func_name}"
-                    ),
+                    error_message=(f"Async retry attempt {attempt + 1}/{max_retries} for {func_name}"),
                     error_category=ErrorCategory.NETWORK,
                     severity=ErrorSeverity.WARNING,
                     context={
@@ -433,9 +419,7 @@ class ErrorHandler:
 
         # Calculate recent errors (last hour)
         one_hour_ago = datetime.now() - timedelta(hours=1)
-        recent_errors = [
-            error for error in self.error_history if error.timestamp > one_hour_ago
-        ]
+        recent_errors = [error for error in self.error_history if error.timestamp > one_hour_ago]
 
         return {
             "total_errors": len(self.error_history),
@@ -447,9 +431,7 @@ class ErrorHandler:
                 name: {
                     "state": cb.state,
                     "failure_count": cb.failure_count,
-                    "last_failure": cb.last_failure_time.isoformat()
-                    if cb.last_failure_time
-                    else None,
+                    "last_failure": cb.last_failure_time.isoformat() if cb.last_failure_time else None,
                 }
                 for name, cb in self.circuit_breakers.items()
             },

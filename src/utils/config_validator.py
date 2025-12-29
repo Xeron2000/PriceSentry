@@ -104,9 +104,7 @@ class ConfigValidator:
             required=False,
             data_type=str,
             custom_validator=self._validate_timeframe_string,
-            error_message=(
-                "checkInterval must use timeframe format such as 1m, 5m, 15m, 1h, 1d"
-            ),
+            error_message=("checkInterval must use timeframe format such as 1m, 5m, 15m, 1h, 1d"),
         )
 
         # Threshold configuration
@@ -134,9 +132,7 @@ class ConfigValidator:
             required=True,
             data_type=list,
             custom_validator=self._validate_notification_channels,
-            error_message=(
-                "Notification channels must list supported channels (telegram)"
-            ),
+            error_message=("Notification channels must list supported channels (telegram)"),
         )
 
         self.rules["notificationSymbols"] = ValidationRule(
@@ -153,9 +149,7 @@ class ConfigValidator:
             required=False,
             data_type=str,
             pattern=r"^\d+:[A-Za-z0-9_-]+$",
-            error_message=(
-                "Telegram token must be in format: numbers:letters_numbers_symbols"
-            ),
+            error_message=("Telegram token must be in format: numbers:letters_numbers_symbols"),
         )
 
         self.rules["telegram.chatId"] = ValidationRule(
@@ -359,10 +353,7 @@ class ConfigValidator:
             if channel not in valid_channels:
                 return (
                     False,
-                    (
-                        f"Invalid notification channel: {channel}. "
-                        f"Must be one of: {valid_channels}"
-                    ),
+                    (f"Invalid notification channel: {channel}. Must be one of: {valid_channels}"),
                 )
 
         return True, ""
@@ -515,9 +506,7 @@ class ConfigValidator:
 
             # Check if required field is missing
             if rule.required and value is None:
-                error_msg = (
-                    rule.error_message or f"Required field '{key_path}' is missing"
-                )
+                error_msg = rule.error_message or f"Required field '{key_path}' is missing"
                 result.add_error(error_msg)
                 continue
 
@@ -527,35 +516,21 @@ class ConfigValidator:
 
             # Validate data type
             if not self.validate_type(value, rule.data_type):
-                expected_type = (
-                    rule.data_type.__name__
-                    if isinstance(rule.data_type, type)
-                    else str(rule.data_type)
-                )
+                expected_type = rule.data_type.__name__ if isinstance(rule.data_type, type) else str(rule.data_type)
                 actual_type = type(value).__name__
-                error_msg = (
-                    f"Field '{key_path}' must be of type {expected_type}, "
-                    f"got {actual_type}"
-                )
+                error_msg = f"Field '{key_path}' must be of type {expected_type}, got {actual_type}"
                 result.add_error(error_msg)
                 continue
 
             # Validate numeric range
-            if isinstance(value, (int, float)) and (
-                rule.min_value is not None or rule.max_value is not None
-            ):
-                is_valid, msg = self.validate_range(
-                    value, rule.min_value, rule.max_value
-                )
+            if isinstance(value, (int, float)) and (rule.min_value is not None or rule.max_value is not None):
+                is_valid, msg = self.validate_range(value, rule.min_value, rule.max_value)
                 if not is_valid:
                     result.add_error(f"Field '{key_path}': {msg}")
 
             # Validate allowed values
             if rule.allowed_values is not None and value not in rule.allowed_values:
-                error_msg = (
-                    rule.error_message
-                    or f"Field '{key_path}' must be one of: {rule.allowed_values}"
-                )
+                error_msg = rule.error_message or f"Field '{key_path}' must be one of: {rule.allowed_values}"
                 result.add_error(error_msg)
 
             # Validate pattern
@@ -567,12 +542,7 @@ class ConfigValidator:
             # Validate string length
             if rule.min_length is not None and isinstance(value, str):
                 if len(value) < rule.min_length:
-                    result.add_error(
-                        (
-                            f"Field '{key_path}' must be at least "
-                            f"{rule.min_length} characters long"
-                        )
-                    )
+                    result.add_error((f"Field '{key_path}' must be at least {rule.min_length} characters long"))
 
             # Custom validator
             if rule.custom_validator is not None:
@@ -585,16 +555,12 @@ class ConfigValidator:
 
         # Log validation results
         if result.errors:
-            self.logger.error(
-                f"Configuration validation failed with {len(result.errors)} errors"
-            )
+            self.logger.error(f"Configuration validation failed with {len(result.errors)} errors")
             for error in result.errors:
                 self.logger.error(f"  - {error}")
 
         if result.warnings:
-            self.logger.warning(
-                f"Configuration validation has {len(result.warnings)} warnings"
-            )
+            self.logger.warning(f"Configuration validation has {len(result.warnings)} warnings")
             for warning in result.warnings:
                 self.logger.warning(f"  - {warning}")
 
@@ -629,14 +595,10 @@ class ConfigValidator:
             chart_lookback = self.get_value_by_path(config, "chartLookbackMinutes")
 
             if not chart_timeframe:
-                result.add_warning(
-                    "Chart attachment enabled but timeframe is not configured"
-                )
+                result.add_warning("Chart attachment enabled but timeframe is not configured")
 
             if not chart_lookback:
-                result.add_warning(
-                    "Chart attachment enabled but lookback minutes is not configured"
-                )
+                result.add_warning("Chart attachment enabled but lookback minutes is not configured")
 
     def get_config_schema(self) -> Dict[str, Any]:
         """Get configuration schema for documentation."""
@@ -653,9 +615,7 @@ class ConfigValidator:
 
             current[keys[-1]] = {
                 "required": rule.required,
-                "type": rule.data_type.__name__
-                if isinstance(rule.data_type, type)
-                else str(rule.data_type),
+                "type": rule.data_type.__name__ if isinstance(rule.data_type, type) else str(rule.data_type),
                 "description": rule.error_message or f"Configuration for {key_path}",
                 "allowed_values": rule.allowed_values,
                 "min_value": rule.min_value,

@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List
 
 from notifications.telegram import send_telegram_message, send_telegram_photo
 
@@ -33,9 +33,7 @@ def send_notifications(
 
                 chat_ids = _resolve_telegram_targets(telegram_config)
                 if not chat_ids:
-                    logging.warning(
-                        "Telegram notifications enabled but no chatId configured"
-                    )
+                    logging.warning("Telegram notifications enabled but no chatId configured")
                     continue
 
                 for chat_id in chat_ids:

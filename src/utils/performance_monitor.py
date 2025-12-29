@@ -242,9 +242,7 @@ class PerformanceMonitor:
                 network_connections=0,
             )
 
-    def record_counter(
-        self, name: str, value: float, tags: Optional[Dict[str, str]] = None
-    ):
+    def record_counter(self, name: str, value: float, tags: Optional[Dict[str, str]] = None):
         """
         Record a counter metric.
 
@@ -268,9 +266,7 @@ class PerformanceMonitor:
 
             self.metrics.append(metric)
 
-    def record_gauge(
-        self, name: str, value: float, tags: Optional[Dict[str, str]] = None
-    ):
+    def record_gauge(self, name: str, value: float, tags: Optional[Dict[str, str]] = None):
         """
         Record a gauge metric.
 
@@ -280,9 +276,7 @@ class PerformanceMonitor:
             tags: Optional tags for the metric
         """
         with self._lock:
-            self.custom_metrics[name] = Metric(
-                name=name, type=MetricType.GAUGE, value=value, tags=tags or {}
-            )
+            self.custom_metrics[name] = Metric(name=name, type=MetricType.GAUGE, value=value, tags=tags or {})
 
             self.metrics.append(self.custom_metrics[name])
 
@@ -301,9 +295,7 @@ class PerformanceMonitor:
             self.active_timers[timer_id] = time.time()
         return timer_id
 
-    def stop_timer(
-        self, timer_id: str, name: str, tags: Optional[Dict[str, str]] = None
-    ):
+    def stop_timer(self, timer_id: str, name: str, tags: Optional[Dict[str, str]] = None):
         """
         Stop a timer and record the duration.
 
@@ -332,9 +324,7 @@ class PerformanceMonitor:
             # Record as histogram
             self.record_histogram(name, duration, tags)
 
-    def record_histogram(
-        self, name: str, value: float, tags: Optional[Dict[str, str]] = None
-    ):
+    def record_histogram(self, name: str, value: float, tags: Optional[Dict[str, str]] = None):
         """
         Record a histogram metric.
 
@@ -353,9 +343,7 @@ class PerformanceMonitor:
             if len(self.histograms[name]) > 1000:
                 self.histograms[name] = self.histograms[name][-1000:]
 
-            metric = Metric(
-                name=name, type=MetricType.HISTOGRAM, value=value, tags=tags or {}
-            )
+            metric = Metric(name=name, type=MetricType.HISTOGRAM, value=value, tags=tags or {})
 
             self.metrics.append(metric)
 
@@ -399,9 +387,7 @@ class PerformanceMonitor:
                 return metrics[-limit:]
             return metrics
 
-    def get_system_snapshots(
-        self, limit: Optional[int] = None
-    ) -> List[PerformanceSnapshot]:
+    def get_system_snapshots(self, limit: Optional[int] = None) -> List[PerformanceSnapshot]:
         """
         Get recent system snapshots.
 
@@ -503,16 +489,10 @@ class PerformanceMonitor:
                 "custom_metrics": len(self.custom_metrics),
                 "counters": len(self.counters),
                 "histograms": len(self.histograms),
-                "recent_cpu_avg": sum(s.cpu_percent for s in snapshots[-10:])
-                / min(len(snapshots), 10),
-                "recent_memory_avg_mb": sum(s.memory_used_mb for s in snapshots[-10:])
-                / min(len(snapshots), 10),
-                "peak_memory_mb": max(s.memory_used_mb for s in snapshots)
-                if snapshots
-                else 0,
-                "peak_cpu_percent": max(s.cpu_percent for s in snapshots)
-                if snapshots
-                else 0,
+                "recent_cpu_avg": sum(s.cpu_percent for s in snapshots[-10:]) / min(len(snapshots), 10),
+                "recent_memory_avg_mb": sum(s.memory_used_mb for s in snapshots[-10:]) / min(len(snapshots), 10),
+                "peak_memory_mb": max(s.memory_used_mb for s in snapshots) if snapshots else 0,
+                "peak_cpu_percent": max(s.cpu_percent for s in snapshots) if snapshots else 0,
             }
 
     def get_performance_report(self) -> Dict[str, Any]:
@@ -522,9 +502,7 @@ class PerformanceMonitor:
                 "timestamp": time.time(),
                 "system_stats": self.get_system_stats(),
                 "recent_metrics": [m.to_dict() for m in self.get_metrics(50)],
-                "recent_system_snapshots": [
-                    s.to_dict() for s in self.get_system_snapshots(10)
-                ],
+                "recent_system_snapshots": [s.to_dict() for s in self.get_system_snapshots(10)],
                 "timer_stats": {},
                 "histogram_stats": {},
                 "counter_values": self.counters.copy(),
@@ -563,9 +541,7 @@ class PerformanceMonitor:
 
         for metric in self.get_metrics():
             tags_str = json.dumps(metric.tags)
-            lines.append(
-                f"{metric.timestamp},{metric.name},{metric.type.value},{metric.value},{tags_str}"
-            )
+            lines.append(f"{metric.timestamp},{metric.name},{metric.type.value},{metric.value},{tags_str}")
 
         return "\n".join(lines)
 
