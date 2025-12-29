@@ -34,37 +34,95 @@ def get_user_input(prompt, default=None, secret=False):
 
 
 def interactive_config():
-    """Interactive configuration setup."""
+    """Interactive configuration setup with language selection and default symbols."""
+    from utils.default_symbols import get_default_symbols, get_prompt
+    
+    # Language selection
     print("\n" + "=" * 60)
-    print("📝 PriceSentry 配置向导")
+    print("🌐 请选择语言 / Please select language")
+    print("=" * 60)
+    print("1. 中文")
+    print("2. English")
+    print()
+    
+    lang_choice = input("请输入选项 / Enter option [1]: ").strip() or "1"
+    language = "zh" if lang_choice == "1" else "en"
+    
+    # Welcome message
+    print("\n" + "=" * 60)
+    print(f"📝 {get_prompt(language, 'welcome')}")
     print("=" * 60 + "\n")
 
     config = {}
 
-    config["exchange"] = get_user_input("选择交易所", default="okx")
-    config["defaultTimeframe"] = get_user_input("默认时间周期", default="5m")
-    config["checkInterval"] = get_user_input("监控检查间隔", default="1m")
-    config["defaultThreshold"] = float(get_user_input("价格变化阈值 (%)", default="1"))
+    # Exchange selection
+    if language == "zh":
+        config["exchange"] = get_user_input(
+            f"{get_prompt(language, 'exchange_prompt')}", 
+            default="okx"
+        )
+    else:
+        config["exchange"] = get_user_input(
+            f"{get_prompt(language, 'exchange_prompt')}", 
+            default="okx"
+        )
+    
+    # Timeframe and interval
+    config["defaultTimeframe"] = get_user_input(
+        get_prompt(language, "timeframe_prompt"), 
+        default="5m"
+    )
+    config["checkInterval"] = get_user_input(
+        get_prompt(language, "check_interval_prompt"), 
+        default="1m"
+    )
+    config["defaultThreshold"] = float(
+        get_user_input(
+            get_prompt(language, "threshold_prompt"), 
+            default="1"
+        )
+    )
 
     config["notificationChannels"] = ["telegram"]
-    config["notificationTimezone"] = get_user_input("通知时区", default="Asia/Shanghai")
-
-    symbols_input = get_user_input(
-        "监控交易对 (逗号分隔，留空监控全部)",
-        default="BTC/USDT,ETH/USDT",
+    config["notificationTimezone"] = get_user_input(
+        get_prompt(language, "timezone_prompt"), 
+        default="Asia/Shanghai"
     )
-    config["notificationSymbols"] = [
-        s.strip() for s in symbols_input.split(",") if s.strip()
-    ]
 
-    print("\n📱 Telegram 配置\n")
+    # Trading pairs selection with default option
+    print(f"\n{get_prompt(language, 'symbols_prompt')}")
+    print(f"💡 {get_prompt(language, 'symbols_hint')}\n")
+    
+    symbols_input = input(f"[default]: ").strip() or "default"
+    
+    if symbols_input.lower() == "default":
+        # Use default top 50 symbols
+        config["notificationSymbols"] = get_default_symbols(config["exchange"])
+        print(f"✅ {get_prompt(language, 'using_default_symbols')} ({len(config['notificationSymbols'])} {get_prompt(language, 'symbols_prompt')})")
+    else:
+        # Manual input
+        config["notificationSymbols"] = [
+            s.strip() + (":USDT" if ":" not in s else "") 
+            for s in symbols_input.split(",") 
+            if s.strip()
+        ]
+
+    # Telegram configuration
+    print(f"\n📱 {get_prompt(language, 'telegram_section')}\n")
     telegram = {}
 
-    telegram["token"] = get_user_input("Telegram Bot Token", secret=True)
-    telegram["chatId"] = get_user_input("Telegram Chat ID", default="")
+    telegram["token"] = get_user_input(
+        get_prompt(language, "telegram_token_prompt"), 
+        secret=True
+    )
+    telegram["chatId"] = get_user_input(
+        get_prompt(language, "telegram_chatid_prompt"), 
+        default=""
+    )
     config["telegram"] = telegram
 
-    print("\n📊 图表设置\n")
+    # Chart settings
+    print(f"\n📊 {get_prompt(language, 'chart_section')}\n")
     config["attachChart"] = True
     config["chartTimeframe"] = "5m"
     config["chartLookbackMinutes"] = 500
@@ -74,7 +132,7 @@ def interactive_config():
     config["chartImageScale"] = 2
 
     print("\n" + "=" * 60)
-    print("✅ 配置完成!")
+    print(f"✅ {get_prompt(language, 'config_complete')}")
     print("=" * 60 + "\n")
 
     return config

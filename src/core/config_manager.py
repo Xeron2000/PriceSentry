@@ -250,8 +250,15 @@ class ConfigManager:
                 self._set_value_by_path(normalized, key_path, coerced)
 
         # Normalize notification symbol selections: trim, deduplicate, maintain order.
+        # Support "default" keyword for market cap top 50 symbols
         notification_symbols = normalized.get("notificationSymbols")
-        if isinstance(notification_symbols, list):
+        
+        if isinstance(notification_symbols, str) and notification_symbols.strip().lower() == "default":
+            # Load default top 50 symbols
+            from utils.default_symbols import get_default_symbols
+            exchange = normalized.get("exchange", "okx")
+            normalized["notificationSymbols"] = get_default_symbols(exchange)
+        elif isinstance(notification_symbols, list):
             seen = set()
             cleaned: List[str] = []
             for raw_symbol in notification_symbols:

@@ -142,9 +142,9 @@ class ConfigValidator:
         self.rules["notificationSymbols"] = ValidationRule(
             key_path="notificationSymbols",
             required=True,
-            data_type=list,
+            data_type=Union[str, list],  # Allow both string ("default") and list
             custom_validator=self._validate_notification_symbols,
-            error_message="At least one notification symbol must be configured",
+            error_message="At least one notification symbol must be configured or use 'default'",
         )
 
         # Telegram configuration
@@ -404,13 +404,19 @@ class ConfigValidator:
 
         return True, ""
 
-    def _validate_notification_symbols(self, value: List[str]) -> Tuple[bool, str]:
+    def _validate_notification_symbols(self, value: Union[str, List[str]]) -> Tuple[bool, str]:
         """Validate notification symbol selections."""
         if value is None:
             return True, ""
 
+        # Allow "default" keyword for market cap top 50
+        if isinstance(value, str):
+            if value.strip().lower() == "default":
+                return True, ""
+            return False, "Notification symbols must be 'default' or a list of symbols"
+
         if not isinstance(value, list):
-            return False, "Notification symbols must be provided as a list"
+            return False, "Notification symbols must be 'default' or provided as a list"
 
         cleaned = []
         for symbol in value:
