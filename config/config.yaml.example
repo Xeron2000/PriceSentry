@@ -19,10 +19,27 @@ defaultThreshold: 1
 notificationChannels:
   - "telegram"
 
-# 通知交易对（留空表示推送所有监控到的合约交易对）
+# 通知交易对
+# 💡 提示：
+#   - 输入 'default' 使用市值前50币种（推荐新手使用，不包含稳定币）
+#   - 或手动指定交易对列表
+#   - 留空表示推送所有监控到的合约交易对
+#
+# 示例1 - 使用默认市值前50（推荐）:
+# notificationSymbols: default
+#
+# 示例2 - 手动指定:
 notificationSymbols:
   - "BTC/USDT:USDT"
   - "ETH/USDT:USDT"
+  - "SOL/USDT:USDT"
+#
+# 市值前50币种包括 (不含稳定币):
+# BTC, ETH, BNB, XRP, SOL, DOGE, ADA, TRX, HYPE, SUI,
+# BCH, LINK, ZEC, HBAR, XLM, XMR, AVAX, SHIB, LEO, DOT,
+# LTC, UNI, NEAR, APT, ICP, PEPE, KAS, RENDER, ARB, OP,
+# INJ, VET, ETC, OKB, CRO, FIL, MNT, IMX, STX, TIA,
+# SEI, BONK, WIF, FLOKI, FET, AAVE, QNT, FTM, ALGO, THETA
 
 # Telegram 机器人配置（至少提供 token，chatId 用作回退通道）
 telegram:
@@ -44,7 +61,6 @@ attachChart: true
 chartTimeframe: "5m"
 chartLookbackMinutes: 500
 chartTheme: "dark"          # "dark" | "light"
-chartIncludeMA: [7, 25]
 chartImageWidth: 1600
 chartImageHeight: 1200
 chartImageScale: 2

@@ -35,6 +35,8 @@ class PriceSentry:
             self._config_events: "Queue[ConfigUpdateEvent]" = Queue()
             self.notification_symbols: Optional[List[str]] = None
             self._notification_symbol_set: Set[str] = set()
+            # Initialize matched_symbols early to prevent AttributeError
+            self.matched_symbols: List[str] = []
 
             # Load configuration (patchable for unit tests while defaulting to manager data)
             self.config = load_config()
@@ -83,7 +85,7 @@ class PriceSentry:
                 logging.error("Failed to bootstrap symbols: %s", exc)
                 return
 
-            if not getattr(self, "matched_symbols", None):
+            if not self.matched_symbols:
                 logging.warning(
                     "No USDT contract symbols found for exchange %s. "
                     "Run tools/update_markets.py to refresh supported markets.",
@@ -203,9 +205,6 @@ class PriceSentry:
                                         self.config.get("chartLookbackMinutes", 60)
                                     )
                                     chart_theme = self.config.get("chartTheme", "dark")
-                                    ma_windows = self.config.get(
-                                        "chartIncludeMA", [7, 25]
-                                    )
                                     chart_timezone = self.config.get(
                                         "notificationTimezone", "Asia/Shanghai"
                                     )
@@ -226,7 +225,6 @@ class PriceSentry:
                                         chart_timeframe,
                                         chart_lookback,
                                         chart_theme,
-                                        ma_windows,
                                         width=img_width,
                                         height=img_height,
                                         scale=img_scale,
@@ -557,6 +555,7 @@ class PriceSentry:
         if not monitored_symbols:
             detail = ""
             if missing_symbols:
+                # Show full symbol format in error message
                 detail = (
                     " Missing symbols: " + ", ".join(sorted(set(missing_symbols))) + "."
                 )
@@ -564,7 +563,13 @@ class PriceSentry:
                 "No valid notification symbols remain after filtering against available contracts. "
                 "Select at least one supported symbol and retry." + detail
             )
+            # Provide helpful guidance
             logging.error(message)
+            logging.info(
+                "Hint: Ensure symbols are in the correct format (e.g., 'BTC/USDT:USDT' for OKX). "
+                "Run 'uv run python tools/update_markets.py --exchanges %s' to refresh market data.",
+                exchange_name,
+            )
             raise ValueError(message)
 
         with self._config_lock:
@@ -573,9 +578,10 @@ class PriceSentry:
 
         if monitored_symbols:
             logging.info(
-                "Loaded %s USDT contract symbols for exchange %s",
+                "Loaded %s USDT contract symbols for exchange %s: %s",
                 len(monitored_symbols),
                 exchange_name,
+                ", ".join(monitored_symbols[:5]) + (" ..." if len(monitored_symbols) > 5 else ""),
             )
         else:
             logging.warning(
