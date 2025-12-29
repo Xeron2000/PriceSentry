@@ -21,7 +21,7 @@ notificationChannels:
 
 # 通知交易对
 # 💡 提示：
-#   - 输入 'default' 使用市值前50币种（推荐新手使用）
+#   - 输入 'default' 使用市值前50币种（推荐新手使用，不包含稳定币）
 #   - 或手动指定交易对列表
 #   - 留空表示推送所有监控到的合约交易对
 #
@@ -34,12 +34,12 @@ notificationSymbols:
   - "ETH/USDT:USDT"
   - "SOL/USDT:USDT"
 #
-# 市值前50币种包括:
-# BTC, ETH, BNB, XRP, SOL, USDC, DOGE, ADA, TRX, LINK,
-# AVAX, XLM, BCH, DOT, SHIB, SUI, HBAR, LTC, UNI, NEAR,
-# PEPE, APT, ICP, POL, FIL, ARB, VET, ETC, ATOM, OP,
-# INJ, MNT, CRO, IMX, STX, OKB, KAS, RENDER, SEI, TIA,
-# BONK, FTM, GRT, RUNE, ALGO, FLOKI
+# 市值前50币种包括 (不含稳定币):
+# BTC, ETH, BNB, XRP, SOL, DOGE, ADA, TRX, HYPE, SUI,
+# BCH, LINK, ZEC, HBAR, XLM, XMR, AVAX, SHIB, LEO, DOT,
+# LTC, UNI, NEAR, APT, ICP, PEPE, KAS, RENDER, ARB, OP,
+# INJ, VET, ETC, OKB, CRO, FIL, MNT, IMX, STX, TIA,
+# SEI, BONK, WIF, FLOKI, FET, AAVE, QNT, FTM, ALGO, THETA
 
 # Telegram 机器人配置（至少提供 token，chatId 用作回退通道）
 telegram:
