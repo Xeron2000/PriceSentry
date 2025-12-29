@@ -22,9 +22,7 @@ class InitError(Exception):
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Interactively create config/config.yaml from the example template."
-    )
+    parser = argparse.ArgumentParser(description="Interactively create config/config.yaml from the example template.")
     parser.add_argument(
         "--template",
         type=Path,
@@ -68,9 +66,7 @@ def ensure_destination(path: Path, *, force: bool) -> bool:
     if force:
         return True
 
-    response = input(
-        f"[init-config] Destination {path} already exists. Overwrite? (y/N): "
-    ).strip().lower()
+    response = input(f"[init-config] Destination {path} already exists. Overwrite? (y/N): ").strip().lower()
     return response in {"y", "yes"}
 
 
@@ -142,7 +138,9 @@ def interactive_customize(config: Dict[str, Any]) -> Dict[str, Any]:
         PromptSpec(["exchange"], "Exchange (binance/okx/bybit)", lambda text, default: text or default),
         PromptSpec(["defaultTimeframe"], "Default timeframe", lambda text, default: text or default),
         PromptSpec(["checkInterval"], "Monitoring interval", lambda text, default: text or default),
-        PromptSpec(["defaultThreshold"], "Default threshold (%)", lambda text, default: parse_float(text, float(default))),
+        PromptSpec(
+            ["defaultThreshold"], "Default threshold (%)", lambda text, default: parse_float(text, float(default))
+        ),
         PromptSpec(
             ["notificationChannels"],
             "Notification channels (comma separated)",

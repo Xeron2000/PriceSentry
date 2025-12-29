@@ -8,9 +8,7 @@ def setup_logging(log_level="INFO"):
     log_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
     # Use RotatingFileHandler
-    file_handler = RotatingFileHandler(
-        "pricesentry.log", maxBytes=5 * 1024 * 1024, backupCount=5
-    )
+    file_handler = RotatingFileHandler("pricesentry.log", maxBytes=5 * 1024 * 1024, backupCount=5)
     file_handler.setFormatter(log_formatter)
 
     # Stream handler for console output

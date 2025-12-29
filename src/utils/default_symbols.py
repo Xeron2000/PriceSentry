@@ -3,55 +3,55 @@
 # Market cap top 50 cryptocurrency trading pairs (USDT quoted, excluding stablecoins)
 # Format: Symbol/USDT:USDT (for perpetual futures)
 DEFAULT_TOP50_SYMBOLS = [
-    "BTC/USDT:USDT",    # Bitcoin
-    "ETH/USDT:USDT",    # Ethereum
-    "BNB/USDT:USDT",    # BNB
-    "XRP/USDT:USDT",    # XRP
-    "SOL/USDT:USDT",    # Solana
-    "DOGE/USDT:USDT",   # Dogecoin
-    "ADA/USDT:USDT",    # Cardano
-    "TRX/USDT:USDT",    # TRON
-    "HYPE/USDT:USDT",   # Hyperliquid
-    "SUI/USDT:USDT",    # Sui
-    "BCH/USDT:USDT",    # Bitcoin Cash
-    "LINK/USDT:USDT",   # Chainlink
-    "ZEC/USDT:USDT",    # Zcash
-    "HBAR/USDT:USDT",   # Hedera
-    "XLM/USDT:USDT",    # Stellar
-    "XMR/USDT:USDT",    # Monero
-    "AVAX/USDT:USDT",   # Avalanche
-    "SHIB/USDT:USDT",   # Shiba Inu
-    "LEO/USDT:USDT",    # UNUS SED LEO
-    "DOT/USDT:USDT",    # Polkadot
-    "LTC/USDT:USDT",    # Litecoin
-    "UNI/USDT:USDT",    # Uniswap
-    "NEAR/USDT:USDT",   # NEAR Protocol
-    "APT/USDT:USDT",    # Aptos
-    "ICP/USDT:USDT",    # Internet Computer
-    "PEPE/USDT:USDT",   # Pepe
-    "KAS/USDT:USDT",    # Kaspa
-    "RENDER/USDT:USDT", # Render
-    "ARB/USDT:USDT",    # Arbitrum
-    "OP/USDT:USDT",     # Optimism
-    "INJ/USDT:USDT",    # Injective
-    "VET/USDT:USDT",    # VeChain
-    "ETC/USDT:USDT",    # Ethereum Classic
-    "OKB/USDT:USDT",    # OKB
-    "CRO/USDT:USDT",    # Cronos
-    "FIL/USDT:USDT",    # Filecoin
-    "MNT/USDT:USDT",    # Mantle
-    "IMX/USDT:USDT",    # Immutable
-    "STX/USDT:USDT",    # Stacks
-    "TIA/USDT:USDT",    # Celestia
-    "SEI/USDT:USDT",    # Sei
-    "BONK/USDT:USDT",   # Bonk
-    "WIF/USDT:USDT",    # dogwifhat
+    "BTC/USDT:USDT",  # Bitcoin
+    "ETH/USDT:USDT",  # Ethereum
+    "BNB/USDT:USDT",  # BNB
+    "XRP/USDT:USDT",  # XRP
+    "SOL/USDT:USDT",  # Solana
+    "DOGE/USDT:USDT",  # Dogecoin
+    "ADA/USDT:USDT",  # Cardano
+    "TRX/USDT:USDT",  # TRON
+    "HYPE/USDT:USDT",  # Hyperliquid
+    "SUI/USDT:USDT",  # Sui
+    "BCH/USDT:USDT",  # Bitcoin Cash
+    "LINK/USDT:USDT",  # Chainlink
+    "ZEC/USDT:USDT",  # Zcash
+    "HBAR/USDT:USDT",  # Hedera
+    "XLM/USDT:USDT",  # Stellar
+    "XMR/USDT:USDT",  # Monero
+    "AVAX/USDT:USDT",  # Avalanche
+    "SHIB/USDT:USDT",  # Shiba Inu
+    "LEO/USDT:USDT",  # UNUS SED LEO
+    "DOT/USDT:USDT",  # Polkadot
+    "LTC/USDT:USDT",  # Litecoin
+    "UNI/USDT:USDT",  # Uniswap
+    "NEAR/USDT:USDT",  # NEAR Protocol
+    "APT/USDT:USDT",  # Aptos
+    "ICP/USDT:USDT",  # Internet Computer
+    "PEPE/USDT:USDT",  # Pepe
+    "KAS/USDT:USDT",  # Kaspa
+    "RENDER/USDT:USDT",  # Render
+    "ARB/USDT:USDT",  # Arbitrum
+    "OP/USDT:USDT",  # Optimism
+    "INJ/USDT:USDT",  # Injective
+    "VET/USDT:USDT",  # VeChain
+    "ETC/USDT:USDT",  # Ethereum Classic
+    "OKB/USDT:USDT",  # OKB
+    "CRO/USDT:USDT",  # Cronos
+    "FIL/USDT:USDT",  # Filecoin
+    "MNT/USDT:USDT",  # Mantle
+    "IMX/USDT:USDT",  # Immutable
+    "STX/USDT:USDT",  # Stacks
+    "TIA/USDT:USDT",  # Celestia
+    "SEI/USDT:USDT",  # Sei
+    "BONK/USDT:USDT",  # Bonk
+    "WIF/USDT:USDT",  # dogwifhat
     "FLOKI/USDT:USDT",  # Floki
-    "FET/USDT:USDT",    # Artificial Superintelligence Alliance
-    "AAVE/USDT:USDT",   # Aave
-    "QNT/USDT:USDT",    # Quant
-    "FTM/USDT:USDT",    # Fantom / Sonic
-    "ALGO/USDT:USDT",   # Algorand
+    "FET/USDT:USDT",  # Artificial Superintelligence Alliance
+    "AAVE/USDT:USDT",  # Aave
+    "QNT/USDT:USDT",  # Quant
+    "FTM/USDT:USDT",  # Fantom / Sonic
+    "ALGO/USDT:USDT",  # Algorand
     "THETA/USDT:USDT",  # Theta Network
 ]
 

@@ -1,7 +1,5 @@
 # core/notifier.py
 
-import base64
-import time
 from typing import Any, Dict, Optional
 
 from utils.send_notifications import send_notifications

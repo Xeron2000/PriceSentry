@@ -8,7 +8,7 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import yaml
 
@@ -128,10 +128,7 @@ class ConfigManager:
                 )
                 errors = [message]
                 if missing_symbols:
-                    errors.append(
-                        "Unavailable symbols: "
-                        + ", ".join(sorted(set(missing_symbols)))
-                    )
+                    errors.append("Unavailable symbols: " + ", ".join(sorted(set(missing_symbols))))
                 return ManagerUpdateResult(
                     success=False,
                     errors=errors,
@@ -192,16 +189,11 @@ class ConfigManager:
         try:
             config = self._load_from_disk()
         except FileNotFoundError:
-            logging.warning(
-                f"Configuration file not found: {self._config_path}, using default config"
-            )
+            logging.warning(f"Configuration file not found: {self._config_path}, using default config")
             config = self._get_default_config()
         validation = config_validator.validate_config(config)
         if not validation.is_valid:
-            raise ValueError(
-                "Initial configuration failed validation: "
-                + "; ".join(validation.errors)
-            )
+            raise ValueError("Initial configuration failed validation: " + "; ".join(validation.errors))
         self._config = copy.deepcopy(config)
         self._last_loaded_at = time.time()
 
@@ -230,9 +222,7 @@ class ConfigManager:
 
     def _load_from_disk(self) -> Dict[str, Any]:
         if not self._config_path.exists():
-            raise FileNotFoundError(
-                f"Configuration file not found: {self._config_path}"
-            )
+            raise FileNotFoundError(f"Configuration file not found: {self._config_path}")
         with self._config_path.open("r", encoding="utf-8") as fh:
             raw = yaml.safe_load(fh) or {}
         if not isinstance(raw, dict):
@@ -252,10 +242,11 @@ class ConfigManager:
         # Normalize notification symbol selections: trim, deduplicate, maintain order.
         # Support "default" keyword for market cap top 50 symbols
         notification_symbols = normalized.get("notificationSymbols")
-        
+
         if isinstance(notification_symbols, str) and notification_symbols.strip().lower() == "default":
             # Load default top 50 symbols
             from utils.default_symbols import get_default_symbols
+
             exchange = normalized.get("exchange", "okx")
             normalized["notificationSymbols"] = get_default_symbols(exchange)
         elif isinstance(notification_symbols, list):
@@ -322,9 +313,7 @@ class ConfigManager:
                 return coerced, True
         return value, False
 
-    def _coerce_numeric_union(
-        self, value: Any, types: Tuple[type, ...]
-    ) -> Tuple[Any, bool]:
+    def _coerce_numeric_union(self, value: Any, types: Tuple[type, ...]) -> Tuple[Any, bool]:
         if isinstance(value, types):
             return value, False
         if isinstance(value, str):
@@ -332,9 +321,7 @@ class ConfigManager:
             if not value:
                 return value, False
             try:
-                if any(t is float for t in types) and (
-                    "." in value or "e" in value.lower()
-                ):
+                if any(t is float for t in types) and ("." in value or "e" in value.lower()):
                     return float(value), True
                 if int in types and (value.lstrip("+-").isdigit()):
                     return int(value), True
@@ -387,9 +374,7 @@ class ConfigManager:
             return parts, True
         return value, False
 
-    def _set_value_by_path(
-        self, config: Dict[str, Any], key_path: str, new_value: Any
-    ) -> None:
+    def _set_value_by_path(self, config: Dict[str, Any], key_path: str, new_value: Any) -> None:
         keys = key_path.split(".")
         target = config
         for key in keys[:-1]:
@@ -407,8 +392,7 @@ class ConfigManager:
 
         reload_exchange = any(key in changed for key in {"exchange"})
         reload_symbols = reload_exchange or any(
-            key in changed
-            for key in {"symbols", "symbolsFilePath", "notificationSymbols"}
+            key in changed for key in {"symbols", "symbolsFilePath", "notificationSymbols"}
         )
 
         return ConfigDiff(

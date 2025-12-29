@@ -4,9 +4,8 @@ import io
 import time
 from typing import List, Optional
 
-import pytz
-
 import matplotlib
+import pytz
 
 matplotlib.use("Agg")  # 使用非GUI后端
 import matplotlib.dates as mdates
@@ -133,9 +132,7 @@ def generate_candlestick_png(
     since_ms = int((time.time() - lookback_minutes * 60) * 1000)
 
     try:
-        ohlcv = ccxt_exchange.fetch_ohlcv(
-            symbol, timeframe, since=since_ms, limit=limit
-        )
+        ohlcv = ccxt_exchange.fetch_ohlcv(symbol, timeframe, since=since_ms, limit=limit)
     except Exception:
         # Retry without since if the exchange rejects it
         ohlcv = ccxt_exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
@@ -144,9 +141,7 @@ def generate_candlestick_png(
         raise RuntimeError(f"Not enough OHLCV data for {symbol} {timeframe}")
 
     # Convert to pandas DataFrame
-    df = pd.DataFrame(
-        ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
-    )
+    df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df.set_index("timestamp", inplace=True)
 
@@ -303,9 +298,7 @@ def generate_multi_candlestick_png(
     fig_height = height / dpi
 
     # Create figure with subplots
-    fig, axes = plt.subplots(
-        rows, cols, figsize=(fig_width, fig_height), facecolor=style_colors["facecolor"]
-    )
+    fig, axes = plt.subplots(rows, cols, figsize=(fig_width, fig_height), facecolor=style_colors["facecolor"])
     if rows == 1 and cols == 1:
         axes = [axes]
     elif rows == 1:
@@ -343,9 +336,7 @@ def generate_multi_candlestick_png(
         since_ms = int((time.time() - lookback_minutes * 60) * 1000)
 
         try:
-            ohlcv = ccxt_exchange.fetch_ohlcv(
-                symbol, timeframe, since=since_ms, limit=limit
-            )
+            ohlcv = ccxt_exchange.fetch_ohlcv(symbol, timeframe, since=since_ms, limit=limit)
         except Exception:
             ohlcv = ccxt_exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
 
@@ -364,12 +355,8 @@ def generate_multi_candlestick_png(
             continue
 
         # Convert to pandas DataFrame
-        df = pd.DataFrame(
-            ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
-        )
-        df["timestamp"] = pd.to_datetime(
-            df["timestamp"], unit="ms", utc=True
-        ).dt.tz_convert(tzinfo)
+        df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True).dt.tz_convert(tzinfo)
         df.set_index("timestamp", inplace=True)
 
         # Create a simple candlestick plot using matplotlib
@@ -435,9 +422,7 @@ def generate_multi_candlestick_png(
                     alpha=0.9,
                 )
 
-        ax.set_title(
-            f"{symbol} ({timeframe})", color=style_colors["text_color"], fontsize=10
-        )
+        ax.set_title(f"{symbol} ({timeframe})", color=style_colors["text_color"], fontsize=10)
         ax.set_facecolor(style_colors["facecolor"])
         ax.tick_params(colors=style_colors["text_color"])
         ax.grid(True, alpha=0.3, color=style_colors["grid_color"])
@@ -445,9 +430,7 @@ def generate_multi_candlestick_png(
         # Set x-axis labels
         x_ticks = range(0, len(df), max(1, len(df) // 5))
         ax.set_xticks(x_ticks)
-        ax.set_xticklabels(
-            [df.index[i].strftime("%H:%M") for i in x_ticks], rotation=45
-        )
+        ax.set_xticklabels([df.index[i].strftime("%H:%M") for i in x_ticks], rotation=45)
 
         # 只在第一个子图显示图例，并且只有在有标签的情况下
         if idx == 0 and ax.get_legend_handles_labels()[0]:

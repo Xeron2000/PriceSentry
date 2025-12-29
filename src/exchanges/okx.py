@@ -46,8 +46,7 @@ class OkxExchange(BaseExchange):
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
         logging.info(
-            f"Attempting to establish WebSocket connection for {self.exchange_name}, "
-            f"subscribing symbols: {symbols}"
+            f"Attempting to establish WebSocket connection for {self.exchange_name}, subscribing symbols: {symbols}"
         )
 
         max_retries = 3
@@ -69,9 +68,7 @@ class OkxExchange(BaseExchange):
                     base_symbol = symbol.split("/")[0]
                     formatted_symbol = f"{base_symbol}-USDT-SWAP"
 
-                    subscribe_msg["args"].append(
-                        {"channel": "tickers", "instId": formatted_symbol}
-                    )
+                    subscribe_msg["args"].append({"channel": "tickers", "instId": formatted_symbol})
 
                 logging.debug(f"Subscription message: {subscribe_msg}")
 
@@ -110,27 +107,19 @@ class OkxExchange(BaseExchange):
                                     self.last_prices[symbol] = price
 
                                     # Log received price data every 10 minutes
-                                    if (
-                                        time.time() % 600 < 1
-                                    ):  # Approximately every 10 minutes
-                                        logging.info(
-                                            f"OKX price update - {symbol}: {price}"
-                                        )
+                                    if time.time() % 600 < 1:  # Approximately every 10 minutes
+                                        logging.info(f"OKX price update - {symbol}: {price}")
 
                                     # Store historical data
                                     timestamp = int(time.time() * 1000)
                                     if symbol not in self.historical_prices:
                                         self.historical_prices[symbol] = []
-                                    self.historical_prices[symbol].append(
-                                        (timestamp, price)
-                                    )
+                                    self.historical_prices[symbol].append((timestamp, price))
 
                                     # Clean up old historical data (keep 24 hours)
                                     cutoff = timestamp - (24 * 60 * 60 * 1000)
                                     self.historical_prices[symbol] = [
-                                        item
-                                        for item in self.historical_prices[symbol]
-                                        if item[0] >= cutoff
+                                        item for item in self.historical_prices[symbol] if item[0] >= cutoff
                                     ]
                         except Exception as e:
                             logging.error(f"OKX WebSocket data processing error: {e}")
@@ -143,14 +132,9 @@ class OkxExchange(BaseExchange):
                 break
 
             except Exception as e:
-                logging.error(
-                    f"Error establishing WebSocket connection "
-                    f"(attempt {retry_count + 1}/{max_retries}): {e}"
-                )
+                logging.error(f"Error establishing WebSocket connection (attempt {retry_count + 1}/{max_retries}): {e}")
                 retry_count += 1
                 await asyncio.sleep(5)  # Wait 5 seconds before retrying
 
         if not self.ws_connected:
-            logging.error(
-                f"Unable to establish WebSocket connection after {max_retries} attempts"
-            )
+            logging.error(f"Unable to establish WebSocket connection after {max_retries} attempts")

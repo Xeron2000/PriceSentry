@@ -16,8 +16,7 @@ class BybitExchange(BaseExchange):
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
         logging.info(
-            f"Attempting to establish WebSocket connection for {self.exchange_name}, "
-            f"subscribing symbols: {symbols}"
+            f"Attempting to establish WebSocket connection for {self.exchange_name}, subscribing symbols: {symbols}"
         )
 
         max_retries = 3
@@ -65,18 +64,11 @@ class BybitExchange(BaseExchange):
                                 symbol = data["data"]["symbol"]
                                 price = float(data["data"]["lastPrice"])
                                 original_symbol = next(
-                                    (
-                                        s
-                                        for s in symbols
-                                        if s.split(":")[0].replace("/", "").upper()
-                                        == symbol.upper()
-                                    ),
+                                    (s for s in symbols if s.split(":")[0].replace("/", "").upper() == symbol.upper()),
                                     symbol,
                                 )
                                 canonical_symbol = (
-                                    original_symbol
-                                    if ":" in original_symbol
-                                    else f"{original_symbol}:USDT"
+                                    original_symbol if ":" in original_symbol else f"{original_symbol}:USDT"
                                 )
                                 self.last_prices[canonical_symbol] = price
 
@@ -92,16 +84,12 @@ class BybitExchange(BaseExchange):
                                 timestamp = int(time.time() * 1000)
                                 if canonical_symbol not in self.historical_prices:
                                     self.historical_prices[canonical_symbol] = []
-                                self.historical_prices[canonical_symbol].append(
-                                    (timestamp, price)
-                                )
+                                self.historical_prices[canonical_symbol].append((timestamp, price))
 
                                 # Clean up old historical data (keep 24 hours)
                                 cutoff = timestamp - (24 * 60 * 60 * 1000)
                                 self.historical_prices[canonical_symbol] = [
-                                    item
-                                    for item in self.historical_prices[canonical_symbol]
-                                    if item[0] >= cutoff
+                                    item for item in self.historical_prices[canonical_symbol] if item[0] >= cutoff
                                 ]
 
                         except Exception as e:
@@ -115,14 +103,9 @@ class BybitExchange(BaseExchange):
                 break
 
             except Exception as e:
-                logging.error(
-                    f"Error establishing WebSocket connection "
-                    f"(attempt {retry_count + 1}/{max_retries}): {e}"
-                )
+                logging.error(f"Error establishing WebSocket connection (attempt {retry_count + 1}/{max_retries}): {e}")
                 retry_count += 1
                 await asyncio.sleep(5)  # Wait 5 seconds before retrying
 
         if not self.ws_connected:
-            logging.error(
-                f"Unable to establish WebSocket connection after {max_retries} attempts"
-            )
+            logging.error(f"Unable to establish WebSocket connection after {max_retries} attempts")

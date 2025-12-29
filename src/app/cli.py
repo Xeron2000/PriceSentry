@@ -36,7 +36,7 @@ def get_user_input(prompt, default=None, secret=False):
 def interactive_config():
     """Interactive configuration setup with language selection and default symbols."""
     from utils.default_symbols import get_default_symbols, get_prompt
-    
+
     # Language selection
     print("\n" + "=" * 60)
     print("🌐 请选择语言 / Please select language")
@@ -44,10 +44,10 @@ def interactive_config():
     print("1. 中文")
     print("2. English")
     print()
-    
+
     lang_choice = input("请输入选项 / Enter option [1]: ").strip() or "1"
     language = "zh" if lang_choice == "1" else "en"
-    
+
     # Welcome message
     print("\n" + "=" * 60)
     print(f"📝 {get_prompt(language, 'welcome')}")
@@ -57,68 +57,42 @@ def interactive_config():
 
     # Exchange selection
     if language == "zh":
-        config["exchange"] = get_user_input(
-            f"{get_prompt(language, 'exchange_prompt')}", 
-            default="okx"
-        )
+        config["exchange"] = get_user_input(f"{get_prompt(language, 'exchange_prompt')}", default="okx")
     else:
-        config["exchange"] = get_user_input(
-            f"{get_prompt(language, 'exchange_prompt')}", 
-            default="okx"
-        )
-    
+        config["exchange"] = get_user_input(f"{get_prompt(language, 'exchange_prompt')}", default="okx")
+
     # Timeframe and interval
-    config["defaultTimeframe"] = get_user_input(
-        get_prompt(language, "timeframe_prompt"), 
-        default="5m"
-    )
-    config["checkInterval"] = get_user_input(
-        get_prompt(language, "check_interval_prompt"), 
-        default="1m"
-    )
-    config["defaultThreshold"] = float(
-        get_user_input(
-            get_prompt(language, "threshold_prompt"), 
-            default="1"
-        )
-    )
+    config["defaultTimeframe"] = get_user_input(get_prompt(language, "timeframe_prompt"), default="5m")
+    config["checkInterval"] = get_user_input(get_prompt(language, "check_interval_prompt"), default="1m")
+    config["defaultThreshold"] = float(get_user_input(get_prompt(language, "threshold_prompt"), default="1"))
 
     config["notificationChannels"] = ["telegram"]
-    config["notificationTimezone"] = get_user_input(
-        get_prompt(language, "timezone_prompt"), 
-        default="Asia/Shanghai"
-    )
+    config["notificationTimezone"] = get_user_input(get_prompt(language, "timezone_prompt"), default="Asia/Shanghai")
 
     # Trading pairs selection with default option
     print(f"\n{get_prompt(language, 'symbols_prompt')}")
     print(f"💡 {get_prompt(language, 'symbols_hint')}\n")
-    
-    symbols_input = input(f"[default]: ").strip() or "default"
-    
+
+    symbols_input = input("[default]: ").strip() or "default"
+
     if symbols_input.lower() == "default":
         # Use default top 50 symbols
         config["notificationSymbols"] = get_default_symbols(config["exchange"])
-        print(f"✅ {get_prompt(language, 'using_default_symbols')} ({len(config['notificationSymbols'])} {get_prompt(language, 'symbols_prompt')})")
+        print(
+            f"✅ {get_prompt(language, 'using_default_symbols')} ({len(config['notificationSymbols'])} {get_prompt(language, 'symbols_prompt')})"
+        )
     else:
         # Manual input
         config["notificationSymbols"] = [
-            s.strip() + (":USDT" if ":" not in s else "") 
-            for s in symbols_input.split(",") 
-            if s.strip()
+            s.strip() + (":USDT" if ":" not in s else "") for s in symbols_input.split(",") if s.strip()
         ]
 
     # Telegram configuration
     print(f"\n📱 {get_prompt(language, 'telegram_section')}\n")
     telegram = {}
 
-    telegram["token"] = get_user_input(
-        get_prompt(language, "telegram_token_prompt"), 
-        secret=True
-    )
-    telegram["chatId"] = get_user_input(
-        get_prompt(language, "telegram_chatid_prompt"), 
-        default=""
-    )
+    telegram["token"] = get_user_input(get_prompt(language, "telegram_token_prompt"), secret=True)
+    telegram["chatId"] = get_user_input(get_prompt(language, "telegram_chatid_prompt"), default="")
     config["telegram"] = telegram
 
     # Chart settings
@@ -154,9 +128,7 @@ def ensure_config_exists():
     import yaml
 
     with CONFIG_FILE.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(
-            config, f, default_flow_style=False, allow_unicode=True, sort_keys=False
-        )
+        yaml.safe_dump(config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
     print(f"✅ 配置文件已保存: {CONFIG_FILE.absolute()}")
     print(f"📝 如需修改，请编辑: {CONFIG_FILE.absolute()}\n")
@@ -184,9 +156,7 @@ def update_markets(config):
     try:
         refreshed = refresh_supported_markets([exchange])
         if refreshed:
-            logging.info(
-                f"Successfully updated markets for: {', '.join(sorted(refreshed))}"
-            )
+            logging.info(f"Successfully updated markets for: {', '.join(sorted(refreshed))}")
             return True
         else:
             logging.warning("No market data received")
@@ -194,8 +164,7 @@ def update_markets(config):
     except Exception as e:
         logging.warning(f"Failed to update markets: {e}")
         logging.warning(
-            "You can try updating markets manually with: "
-            f"uv run python tools/update_markets.py --exchanges {exchange}"
+            f"You can try updating markets manually with: uv run python tools/update_markets.py --exchanges {exchange}"
         )
         return False
 
@@ -212,13 +181,8 @@ def ensure_market_data(config):
         logging.info("Market data file not found, updating now...")
         success = update_markets(config)
         if not success:
-            logging.warning(
-                f"Failed to update markets for {exchange}. "
-                "Please run update_markets.py manually:"
-            )
-            logging.info(
-                f"  uv run python tools/update_markets.py --exchanges {exchange}"
-            )
+            logging.warning(f"Failed to update markets for {exchange}. Please run update_markets.py manually:")
+            logging.info(f"  uv run python tools/update_markets.py --exchanges {exchange}")
             return False
     else:
         import json
@@ -230,13 +194,8 @@ def ensure_market_data(config):
             logging.info(f"No market data for {exchange}, updating now...")
             success = update_markets(config)
             if not success:
-                logging.warning(
-                    f"Failed to update markets for {exchange}. "
-                    "Please run update_markets.py manually:"
-                )
-                logging.info(
-                    f"  uv run python tools/update_markets.py --exchanges {exchange}"
-                )
+                logging.warning(f"Failed to update markets for {exchange}. Please run update_markets.py manually:")
+                logging.info(f"  uv run python tools/update_markets.py --exchanges {exchange}")
                 return False
 
     logging.info(f"Market data verified for {exchange}")
@@ -245,9 +204,9 @@ def ensure_market_data(config):
 
 async def run_monitoring():
     """Run price monitoring service."""
-    from utils.setup_logging import setup_logging
     from core.sentry import PriceSentry
     from notifications.telegram_bot_service import TelegramBotService
+    from utils.setup_logging import setup_logging
 
     bot_service = None
     try:
@@ -280,10 +239,7 @@ def load_config(config_path):
     import yaml
 
     if not config_path.exists():
-        raise FileNotFoundError(
-            f"Configuration file not found: {config_path}\n"
-            f"Please create config file manually."
-        )
+        raise FileNotFoundError(f"Configuration file not found: {config_path}\nPlease create config file manually.")
 
     with config_path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
@@ -308,9 +264,7 @@ def main():
         if not ensure_market_data(config):
             logging.error("❌ 无法获取市场数据，请检查网络或使用代理")
             logging.info("💡 提示:")
-            logging.info(
-                "   1. 手动运行: uv run python tools/update_markets.py --exchanges <exchange>"
-            )
+            logging.info("   1. 手动运行: uv run python tools/update_markets.py --exchanges <exchange>")
             logging.info("   2. 检查网络连接")
             logging.info("   3. Binance 可能需要代理")
             sys.exit(1)

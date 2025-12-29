@@ -86,17 +86,13 @@ def _read_supported_markets() -> Dict[str, List[str]]:
         return {}
 
     if not isinstance(data, dict):
-        logging.warning(
-            "Supported markets file must contain a mapping. Got %s", type(data)
-        )
+        logging.warning("Supported markets file must contain a mapping. Got %s", type(data))
         return {}
 
     normalized: Dict[str, List[str]] = {}
     for exchange, symbols in data.items():
         if isinstance(symbols, list):
-            normalized[str(exchange)] = [
-                str(symbol) for symbol in symbols if isinstance(symbol, str)
-            ]
+            normalized[str(exchange)] = [str(symbol) for symbol in symbols if isinstance(symbol, str)]
         else:
             logging.debug(
                 "Skipping supported market entry for %s because it is not a list: %s",
@@ -183,9 +179,7 @@ def _fetch_exchange_symbols(exchange_name: str) -> List[str]:
         exchange = exchange_class({"options": {"defaultType": "swap"}})
         markets = exchange.fetch_markets()
         derivative_symbols = [
-            market["symbol"]
-            for market in markets
-            if "symbol" in market and _is_derivatives_market(market)
+            market["symbol"] for market in markets if "symbol" in market and _is_derivatives_market(market)
         ]
         filtered = filter_usdt_symbols(derivative_symbols)
         logging.info(
@@ -199,9 +193,7 @@ def _fetch_exchange_symbols(exchange_name: str) -> List[str]:
         logging.error("Failed to fetch markets for %s: %s", exchange_name, exc)
         return []
     except Exception as exc:
-        logging.error(
-            "Unexpected error fetching markets for %s: %s", exchange_name, exc
-        )
+        logging.error("Unexpected error fetching markets for %s: %s", exchange_name, exc)
         return []
 
 
@@ -220,16 +212,12 @@ def refresh_supported_markets(exchange_names: Iterable[str]) -> Dict[str, List[s
             updated[exchange] = symbols
             refreshed[exchange] = symbols
         else:
-            logging.warning(
-                "No USDT symbols available for %s after refresh attempt.", exchange
-            )
+            logging.warning("No USDT symbols available for %s after refresh attempt.", exchange)
 
     if refreshed:
         _write_supported_markets(updated)
     else:
-        logging.warning(
-            "No exchanges produced market data; supported markets file left unchanged."
-        )
+        logging.warning("No exchanges produced market data; supported markets file left unchanged.")
 
     return refreshed
 

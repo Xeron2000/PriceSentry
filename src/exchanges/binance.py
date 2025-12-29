@@ -16,8 +16,7 @@ class BinanceExchange(BaseExchange):
     async def _ws_connect(self, symbols):
         """Establish WebSocket connection and subscribe to market data"""
         logging.info(
-            f"Attempting to establish WebSocket connection for {self.exchange_name}, "
-            f"subscribing symbols: {symbols}"
+            f"Attempting to establish WebSocket connection for {self.exchange_name}, subscribing symbols: {symbols}"
         )
 
         max_retries = 3
@@ -62,12 +61,7 @@ class BinanceExchange(BaseExchange):
                                 # Binance symbols are uppercase, but stream is lowercase
                                 # We need to find the original symbol format
                                 original_symbol = next(
-                                    (
-                                        s
-                                        for s in symbols
-                                        if s.split(":")[0].replace("/", "").upper()
-                                        == symbol.upper()
-                                    ),
+                                    (s for s in symbols if s.split(":")[0].replace("/", "").upper() == symbol.upper()),
                                     symbol,
                                 )
                                 canonical_symbol = original_symbol
@@ -76,9 +70,7 @@ class BinanceExchange(BaseExchange):
                                 self.last_prices[canonical_symbol] = price
 
                                 # Log received price data every 10 minutes
-                                if (
-                                    time.time() % 600 < 1
-                                ):  # Approximately every 10 minutes
+                                if time.time() % 600 < 1:  # Approximately every 10 minutes
                                     logging.info(
                                         "Binance price update - %s: %s",
                                         canonical_symbol,
@@ -89,21 +81,15 @@ class BinanceExchange(BaseExchange):
                                 timestamp = int(time.time() * 1000)
                                 if canonical_symbol not in self.historical_prices:
                                     self.historical_prices[canonical_symbol] = []
-                                self.historical_prices[canonical_symbol].append(
-                                    (timestamp, price)
-                                )
+                                self.historical_prices[canonical_symbol].append((timestamp, price))
 
                                 # Clean up old historical data (keep 24 hours)
                                 cutoff = timestamp - (24 * 60 * 60 * 1000)
                                 self.historical_prices[canonical_symbol] = [
-                                    item
-                                    for item in self.historical_prices[canonical_symbol]
-                                    if item[0] >= cutoff
+                                    item for item in self.historical_prices[canonical_symbol] if item[0] >= cutoff
                                 ]
                         except Exception as e:
-                            logging.error(
-                                f"Binance WebSocket data processing error: {e}"
-                            )
+                            logging.error(f"Binance WebSocket data processing error: {e}")
                             break
 
                     self.ws_connected = False
@@ -113,14 +99,9 @@ class BinanceExchange(BaseExchange):
                 break
 
             except Exception as e:
-                logging.error(
-                    f"Error establishing WebSocket connection "
-                    f"(attempt {retry_count + 1}/{max_retries}): {e}"
-                )
+                logging.error(f"Error establishing WebSocket connection (attempt {retry_count + 1}/{max_retries}): {e}")
                 retry_count += 1
                 await asyncio.sleep(5)  # Wait 5 seconds before retrying
 
         if not self.ws_connected:
-            logging.error(
-                f"Unable to establish WebSocket connection after {max_retries} attempts"
-            )
+            logging.error(f"Unable to establish WebSocket connection after {max_retries} attempts")

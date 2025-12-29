@@ -17,7 +17,6 @@ from telegram.ext import (
     filters,
 )
 
-
 WELCOME_MESSAGE = "喵～这是 PriceSentry 通知机器人。\n直接配置 chatId 即可接收通知。"
 
 HELP_MESSAGE = "要接收价格通知，请在配置文件中设置 telegram.chatId。"
@@ -42,18 +41,11 @@ class TelegramBotService:
                 return
 
             logging.info("Starting Telegram bot service")
-            application = (
-                Application.builder()
-                .token(self._token)
-                .rate_limiter(AIORateLimiter())
-                .build()
-            )
+            application = Application.builder().token(self._token).rate_limiter(AIORateLimiter()).build()
 
             application.add_handler(CommandHandler("start", self._handle_start))
             application.add_handler(CommandHandler("help", self._handle_help))
-            application.add_handler(
-                MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_free_text)
-            )
+            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_free_text))
 
             await application.initialize()
             await application.start()
@@ -80,9 +72,7 @@ class TelegramBotService:
             self._application = None
             self._running = False
 
-    async def _handle_start(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def _handle_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not update.effective_chat:
             return
         await context.bot.send_message(
@@ -90,9 +80,7 @@ class TelegramBotService:
             text=WELCOME_MESSAGE,
         )
 
-    async def _handle_help(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def _handle_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not update.effective_chat:
             return
         await context.bot.send_message(
@@ -100,9 +88,7 @@ class TelegramBotService:
             text=HELP_MESSAGE,
         )
 
-    async def _handle_free_text(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE
-    ) -> None:
+    async def _handle_free_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not update.effective_chat:
             return
 

@@ -46,10 +46,11 @@ dev = [
 ]
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # Ignore line too long errors
 
 [tool.setuptools]
 package-dir = {"" = "src"}
