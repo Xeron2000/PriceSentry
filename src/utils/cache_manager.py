@@ -627,7 +627,81 @@ class AlertHistoryManager:
             }
 
 
+class NotificationCooldownManager:
+    """Manager for per-symbol notification cooldowns."""
+
+    def __init__(self, default_cooldown_seconds: float = 300.0):
+        """
+        Initialize cooldown manager.
+
+        Args:
+            default_cooldown_seconds: Default cooldown period in seconds
+        """
+        self._cache = CacheManager(
+            max_size=2000,
+            default_ttl=default_cooldown_seconds,
+            strategy=CacheStrategy.TTL,
+        )
+        self.logger = logging.getLogger(__name__)
+
+    def should_notify(self, symbol: str, bypass_cooldown: bool = False) -> bool:
+        """
+        Check if a notification should be sent for the given symbol.
+
+        Args:
+            symbol: Trading pair symbol
+            bypass_cooldown: Whether to bypass the cooldown check
+
+        Returns:
+            True if notification should be sent, False otherwise
+        """
+        if bypass_cooldown:
+            return True
+
+        # If symbol is in cache, it's still in cooldown
+        return not self._cache.contains(symbol)
+
+    def record_notification(self, symbol: str, cooldown_seconds: Optional[float] = None):
+        """
+        Record that a notification was sent for the given symbol, starting its cooldown.
+
+        Args:
+            symbol: Trading pair symbol
+            cooldown_seconds: Optional custom cooldown period in seconds
+        """
+        self._cache.set(symbol, time.time(), ttl=cooldown_seconds)
+        self.logger.debug(f"Notification recorded for {symbol}, cooldown started")
+
+    def get_remaining_cooldown(self, symbol: str) -> float:
+        """
+        Get remaining cooldown time for a symbol in seconds.
+
+        Args:
+            symbol: Trading pair symbol
+
+        Returns:
+            Remaining cooldown in seconds, or 0 if not in cooldown
+        """
+        cache_key = self._cache._generate_key(symbol)
+        with self._cache.lock:
+            if cache_key in self._cache.cache:
+                entry = self._cache.cache[cache_key]
+                if not entry.is_expired():
+                    elapsed = time.time() - entry.timestamp
+                    return max(0.0, entry.ttl - elapsed)
+        return 0.0
+
+    def clear(self):
+        """Clear all cooldowns."""
+        self._cache.clear()
+
+    def update_default_cooldown(self, seconds: float):
+        """Update the default cooldown period."""
+        self._cache.default_ttl = seconds
+
+
 # Global cache instances
 default_cache = CacheManager(max_size=1000, default_ttl=300.0)
 price_cache = PriceCacheManager(max_size=1000, default_ttl=300.0)
 alert_cache = AlertHistoryManager(max_alerts=1000)
+notification_cooldown = NotificationCooldownManager(default_cooldown_seconds=300.0)

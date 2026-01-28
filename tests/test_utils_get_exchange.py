@@ -4,7 +4,6 @@ Tests for utils/get_exchange.py - Exchange factory functionality.
 
 import pytest
 
-
 from utils.get_exchange import get_exchange
 
 

@@ -207,6 +207,12 @@ class ConfigManager:
             "notificationChannels": ["telegram"],
             "notificationSymbols": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
             "notificationTimezone": "Asia/Shanghai",
+            "notificationCooldown": "5m",
+            "priorityThresholds": {
+                "high": 5.0,
+                "medium": 2.0,
+            },
+            "highPriorityBypassCooldown": True,
             "telegram": {
                 "token": None,
                 "chatId": None,

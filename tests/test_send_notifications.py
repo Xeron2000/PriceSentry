@@ -1,7 +1,5 @@
 from typing import List
 
-import pytest
-
 from utils.send_notifications import send_notifications
 
 
@@ -67,26 +65,6 @@ def test_send_notifications_missing_chat_id(monkeypatch):
 
 def test_send_notifications_missing_token(monkeypatch):
     sent: List[tuple] = []
-
-    def fake_send_message(message, token, chat_id):
-        sent.append(("msg", chat_id, message))
-        return True
-
-    monkeypatch.setattr(
-        "utils.send_notifications.send_telegram_message", fake_send_message
-    )
-
-    send_notifications(
-        "Hello",
-        ["telegram"],
-        {"chatId": "123456"},
-    )
-
-    assert sent == []
-
-
-def test_send_notifications_missing_token(monkeypatch):
-    sent: List[Tuple[str, str]] = []
 
     def fake_send_message(message, token, chat_id):
         sent.append(("msg", chat_id, message))

@@ -80,17 +80,8 @@ class BybitExchange(BaseExchange):
                                         price,
                                     )
 
-                                # Store historical data
-                                timestamp = int(time.time() * 1000)
-                                if canonical_symbol not in self.historical_prices:
-                                    self.historical_prices[canonical_symbol] = []
-                                self.historical_prices[canonical_symbol].append((timestamp, price))
-
-                                # Clean up old historical data (keep 24 hours)
-                                cutoff = timestamp - (24 * 60 * 60 * 1000)
-                                self.historical_prices[canonical_symbol] = [
-                                    item for item in self.historical_prices[canonical_symbol] if item[0] >= cutoff
-                                ]
+                                # Store historical data using base class method
+                                self._store_historical_price(canonical_symbol, price)
 
                         except Exception as e:
                             logging.error(f"Bybit WebSocket data processing error: {e}")

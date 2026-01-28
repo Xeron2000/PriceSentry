@@ -3,6 +3,7 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
+from collections import deque
 
 import ccxt
 from expiringdict import ExpiringDict
@@ -10,6 +11,11 @@ from expiringdict import ExpiringDict
 from utils.cache_manager import price_cache
 from utils.error_handler import ErrorSeverity, error_handler
 from utils.performance_monitor import performance_monitor
+
+# Historical price storage configuration
+HISTORICAL_PRICE_MAX_AGE_MS = 60 * 60 * 1000  # 1 hour in milliseconds
+HISTORICAL_PRICE_MAX_LEN = 3600  # Max records per symbol (1 per second for 1 hour)
+HISTORICAL_PRICE_CLEANUP_INTERVAL = 60  # Cleanup every 60 seconds
 
 
 class BaseExchange(ABC):
@@ -34,6 +40,7 @@ class BaseExchange(ABC):
             self.ws_data = {}
             self.last_prices = {}
             self.historical_prices = {}
+            self._last_cleanup_time = 0  # Track last cleanup time
             self.ws_thread = None
             self.running = False
 
@@ -54,6 +61,51 @@ class BaseExchange(ABC):
     def _get_ohlcv_params(self, symbol):
         """Parameters forwarded to fetch_ohlcv for historical data."""
         return {}
+
+    def _store_historical_price(self, symbol: str, price: float) -> None:
+        """Store historical price with automatic cleanup.
+
+        Uses deque for O(1) append and automatic size limiting.
+        Periodic cleanup removes entries older than HISTORICAL_PRICE_MAX_AGE_MS.
+        """
+        timestamp = int(time.time() * 1000)
+
+        # Initialize deque for new symbols
+        if symbol not in self.historical_prices:
+            self.historical_prices[symbol] = deque(maxlen=HISTORICAL_PRICE_MAX_LEN)
+
+        self.historical_prices[symbol].append((timestamp, price))
+
+        # Periodic cleanup (not on every message)
+        current_time = time.time()
+        if current_time - self._last_cleanup_time >= HISTORICAL_PRICE_CLEANUP_INTERVAL:
+            self._cleanup_historical_prices()
+            self._last_cleanup_time = current_time
+
+    def _cleanup_historical_prices(self) -> None:
+        """Remove historical price entries older than HISTORICAL_PRICE_MAX_AGE_MS."""
+        cutoff = int(time.time() * 1000) - HISTORICAL_PRICE_MAX_AGE_MS
+        total_removed = 0
+
+        for symbol in list(self.historical_prices.keys()):
+            prices = self.historical_prices[symbol]
+            original_len = len(prices)
+
+            # Remove old entries from the left (oldest first)
+            while prices and prices[0][0] < cutoff:
+                prices.popleft()
+
+            total_removed += original_len - len(prices)
+
+            # Remove empty deques
+            if not prices:
+                del self.historical_prices[symbol]
+
+        if total_removed > 0:
+            logging.debug(
+                f"Cleaned up {total_removed} old historical price entries, "
+                f"{len(self.historical_prices)} symbols remaining"
+            )
 
     @abstractmethod
     async def _ws_connect(self, symbols):

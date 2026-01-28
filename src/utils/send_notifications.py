@@ -21,8 +21,14 @@ def send_notifications(
     telegram_config,
     image_bytes=None,
     image_caption=None,
-):
-    """Send notifications to configured channels."""
+) -> bool:
+    """Send notifications to configured channels.
+
+    Returns:
+        True if at least one notification was sent successfully, False otherwise.
+    """
+    success = False
+
     for channel in notification_channels:
         try:
             if channel == "telegram":
@@ -39,18 +45,20 @@ def send_notifications(
                 for chat_id in chat_ids:
                     try:
                         if image_bytes is not None:
-                            send_telegram_photo(
+                            if send_telegram_photo(
                                 image_caption or "",
                                 token,
                                 chat_id,
                                 image_bytes,
-                            )
+                            ):
+                                success = True
                         else:
-                            send_telegram_message(
+                            if send_telegram_message(
                                 message,
                                 token,
                                 chat_id,
-                            )
+                            ):
+                                success = True
                     except Exception as exc:
                         logging.error(
                             "Failed to send Telegram notification to %s: %s",
@@ -61,3 +69,5 @@ def send_notifications(
                 logging.warning(f"Unsupported notification channel: {channel}")
         except Exception as exc:
             logging.error(f"Failed to send message via {channel}: {exc}")
+
+    return success

@@ -110,17 +110,8 @@ class OkxExchange(BaseExchange):
                                     if time.time() % 600 < 1:  # Approximately every 10 minutes
                                         logging.info(f"OKX price update - {symbol}: {price}")
 
-                                    # Store historical data
-                                    timestamp = int(time.time() * 1000)
-                                    if symbol not in self.historical_prices:
-                                        self.historical_prices[symbol] = []
-                                    self.historical_prices[symbol].append((timestamp, price))
-
-                                    # Clean up old historical data (keep 24 hours)
-                                    cutoff = timestamp - (24 * 60 * 60 * 1000)
-                                    self.historical_prices[symbol] = [
-                                        item for item in self.historical_prices[symbol] if item[0] >= cutoff
-                                    ]
+                                    # Store historical data using base class method
+                                    self._store_historical_price(symbol, price)
                         except Exception as e:
                             logging.error(f"OKX WebSocket data processing error: {e}")
                             break

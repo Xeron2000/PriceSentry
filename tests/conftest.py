@@ -8,7 +8,6 @@ import pytest
 import yaml
 
 
-
 @pytest.fixture
 def sample_config():
     """Sample configuration for testing."""

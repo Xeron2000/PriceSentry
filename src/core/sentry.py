@@ -9,6 +9,7 @@ from typing import List, Optional, Set, Tuple
 
 from core.config_manager import ConfigUpdateEvent, config_manager
 from core.notifier import Notifier
+from utils.cache_manager import notification_cooldown
 from utils.chart import generate_multi_candlestick_png
 from utils.config_validator import config_validator
 from utils.error_handler import ErrorSeverity, error_handler
@@ -173,6 +174,7 @@ class PriceSentry:
                             self.exchange,
                             self.config,
                             notification_filter_snapshot,
+                            cooldown_manager=notification_cooldown,
                         )
 
                         if result:
@@ -187,7 +189,7 @@ class PriceSentry:
                             chart_metadata = None
                             if attach_chart and top_movers_sorted:
                                 try:
-                                    symbols_for_chart = [s for s, _ in top_movers_sorted[:6]]
+                                    symbols_for_chart = [s for s, _, _ in top_movers_sorted[:6]]
                                     chart_timeframe = self.config.get("chartTimeframe", "1m")
                                     chart_lookback = int(self.config.get("chartLookbackMinutes", 60))
                                     chart_theme = self.config.get("chartTheme", "dark")
@@ -232,7 +234,17 @@ class PriceSentry:
                             if chart_metadata is not None:
                                 send_kwargs["chart_metadata"] = chart_metadata
 
-                            self.notifier.send(message, **send_kwargs)
+                            if self.notifier.send(message, **send_kwargs):
+                                # Record notifications for cooldown tracking
+                                cooldown_source = self.config.get("notificationCooldown", "5m")
+                                try:
+                                    cooldown_seconds = parse_timeframe(cooldown_source) * 60
+                                except Exception:
+                                    cooldown_seconds = 300.0
+
+                                for mover in top_movers_sorted:
+                                    symbol = mover[0]
+                                    notification_cooldown.record_notification(symbol, cooldown_seconds)
                         else:
                             logging.info("No price movements exceeding threshold detected")
                     except Exception as e:
@@ -361,6 +373,15 @@ class PriceSentry:
             self._check_interval = interval_seconds
             self.check_interval_minutes = max(int(interval_seconds / 60) or 1, 1)
             self.threshold = self.config.get("defaultThreshold", 1)
+
+            # Update notification cooldown settings
+            cooldown_source = self.config.get("notificationCooldown", "5m")
+            try:
+                cooldown_seconds = parse_timeframe(cooldown_source) * 60
+                notification_cooldown.update_default_cooldown(cooldown_seconds)
+            except Exception as exc:
+                logging.error(f"Failed to parse notificationCooldown '{cooldown_source}': {exc}")
+
             self._rebuild_notification_filter_locked()
             if hasattr(self, "notifier") and self.notifier is not None:
                 self.notifier.update_config(self.config)

@@ -143,6 +143,40 @@ class ConfigValidator:
             error_message="At least one notification symbol must be configured or use 'default'",
         )
 
+        # Notification deduplication and priority
+        self.rules["notificationCooldown"] = ValidationRule(
+            key_path="notificationCooldown",
+            required=False,
+            data_type=str,
+            custom_validator=self._validate_timeframe_string,
+            error_message="notificationCooldown must use timeframe format such as 1m, 5m, 15m, 30m, 1h",
+        )
+
+        self.rules["priorityThresholds.high"] = ValidationRule(
+            key_path="priorityThresholds.high",
+            required=False,
+            data_type=(int, float),
+            min_value=0.1,
+            max_value=100.0,
+            error_message="High priority threshold must be between 0.1 and 100.0",
+        )
+
+        self.rules["priorityThresholds.medium"] = ValidationRule(
+            key_path="priorityThresholds.medium",
+            required=False,
+            data_type=(int, float),
+            min_value=0.1,
+            max_value=100.0,
+            error_message="Medium priority threshold must be between 0.1 and 100.0",
+        )
+
+        self.rules["highPriorityBypassCooldown"] = ValidationRule(
+            key_path="highPriorityBypassCooldown",
+            required=False,
+            data_type=bool,
+            error_message="highPriorityBypassCooldown must be a boolean value",
+        )
+
         # Telegram configuration
         self.rules["telegram.token"] = ValidationRule(
             key_path="telegram.token",

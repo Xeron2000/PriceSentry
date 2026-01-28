@@ -69,5 +69,36 @@ class TestNotifier:
         ):
             notifier = Notifier(sample_config)
 
-            notifier.send("Test message")
+            result = notifier.send("Test message")
             # Should not raise despite underlying exception
+            assert result is False
+
+    def test_send_returns_true_on_success(self, sample_config):
+        """Verify send returns True when notification is sent successfully."""
+        with patch("core.notifier.send_notifications", return_value=True):
+            notifier = Notifier(sample_config)
+            result = notifier.send("Test message")
+            assert result is True
+
+    def test_send_returns_false_on_empty_message(self, sample_config):
+        """Verify send returns False for empty messages."""
+        notifier = Notifier(sample_config)
+
+        assert notifier.send("") is False
+        assert notifier.send("   ") is False
+
+    def test_send_returns_false_on_all_channels_fail(self, sample_config):
+        """Verify send returns False when all channels fail."""
+        with patch("core.notifier.send_notifications", return_value=False):
+            notifier = Notifier(sample_config)
+            result = notifier.send("Test message")
+            assert result is False
+
+    def test_send_returns_false_on_exception(self, sample_config):
+        """Verify send returns False when exception occurs."""
+        with patch(
+            "core.notifier.send_notifications", side_effect=Exception("Network error")
+        ):
+            notifier = Notifier(sample_config)
+            result = notifier.send("Test message")
+            assert result is False

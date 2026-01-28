@@ -21,12 +21,17 @@ class Notifier:
         image_bytes: Optional[bytes] = None,
         image_caption: Optional[str] = None,
         chart_metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
+    ) -> bool:
+        """Send notification to configured channels.
+
+        Returns:
+            True if at least one notification was sent successfully, False otherwise.
+        """
         if not message or not message.strip():
-            return
+            return False
 
         try:
-            send_notifications(
+            return send_notifications(
                 message,
                 self.notification_channels,
                 self.telegram_config,
@@ -36,3 +41,4 @@ class Notifier:
         except Exception as exc:
             # Log the error but don't raise it
             print(f"Error sending notification: {exc}")
+            return False

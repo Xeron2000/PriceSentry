@@ -4,7 +4,6 @@ Tests for utils/parse_timeframe.py - Timeframe parsing functionality.
 
 import pytest
 
-
 from utils.parse_timeframe import parse_timeframe
 
 
