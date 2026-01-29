@@ -66,7 +66,14 @@ def _create_exchange(exchange_name: str) -> ccxt.Exchange:
     if exchange_name not in exchange_classes:
         raise ValueError(f"Unsupported exchange: {exchange_name}")
 
-    exchange = exchange_classes[exchange_name]({"enableRateLimit": True})
+    options = {"enableRateLimit": True}
+
+    # Binance: use USDT-margined futures API
+    if exchange_name == "binance":
+        options["defaultType"] = "swap"
+        options["options"] = {"defaultType": "swap"}
+
+    exchange = exchange_classes[exchange_name](options)
     return exchange
 
 
@@ -149,12 +156,11 @@ def _fetch_tickers_for_exchange(exchange: ccxt.Exchange, symbols: list[str]) -> 
         except Exception as e:
             logging.warning(f"Failed to fetch tickers with instType param: {e}")
 
-    # Binance: fetch all tickers (no params needed for futures)
-    if exchange_id == "binance":
-        try:
-            return exchange.fetch_tickers()
-        except Exception as e:
-            logging.warning(f"Failed to fetch all tickers for binance: {e}")
+    # Binance/others: fetch all tickers (defaultType already set in exchange config)
+    try:
+        return exchange.fetch_tickers()
+    except Exception as e:
+        logging.warning(f"Failed to fetch all tickers: {e}")
 
     # Fallback: fetch individually
     try:
