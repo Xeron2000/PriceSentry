@@ -33,6 +33,73 @@ def get_user_input(prompt, default=None, secret=False):
     return value
 
 
+def print_section(title: str, char: str = "─"):
+    """Print a section header."""
+    print(f"\n📌 {title}")
+    print(char * 40)
+
+
+def print_help(text: str):
+    """Print help text."""
+    print(text)
+    print()
+
+
+def validate_exchange(value: str, language: str) -> tuple[bool, str]:
+    """Validate exchange input."""
+    from utils.default_symbols import VALID_EXCHANGES, get_prompt
+
+    value = value.lower().strip()
+    if value in VALID_EXCHANGES:
+        return True, value
+    return False, get_prompt(language, "invalid_exchange")
+
+
+def validate_timeframe(value: str, language: str) -> tuple[bool, str]:
+    """Validate timeframe input."""
+    from utils.default_symbols import VALID_TIMEFRAMES, get_prompt
+
+    value = value.lower().strip()
+    if value in VALID_TIMEFRAMES:
+        return True, value
+    return False, get_prompt(language, "invalid_timeframe")
+
+
+def validate_positive_number(value: str, language: str) -> tuple[bool, float | str]:
+    """Validate positive number input."""
+    from utils.default_symbols import get_prompt
+
+    try:
+        num = float(value)
+        if num > 0:
+            return True, num
+        return False, get_prompt(language, "invalid_threshold")
+    except ValueError:
+        return False, get_prompt(language, "invalid_number")
+
+
+def get_validated_input(prompt: str, default: str, validator, language: str, secret: bool = False) -> str:
+    """Get user input with validation."""
+    while True:
+        value = get_user_input(prompt, default=default, secret=secret)
+        if not value and default:
+            value = default
+        valid, result = validator(value, language)
+        if valid:
+            return result
+        print(f"❌ {result}")
+
+
+def ask_yes_no(prompt: str, language: str, default: bool = False) -> bool:
+    """Ask a yes/no question."""
+    from utils.default_symbols import get_prompt
+
+    hint = get_prompt(language, "yes_no_hint")
+    default_str = "y" if default else "n"
+    response = get_user_input(f"{prompt} {hint}", default=default_str).lower().strip()
+    return response in ("y", "yes", "是")
+
+
 def interactive_config():
     """Interactive configuration setup with language selection and default symbols."""
     from utils.default_symbols import get_prompt
@@ -50,45 +117,96 @@ def interactive_config():
 
     # Welcome message
     print("\n" + "=" * 60)
-    print(f"{get_prompt(language, 'welcome')}")
-    print("=" * 60 + "\n")
+    print(f"🚀 {get_prompt(language, 'welcome')}")
+    print("=" * 60)
 
     config = {}
 
-    # Exchange selection
-    config["exchange"] = get_user_input(get_prompt(language, "exchange_prompt"), default="okx")
+    # ==================== Exchange Selection ====================
+    print_section(get_prompt(language, "exchange_prompt"))
+    print_help(get_prompt(language, "exchange_help"))
 
-    # Timeframe and interval
-    config["defaultTimeframe"] = get_user_input(get_prompt(language, "timeframe_prompt"), default="5m")
-    config["checkInterval"] = get_user_input(get_prompt(language, "check_interval_prompt"), default="1m")
-    config["defaultThreshold"] = float(get_user_input(get_prompt(language, "threshold_prompt"), default="1"))
+    config["exchange"] = get_validated_input(
+        get_prompt(language, "exchange_prompt"),
+        default="okx",
+        validator=validate_exchange,
+        language=language,
+    )
 
+    # ==================== Timeframe Selection ====================
+    print_section(get_prompt(language, "timeframe_prompt"))
+    print_help(get_prompt(language, "timeframe_help"))
+    print(f"   {get_prompt(language, 'timeframe_options')}\n")
+
+    config["defaultTimeframe"] = get_validated_input(
+        get_prompt(language, "timeframe_prompt"),
+        default="5m",
+        validator=validate_timeframe,
+        language=language,
+    )
+
+    # ==================== Check Interval ====================
+    print_section(get_prompt(language, "check_interval_prompt"))
+    print_help(get_prompt(language, "check_interval_help"))
+    print(f"   {get_prompt(language, 'timeframe_options')}\n")
+
+    config["checkInterval"] = get_validated_input(
+        get_prompt(language, "check_interval_prompt"),
+        default="1m",
+        validator=validate_timeframe,
+        language=language,
+    )
+
+    # ==================== Threshold ====================
+    print_section(get_prompt(language, "threshold_prompt"))
+    print_help(get_prompt(language, "threshold_help"))
+    print(get_prompt(language, "threshold_examples"))
+    print()
+
+    config["defaultThreshold"] = get_validated_input(
+        get_prompt(language, "threshold_prompt"),
+        default="1",
+        validator=validate_positive_number,
+        language=language,
+    )
+
+    # ==================== Timezone ====================
     config["notificationChannels"] = ["telegram"]
     config["notificationTimezone"] = get_user_input(get_prompt(language, "timezone_prompt"), default="Asia/Shanghai")
 
-    # Trading pairs selection - simplified
-    print(f"\n{get_prompt(language, 'symbols_prompt')}")
-    print(f"{get_prompt(language, 'symbols_hint')}\n")
+    # ==================== Trading Pairs ====================
+    print_section(get_prompt(language, "symbols_prompt"))
+    print_help(get_prompt(language, "symbols_mode_help"))
+    print(f"   {get_prompt(language, 'symbols_format_help')}\n")
 
     symbols_input = input("[auto]: ").strip()
 
     if not symbols_input or symbols_input.lower() == "auto":
         config["notificationSymbols"] = "auto"
-        print(f"{get_prompt(language, 'using_auto_mode')}")
+        print(f"✅ {get_prompt(language, 'using_auto_mode')}")
+    elif symbols_input.lower() == "default":
+        config["notificationSymbols"] = "default"
+        print(f"✅ {get_prompt(language, 'using_default_symbols')}")
     else:
         config["notificationSymbols"] = [
             s.strip() + (":USDT" if ":" not in s else "") for s in symbols_input.split(",") if s.strip()
         ]
 
-    # Telegram configuration
-    print(f"\n{get_prompt(language, 'telegram_section')}\n")
-    telegram = {}
+    # ==================== Telegram Configuration ====================
+    print_section(get_prompt(language, "telegram_section"))
+    print_help(get_prompt(language, "telegram_token_help"))
 
+    telegram = {}
     telegram["token"] = get_user_input(get_prompt(language, "telegram_token_prompt"), secret=True)
+
+    print()
+    print_help(get_prompt(language, "telegram_chatid_help"))
+    print(f"   {get_prompt(language, 'telegram_chatid_optional')}\n")
+
     telegram["chatId"] = get_user_input(get_prompt(language, "telegram_chatid_prompt"), default="")
     config["telegram"] = telegram
 
-    # Chart settings (simplified - use defaults)
+    # ==================== Chart Settings (defaults) ====================
     config["attachChart"] = True
     config["chartTimeframe"] = "5m"
     config["chartLookbackMinutes"] = 500
@@ -97,8 +215,53 @@ def interactive_config():
     config["chartImageHeight"] = 1200
     config["chartImageScale"] = 2
 
+    # ==================== Advanced Configuration (Optional) ====================
+    print_section(get_prompt(language, "advanced_config_prompt"))
+    print(f"   {get_prompt(language, 'advanced_config_hint')}\n")
+
+    if ask_yes_no(get_prompt(language, "advanced_config_prompt"), language, default=False):
+        # Notification Cooldown
+        print()
+        print_help(get_prompt(language, "cooldown_help"))
+        cooldown_input = get_user_input(get_prompt(language, "cooldown_prompt"), default="300")
+        try:
+            config["notificationCooldown"] = int(cooldown_input)
+        except ValueError:
+            config["notificationCooldown"] = 300
+
+        # Priority Thresholds
+        print()
+        print_help(get_prompt(language, "priority_help"))
+
+        priority_thresholds = {}
+        low_input = get_user_input(get_prompt(language, "priority_low_prompt"), default="0.5")
+        medium_input = get_user_input(get_prompt(language, "priority_medium_prompt"), default="1")
+        high_input = get_user_input(get_prompt(language, "priority_high_prompt"), default="3")
+
+        try:
+            priority_thresholds["low"] = float(low_input)
+            priority_thresholds["medium"] = float(medium_input)
+            priority_thresholds["high"] = float(high_input)
+            config["priorityThresholds"] = priority_thresholds
+        except ValueError:
+            pass
+
+        # Chart detailed settings
+        print()
+        print_section(get_prompt(language, "chart_section"))
+
+        chart_theme = get_user_input("Chart theme (dark/light)", default="dark")
+        if chart_theme.lower() in ("dark", "light"):
+            config["chartTheme"] = chart_theme.lower()
+
+        chart_lookback = get_user_input("Chart lookback minutes", default="500")
+        try:
+            config["chartLookbackMinutes"] = int(chart_lookback)
+        except ValueError:
+            pass
+
     print("\n" + "=" * 60)
-    print(f"{get_prompt(language, 'config_complete')}")
+    print(f"✅ {get_prompt(language, 'config_complete')}")
     print("=" * 60 + "\n")
 
     return config
