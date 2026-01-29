@@ -18,6 +18,7 @@ from utils.monitor_top_movers import monitor_top_movers
 from utils.parse_timeframe import parse_timeframe
 from utils.performance_monitor import performance_monitor
 from utils.supported_markets import load_usdt_contracts
+from utils.top_volume_symbols import fetch_top_volume_symbols
 
 
 def load_config() -> dict:
@@ -26,6 +27,9 @@ def load_config() -> dict:
 
 
 class PriceSentry:
+    # 4-hour refresh interval for auto mode (in seconds)
+    AUTO_REFRESH_INTERVAL = 4 * 60 * 60
+
     def __init__(self):
         try:
             # Start performance monitoring
@@ -37,6 +41,9 @@ class PriceSentry:
             self._notification_symbol_set: Set[str] = set()
             # Initialize matched_symbols early to prevent AttributeError
             self.matched_symbols: List[str] = []
+            # Track auto mode and last refresh time
+            self._auto_mode: bool = False
+            self._last_auto_refresh: float = 0
 
             # Load configuration (patchable for unit tests while defaulting to manager data)
             self.config = load_config()
@@ -131,7 +138,12 @@ class PriceSentry:
             )
             raise
 
-        last_check_time = 0
+        # Wait for WebSocket to receive initial price data
+        warmup_seconds = 5
+        logging.info(f"Waiting {warmup_seconds}s for WebSocket to collect initial price data...")
+        await asyncio.sleep(warmup_seconds)
+
+        last_check_time = time.time()  # Start from now, not 0
 
         try:
             logging.info("Entering main loop, starting price movement monitoring")
@@ -144,6 +156,10 @@ class PriceSentry:
             )
             while True:
                 self._process_config_updates()
+
+                # Check for auto mode refresh (every 4 hours)
+                if self._auto_mode:
+                    self._check_auto_refresh()
 
                 (
                     minutes_snapshot,
@@ -505,6 +521,34 @@ class PriceSentry:
             self._notification_symbol_set = set()
 
     def _sync_symbols(self, exchange_name: str) -> None:
+        selection = self.config.get("notificationSymbols")
+
+        # Check for auto mode
+        is_auto = selection == "auto" or (not selection)
+        self._auto_mode = is_auto
+
+        if is_auto:
+            logging.info("Auto mode enabled, fetching top volume symbols")
+            monitored_symbols = fetch_top_volume_symbols(exchange_name, limit=20)
+            self._last_auto_refresh = time.time()
+
+            if not monitored_symbols:
+                logging.error("Failed to fetch top volume symbols in auto mode")
+                raise ValueError("Failed to fetch top volume symbols")
+
+            with self._config_lock:
+                self.matched_symbols = monitored_symbols
+                self._rebuild_notification_filter_locked()
+
+            logging.info(
+                "Auto mode: loaded %s top volume symbols for %s: %s",
+                len(monitored_symbols),
+                exchange_name,
+                ", ".join(monitored_symbols[:5]) + (" ..." if len(monitored_symbols) > 5 else ""),
+            )
+            return
+
+        # Manual mode: validate against available symbols
         available_symbols = load_usdt_contracts(exchange_name)
 
         if not available_symbols:
@@ -518,10 +562,9 @@ class PriceSentry:
             )
             return
 
-        selection = self.config.get("notificationSymbols")
         if not isinstance(selection, list) or not selection:
             message = (
-                "Configuration must include at least one notification symbol. "
+                "Configuration must include at least one notification symbol or set to 'auto'. "
                 "Save the configuration with a non-empty list before restarting."
             )
             logging.error(message)
@@ -545,13 +588,11 @@ class PriceSentry:
         if not monitored_symbols:
             detail = ""
             if missing_symbols:
-                # Show full symbol format in error message
                 detail = " Missing symbols: " + ", ".join(sorted(set(missing_symbols))) + "."
             message = (
                 "No valid notification symbols remain after filtering against available contracts. "
                 "Select at least one supported symbol and retry." + detail
             )
-            # Provide helpful guidance
             logging.error(message)
             logging.info(
                 "Hint: Ensure symbols are in the correct format (e.g., 'BTC/USDT:USDT' for OKX). "
@@ -577,6 +618,58 @@ class PriceSentry:
                 "Ensure config/supported_markets.json is up-to-date.",
                 exchange_name,
             )
+
+    def _check_auto_refresh(self) -> None:
+        """Check if auto mode symbols need refresh (every 4 hours)."""
+        if not self._auto_mode:
+            return
+
+        current_time = time.time()
+        if current_time - self._last_auto_refresh < self.AUTO_REFRESH_INTERVAL:
+            return
+
+        exchange_name = self.config.get("exchange", "binance")
+        logging.info("Auto mode: refreshing top volume symbols (4-hour interval)")
+
+        try:
+            new_symbols = fetch_top_volume_symbols(exchange_name, limit=20)
+            if not new_symbols:
+                logging.warning("Auto refresh returned empty symbols, keeping current list")
+                return
+
+            old_symbols = set(self.matched_symbols)
+            new_symbols_set = set(new_symbols)
+
+            if old_symbols != new_symbols_set:
+                added = new_symbols_set - old_symbols
+                removed = old_symbols - new_symbols_set
+                if added:
+                    logging.info("Auto refresh: added symbols: %s", ", ".join(sorted(added)))
+                if removed:
+                    logging.info("Auto refresh: removed symbols: %s", ", ".join(sorted(removed)))
+
+                # Restart websocket with new symbols
+                try:
+                    self.exchange.close()
+                except Exception as e:
+                    logging.warning(f"Failed to close websocket during auto refresh: {e}")
+
+                with self._config_lock:
+                    self.matched_symbols = new_symbols
+                    self._rebuild_notification_filter_locked()
+
+                try:
+                    self.exchange.start_websocket(new_symbols)
+                    logging.info("Auto refresh: websocket restarted with %s symbols", len(new_symbols))
+                except Exception as e:
+                    logging.error(f"Failed to restart websocket after auto refresh: {e}")
+            else:
+                logging.info("Auto refresh: no symbol changes detected")
+
+            self._last_auto_refresh = current_time
+
+        except Exception as e:
+            logging.error(f"Auto refresh failed: {e}")
 
     def _snapshot_runtime_state(
         self,

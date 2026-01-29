@@ -138,9 +138,9 @@ class ConfigValidator:
         self.rules["notificationSymbols"] = ValidationRule(
             key_path="notificationSymbols",
             required=True,
-            data_type=Union[str, list],  # Allow both string ("default") and list
+            data_type=Union[str, list],  # Allow both string ("default"/"auto") and list
             custom_validator=self._validate_notification_symbols,
-            error_message="At least one notification symbol must be configured or use 'default'",
+            error_message="At least one notification symbol must be configured, or use 'default'/'auto'",
         )
 
         # Notification deduplication and priority
@@ -434,14 +434,14 @@ class ConfigValidator:
         if value is None:
             return True, ""
 
-        # Allow "default" keyword for market cap top 50
+        # Allow "default" (market cap top 50) or "auto" (volume top 20)
         if isinstance(value, str):
-            if value.strip().lower() == "default":
+            if value.strip().lower() in ("default", "auto"):
                 return True, ""
-            return False, "Notification symbols must be 'default' or a list of symbols"
+            return False, "Notification symbols must be 'default', 'auto', or a list of symbols"
 
         if not isinstance(value, list):
-            return False, "Notification symbols must be 'default' or provided as a list"
+            return False, "Notification symbols must be 'default', 'auto', or provided as a list"
 
         cleaned = []
         for symbol in value:
