@@ -223,11 +223,8 @@ def interactive_config():
         # Notification Cooldown
         print()
         print_help(get_prompt(language, "cooldown_help"))
-        cooldown_input = get_user_input(get_prompt(language, "cooldown_prompt"), default="300")
-        try:
-            config["notificationCooldown"] = int(cooldown_input)
-        except ValueError:
-            config["notificationCooldown"] = 300
+        cooldown_input = get_user_input(get_prompt(language, "cooldown_prompt"), default="5m")
+        config["notificationCooldown"] = cooldown_input.strip() or "5m"
 
         # Priority Thresholds
         print()

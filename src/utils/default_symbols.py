@@ -139,8 +139,8 @@ PROMPTS = {
         "cooldown_help": """💡 通知冷却时间:
    同一交易对在冷却时间内不会重复通知
    避免短时间内收到大量相同通知
-   单位: 秒，默认: 300 (5分钟)""",
-        "cooldown_prompt": "通知冷却时间 (秒)",
+   格式: 5m, 10m, 30m, 1h 等""",
+        "cooldown_prompt": "通知冷却时间",
         "priority_help": """💡 优先级阈值:
    根据价格变化幅度设置通知优先级
    高优先级通知会绕过冷却时间限制""",
@@ -232,8 +232,8 @@ PROMPTS = {
         "cooldown_help": """💡 Notification Cooldown:
    Same trading pair won't trigger repeated notifications within cooldown period
    Prevents notification spam
-   Unit: seconds, Default: 300 (5 minutes)""",
-        "cooldown_prompt": "Notification cooldown (seconds)",
+   Format: 5m, 10m, 30m, 1h, etc.""",
+        "cooldown_prompt": "Notification cooldown",
         "priority_help": """💡 Priority Thresholds:
    Set notification priority based on price change magnitude
    High priority notifications bypass cooldown limits""",
