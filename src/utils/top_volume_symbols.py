@@ -74,10 +74,12 @@ def _fetch_symbols_by_volume(exchange: ccxt.Exchange, limit: int) -> list[str]:
     """Fetch and sort symbols by 24h volume."""
     exchange.load_markets()
 
+    exchange_id = exchange.id.lower()
+
     # Get all USDT perpetual futures
     usdt_futures = []
     for symbol, market in exchange.markets.items():
-        if not _is_usdt_perpetual(market):
+        if not _is_usdt_perpetual(market, exchange_id):
             continue
         usdt_futures.append(symbol)
 
@@ -88,16 +90,7 @@ def _fetch_symbols_by_volume(exchange: ccxt.Exchange, limit: int) -> list[str]:
     usdt_futures_set = set(usdt_futures)
 
     # Fetch tickers for volume data
-    try:
-        # Use instType param for OKX/Bybit to get all swap tickers efficiently
-        tickers = exchange.fetch_tickers(params={"instType": "SWAP"})
-    except Exception as e:
-        logging.warning(f"Failed to fetch tickers with instType param: {e}")
-        try:
-            tickers = exchange.fetch_tickers(usdt_futures)
-        except Exception as e2:
-            logging.warning(f"Failed to fetch all tickers, trying individually: {e2}")
-            tickers = _fetch_tickers_individually(exchange, usdt_futures[:100])
+    tickers = _fetch_tickers_for_exchange(exchange, usdt_futures)
 
     # Sort by USDT volume
     volume_data = []
@@ -145,17 +138,48 @@ def _calculate_usdt_volume(ticker: dict) -> float:
     return 0
 
 
-def _is_usdt_perpetual(market: dict) -> bool:
+def _fetch_tickers_for_exchange(exchange: ccxt.Exchange, symbols: list[str]) -> dict:
+    """Fetch tickers using exchange-appropriate method."""
+    exchange_id = exchange.id.lower()
+
+    # OKX/Bybit support instType param for efficient batch fetch
+    if exchange_id in ("okx", "bybit"):
+        try:
+            return exchange.fetch_tickers(params={"instType": "SWAP"})
+        except Exception as e:
+            logging.warning(f"Failed to fetch tickers with instType param: {e}")
+
+    # Binance: fetch all tickers (no params needed for futures)
+    if exchange_id == "binance":
+        try:
+            return exchange.fetch_tickers()
+        except Exception as e:
+            logging.warning(f"Failed to fetch all tickers for binance: {e}")
+
+    # Fallback: fetch individually
+    try:
+        return exchange.fetch_tickers(symbols)
+    except Exception as e:
+        logging.warning(f"Failed to fetch tickers by symbols: {e}")
+        return _fetch_tickers_individually(exchange, symbols[:100])
+
+
+def _is_usdt_perpetual(market: dict, exchange_id: str = "") -> bool:
     """Check if market is a USDT perpetual future."""
     if not market.get("active", False):
         return False
     if market.get("quote") != "USDT":
         return False
-    if market.get("type") not in ("swap", "future"):
-        return False
     if market.get("settle") != "USDT":
         return False
-    return True
+
+    market_type = market.get("type")
+    # Binance: only swap (perpetual), exclude future (delivery)
+    if exchange_id == "binance":
+        return market_type == "swap"
+
+    # OKX/Bybit: accept both swap and future
+    return market_type in ("swap", "future")
 
 
 def _fetch_tickers_individually(exchange: ccxt.Exchange, symbols: list[str]) -> dict:
