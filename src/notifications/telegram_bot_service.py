@@ -8,6 +8,7 @@ from typing import Optional
 
 from telegram import Update
 from telegram.constants import ChatType
+from telegram.error import NetworkError, TimedOut
 from telegram.ext import (
     AIORateLimiter,
     Application,
@@ -51,7 +52,23 @@ class TelegramBotService:
             await application.start()
             if application.updater is None:
                 raise RuntimeError("Telegram application missing updater instance")
-            await application.updater.start_polling(drop_pending_updates=True)
+
+            # Retry polling with exponential backoff for transient network errors
+            max_retries = 5
+            for attempt in range(max_retries):
+                try:
+                    await application.updater.start_polling(
+                        drop_pending_updates=True,
+                        error_callback=self._polling_error_callback,
+                    )
+                    break
+                except (NetworkError, TimedOut) as e:
+                    if attempt == max_retries - 1:
+                        logging.error("Failed to start polling after %d attempts: %s", max_retries, e)
+                        raise
+                    wait_time = 2 ** attempt
+                    logging.warning("Polling failed (attempt %d/%d): %s. Retrying in %ds...", attempt + 1, max_retries, e, wait_time)
+                    await asyncio.sleep(wait_time)
 
             self._application = application
             self._running = True
@@ -103,6 +120,13 @@ class TelegramBotService:
             chat_id=update.effective_chat.id,
             text=HELP_MESSAGE,
         )
+
+    def _polling_error_callback(self, error: Exception) -> None:
+        """Log polling errors without crashing the service."""
+        if isinstance(error, (NetworkError, TimedOut)):
+            logging.warning("Telegram polling network error (will auto-retry): %s", error)
+        else:
+            logging.error("Telegram polling error: %s", error)
 
 
 __all__ = ["TelegramBotService"]

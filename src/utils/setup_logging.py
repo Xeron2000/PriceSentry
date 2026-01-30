@@ -27,3 +27,4 @@ def setup_logging(log_level="INFO"):
     # Suppress noisy loggers
     logging.getLogger("websockets").setLevel(logging.WARNING)
     logging.getLogger("asyncio").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
